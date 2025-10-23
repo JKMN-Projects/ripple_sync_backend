@@ -52,3 +52,29 @@ Used to get statistics on post for each integration
     PostService -->>- PostController: Stats on post
     PostController -->>- Client : Return stats on post
 ```
+
+## Schedule post
+
+Used to schedule post
+
+``` mermaid
+    sequenceDiagram
+    Client->>+PostController: Post /api/post/schedule
+    PostController->>+PostService: Schedule post
+    PostService ->>+ PostRepository: Schedule post
+    PostRepository -->>- PostService: 
+    PostService -->>- PostController: 
+    PostController -->>- Client : 
+    loop Foreach Scheduled Post
+        PostPublisher -->>+ PostRepository: GetScheduledPosts
+        PostRepository -->>+ PostPublisher: Scheduled Post With Datetime < Now
+        loop Foreach Post Event
+            PostPublisher -->>+ IIntegretionRepository: Publish Post
+            IIntegretionRepository -->>- PostPublisher: Return Status
+        end
+        PostPublisher -->>- PostRepository: SetEventStatus
+        PostRepository -->>- PostPublisher: 
+    end
+
+
+```
