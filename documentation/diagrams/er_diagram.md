@@ -1,7 +1,7 @@
 # ER Diagram
 
 ``` mermaid
- 
+
     erDiagram
     user ||--o{ user_platform_integration : "has"
     user ||--o{ post : "creates"
@@ -16,6 +16,8 @@
         uuid id PK
         text email UK
         varchar(100) password_hash
+        varchar(100) salt
+        varchar(100) refresh_token
         timestamp created_at 
     }
 
@@ -36,7 +38,7 @@
         text message_content
         timestamp submitted_at
         timestamp updated_at
-        timestamp scheduled_for
+        timestamp scheduled_for "NULL"
     }
 
     post_media {

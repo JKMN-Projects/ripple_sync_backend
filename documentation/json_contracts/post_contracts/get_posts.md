@@ -1,5 +1,7 @@
 ## Get posts
+
 GET /api/post
+
 ``` mermaid
 classDiagram
     class GetPostsRequest {
