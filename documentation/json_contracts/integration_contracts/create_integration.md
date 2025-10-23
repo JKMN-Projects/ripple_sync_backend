@@ -1,4 +1,4 @@
-## Create integrations
+## Create integration
 
 Post /api/integration
 
@@ -11,12 +11,12 @@ config:
 ---
 
 classDiagram
-    class PostIntegrationsRequest {
+    class CreateIntegrationRequest {
         int platformId
         string accesstoken
     }
 
-    class PostIntegrationsResponse {
+    class CreateIntegrationResponse {
     }
 
     class ProblemDetails {
@@ -27,7 +27,7 @@ classDiagram
         string detail
     }
 
-    PostIntegrationsRequest --> PostIntegrationsResponse : "201"
-    PostIntegrationsRequest --> ProblemDetails : "400"
-    PostIntegrationsRequest --> ProblemDetails : "401"
+    CreateIntegrationRequest --> CreateIntegrationResponse : "201"
+    CreateIntegrationRequest --> ProblemDetails : "400"
+    CreateIntegrationRequest --> ProblemDetails : "401"
 ```

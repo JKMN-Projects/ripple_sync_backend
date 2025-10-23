@@ -1,8 +1,15 @@
 ## Delete post
-DELETE /api/post/{id}
+DELETE /api/post/{postId}
 ``` mermaid
+---
+
+config:
+    class:
+        hideEmptyMembersBox: true
+---
 classDiagram
-    class DeletePostRequest {
+    class DeletePostQueryParameters {
+        
     }
 
     class DeletePostResponse {
@@ -15,8 +22,8 @@ classDiagram
         string instance
         string detail
     }
-
-    DeletePostRequest --> DeletePostResponse : "200"
-    DeletePostRequest --> ProblemDetails : "400"
-    DeletePostRequest --> ProblemDetails : "401"
+    
+    DeletePostQueryParameters --> DeletePostResponse : "204"
+    DeletePostQueryParameters --> ProblemDetails : "400"
+    DeletePostQueryParameters --> ProblemDetails : "401"
 ```
