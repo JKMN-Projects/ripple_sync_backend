@@ -1,5 +1,6 @@
 ## Get integrations
 GET /api/integration
+
 ``` mermaid
 classDiagram
     class GetIntegrationsRequest {
