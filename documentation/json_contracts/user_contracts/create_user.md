@@ -1,14 +1,22 @@
 ``` mermaid
 classDiagram
     class CreateUserRequest {
-        +string email
-        +string password
+        string email
+        string password
     }
 
-    class StatusCodes {
-        200: OK
-        
+    class CreateUserResponse {
     }
 
-    CreateUserRequest --> StatusCodes : returns
+    class ProblemDetails {
+        int Status
+        string Title
+        string Type
+        string Instance
+        string Detail
+    }
+
+    CreateUserRequest --> CreateUserResponse : "201"
+    CreateUserRequest --> ProblemDetails : "400"
+    CreateUserRequest --> ProblemDetails : "401"
 ```
