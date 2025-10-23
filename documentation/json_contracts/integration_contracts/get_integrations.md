@@ -12,6 +12,7 @@ classDiagram
     class IntegrationDto {
         int32 id
         string name
+        bool connected
     }
 
     class ProblemDetails {

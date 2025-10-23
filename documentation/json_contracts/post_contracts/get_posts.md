@@ -7,10 +7,10 @@ classDiagram
     }
 
     class GetPostResponse {
-        PostDto[] posts
+        GetPostDto[] posts
     }
 
-    class PostDto {
+    class GetPostDto {
         string messageContent
         string statusName
         string[] mediaAttachment
@@ -26,7 +26,7 @@ classDiagram
         string detail
     }
 
-    GetPostResponse <|--|> PostDto
+    GetPostResponse <|--|> GetPostDto
     GetPostsRequest --> GetPostResponse : "200"
     GetPostsRequest --> ProblemDetails : "400"
     GetPostsRequest --> ProblemDetails : "401"
