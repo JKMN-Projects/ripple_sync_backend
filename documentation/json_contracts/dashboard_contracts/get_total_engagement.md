@@ -32,7 +32,7 @@ classDiagram
         string detail
     }
 
-    GetTotalEngagementParameters ..> StatsForPlatform : "Has"
+    GetTotalEngagementResponse ..> StatsForPlatform : "Includes"
 
     GetTotalEngagementParameters --> GetTotalEngagementResponse : "200"
     GetTotalEngagementParameters --> ProblemDetails : "400"
