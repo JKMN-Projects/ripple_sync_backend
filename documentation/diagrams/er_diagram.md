@@ -62,8 +62,8 @@
     }
 
     post_event {
-        uuid post_id FK
-        uuid user_platform_integration_id FK
+        uuid post_id FK, PK
+        uuid user_platform_integration_id FK, PK
         int post_status_id FK
         text platform_post_identifier 
         jsonb platform_response "errors, etc"
