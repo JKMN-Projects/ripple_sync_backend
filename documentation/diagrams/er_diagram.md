@@ -10,6 +10,7 @@
     user_platform_integration ||--o{ post_event : "posts_to"
     post ||--o{ post_media : "contains"
     post_event }o--|| post_status : "has"
+    user }o--|| user_token : "has"
 
 
     user {
@@ -17,8 +18,14 @@
         text email UK
         varchar(100) password_hash
         varchar(100) salt
-        varchar(100) refresh_token
         timestamp created_at 
+    }
+
+    user_token {
+        uuid user_id PK
+        varchar(100) refresh_token
+        timestamp created_at
+        timestamp expires_at
     }
 
     platform {
