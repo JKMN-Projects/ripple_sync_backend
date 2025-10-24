@@ -48,7 +48,7 @@
 
     post {
         uuid id PK
-        uuid user_id FK, PK
+        uuid user_account_id FK, PK
         text message_content
         timestamptz submitted_at
         timestamptz updated_at
