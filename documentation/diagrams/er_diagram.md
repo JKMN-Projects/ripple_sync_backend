@@ -19,7 +19,7 @@
         text email UK
         varchar(100) password_hash
         varchar(100) salt
-        timestamp created_at 
+        timestamptz created_at 
     }
 
     user_token {
@@ -27,8 +27,8 @@
         uuid user_id PK, FK
         int token_type_id FK
         varchar(100) token
-        timestamp created_at
-        timestamp expires_at
+        timestamptz created_at
+        timestamptz expires_at
     }
 
     token_type {
@@ -51,9 +51,9 @@
         uuid id PK
         uuid user_id FK, PK
         text message_content
-        timestamp submitted_at
-        timestamp updated_at
-        timestamp scheduled_for "NULL"
+        timestamptz submitted_at
+        timestamptz updated_at
+        timestamptz scheduled_for "NULL"
     }
 
     post_media {
