@@ -1,2 +1,2 @@
 ﻿global using Xunit;
-global using RibbleSync.Tests.Shared;
+global using RippleSync.Tests.Shared;

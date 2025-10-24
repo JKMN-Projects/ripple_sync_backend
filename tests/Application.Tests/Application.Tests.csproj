@@ -5,8 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-	  <RootNamespace>RibbleSync.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
-	  <AssemblyName>RibbleSync.$(MSBuildProjectName)</AssemblyName>
+	  <RootNamespace>RippleSync.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+	  <AssemblyName>RippleSync.$(MSBuildProjectName)</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

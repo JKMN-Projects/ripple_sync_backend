@@ -4,8 +4,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-	  <RootNamespace>RibbleSync.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
-	  <AssemblyName>RibbleSync.$(MSBuildProjectName)</AssemblyName>
+	  <RootNamespace>RippleSync.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+	  <AssemblyName>RippleSync.$(MSBuildProjectName)</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace RibbleSync.Application;
+namespace RippleSync.Application;
 
 public static class DependencyInjection
 {
