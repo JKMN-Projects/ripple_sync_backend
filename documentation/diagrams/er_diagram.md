@@ -25,7 +25,7 @@
         uuid id PK
         uuid user_account_id PK, FK
         int token_type_id FK
-        varchar(100) token
+        varchar(100) token_value
         timestamptz created_at
         timestamptz expires_at
     }
