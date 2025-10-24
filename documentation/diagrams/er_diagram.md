@@ -3,18 +3,17 @@
 ``` mermaid
 
     erDiagram
-    user ||--o{ user_platform_integration : "has"
-    user ||--o{ post : "creates"
-    platform ||--o{ user_platform_integration : "defines"
-    post ||--o{ post_event : "has"
-    user_platform_integration ||--o{ post_event : "posts_to"
-    post ||--o{ post_media : "contains"
-    post_event }o--|| post_status : "has"
-    user ||--|| user_token : "has"
+    user_account ||--o{ user_platform_integration : "has"
+    user_account ||--o{ post : "creates"
+    user_account ||--|| user_token : "has"
     user_token }o--|| token_type : "uses"
+    post ||--o{ post_event : "has"
+    post_event }o--|| post_status : "has"
+    post ||--o{ post_media : "contains"
+    platform ||--o{ user_platform_integration : "defines"
+    user_platform_integration ||--o{ post_event : "posts_to"
 
-
-    user {
+    user_account {
         uuid id PK
         text email UK
         varchar(100) password_hash
@@ -24,7 +23,7 @@
 
     user_token {
         uuid id PK
-        uuid user_id PK, FK
+        uuid user_account_id PK, FK
         int token_type_id FK
         varchar(100) token
         timestamptz created_at
@@ -42,7 +41,7 @@
     }
 
     user_platform_integration {
-        uuid user_id FK, PK
+        uuid user_account_id FK, PK
         int platform_id FK, PK
         text access_token "encrypted"
     }
