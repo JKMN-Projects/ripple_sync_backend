@@ -10,7 +10,8 @@
     user_platform_integration ||--o{ post_event : "posts_to"
     post ||--o{ post_media : "contains"
     post_event }o--|| post_status : "has"
-    user }o--|| user_token : "has"
+    user ||--|| user_token : "has"
+    user_token }o--|| token_type : "uses"
 
 
     user {
@@ -22,10 +23,17 @@
     }
 
     user_token {
-        uuid user_id PK
-        varchar(100) refresh_token
+        uuid id PK
+        uuid user_id PK, FK
+        int token_type_id FK
+        varchar(100) token
         timestamp created_at
         timestamp expires_at
+    }
+
+    token_type {
+        int id PK
+        text type
     }
 
     platform {
@@ -57,13 +65,13 @@
     post_event {
         uuid post_id FK
         uuid integration_id FK
-        uuid post_status_id FK
+        int post_status_id FK
         text platform_post_identifier 
         jsonb platform_response "errors, etc"
     }
 
     post_status {
-        uuid id PK
-        varchar(50) status "Scheduled, Processing, Posted, Failed"
+        int id PK
+        varchar(50) status "scheduled, processing, posted, failed"
     }
 ```
