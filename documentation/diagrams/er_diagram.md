@@ -32,7 +32,7 @@
 
     token_type {
         int id PK
-        text type
+        text token_name
     }
 
     platform {
