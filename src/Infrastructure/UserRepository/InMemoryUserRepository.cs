@@ -1,17 +1,14 @@
-﻿using RippleSync.Application.Repositories;
+﻿using RippleSync.Application.Common.Repositories;
 using RippleSync.Domain.Users;
 
 namespace RippleSync.Infrastructure.UserRepository;
 internal class InMemoryUserRepository : IUserRepository
 {
-    private List<User> _users = new List<User>()
-    {
-        new(Guid.NewGuid(), "jukman.test1@gmail.com")
-    };
+    private readonly List<User> _users = [];
 
-    public async Task<User?> GetUserByEmail(string email)
+    public async Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
-        Thread.Sleep(3000);
+        await Task.Delay(3000, cancellationToken);
 
         return _users.SingleOrDefault(u => u.Email == email);
     }
