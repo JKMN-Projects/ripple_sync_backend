@@ -5,7 +5,7 @@
     erDiagram
     user_account ||--o{ user_platform_integration : "has"
     user_account ||--o{ post : "creates"
-    user_account ||--|| user_token : "has"
+    user_account ||--o{ user_token : "has"
     user_token }o--|| token_type : "uses"
     post ||--o{ post_event : "has"
     post_event }o--|| post_status : "has"
@@ -23,16 +23,16 @@
 
     user_token {
         uuid id PK
-        uuid user_account_id PK, FK
+        uuid user_account_id FK
         int token_type_id FK
-        varchar(100) token
+        varchar(100) token_value
         timestamptz created_at
         timestamptz expires_at
     }
 
     token_type {
         int id PK
-        text token_name
+        text token_name UK
     }
 
     platform {
@@ -41,32 +41,33 @@
     }
 
     user_platform_integration {
-        uuid user_account_id FK, PK
-        int platform_id FK, PK
+        uuid id PK
+        uuid user_account_id FK, UK
+        int platform_id FK, UK
         text access_token "encrypted"
     }
 
     post {
         uuid id PK
-        uuid user_account_id FK, PK
+        uuid user_account_id FK
         text message_content
         timestamptz submitted_at
-        timestamptz updated_at
+        timestamptz updated_at "NULL"
         timestamptz scheduled_for "NULL"
     }
 
     post_media {
         uuid id PK
-        uuid post_id FK, PK
+        uuid post_id FK
         text image_url 
     }
 
     post_event {
-        uuid post_id FK
-        uuid integration_id FK
+        uuid post_id FK, PK
+        uuid user_platform_integration_id FK, PK
         int post_status_id FK
         text platform_post_identifier 
-        jsonb platform_response "errors, etc"
+        jsonb platform_response "NULL - errors, etc" 
     }
 
     post_status {
