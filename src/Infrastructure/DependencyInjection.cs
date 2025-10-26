@@ -11,6 +11,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
         services.AddSingleton<IPasswordHasher, Rfc2898PasswordHasher>();
+        services.AddSingleton<IAuthenticationTokenProvider, JwtTokenProvider>();
 
         services.AddScoped<IUserRepository, InMemoryUserRepository>();
 

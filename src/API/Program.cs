@@ -1,7 +1,10 @@
+using RippleSync.API.Authentication;
 using RippleSync.API.Common.Middleware;
 using RippleSync.Application;
 using RippleSync.Infrastructure;
+using RippleSync.Infrastructure.Security;
 using Serilog;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseDefaultServiceProvider(options =>
@@ -14,8 +17,8 @@ builder.Host.UseDefaultServiceProvider(options =>
 });
 
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.File("logs/app.log", rollingInterval: RollingInterval.Day)
+    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+    .WriteTo.File("logs/app.log", rollingInterval: RollingInterval.Day, formatProvider: CultureInfo.InvariantCulture)
     .CreateLogger();
 // Add services to the container.
 
@@ -33,6 +36,19 @@ builder.Services.AddSerilog(options =>
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructure();
 
+builder.Services.AddOptions<PasswordHasherOptions>()
+    .Bind(builder.Configuration.GetSection("PasswordHasher"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<JwtOptions>()
+    .BindConfiguration("JWT")
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+JwtOptions jwtOptions = builder.Configuration.GetRequiredSection("JWT").Get<JwtOptions>()!;
+builder.Services.AddJwtAuthentication(jwtOptions);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -43,6 +59,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseExceptionHandler();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
