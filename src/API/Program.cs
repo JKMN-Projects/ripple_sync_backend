@@ -8,19 +8,6 @@ using DbMigrator;
 using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
-
-/// Need connectionString
-//string? connString = builder.Configuration.GetConnectionString("Postgres");
-
-//if (string.IsNullOrWhiteSpace(connString))
-//{
-//    throw new InvalidOperationException("Connection string not found");
-//}
-
-//if (builder.Environment.IsDevelopment())
-//    if (DatabaseMigrator.MigrateDatabase(connString, true) == 0)
-//        DatabaseMigrator.MigrateDatabase(connString);
-
 builder.Host.UseDefaultServiceProvider(options =>
 {
     if (builder.Environment.IsDevelopment())
@@ -34,6 +21,19 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
     .WriteTo.File("logs/app.log", rollingInterval: RollingInterval.Day, formatProvider: CultureInfo.InvariantCulture)
     .CreateLogger();
+
+/// Need connectionString
+//string? connString = builder.Configuration.GetConnectionString("Postgres");
+
+//if (string.IsNullOrWhiteSpace(connString))
+//{
+//    throw new InvalidOperationException("Connection string not found");
+//}
+
+//if (builder.Environment.IsDevelopment())
+//    if (DatabaseMigrator.MigrateDatabase(connString, true) == 0)
+//        DatabaseMigrator.MigrateDatabase(connString);
+
 // Add services to the container.
 
 builder.Services.AddControllers();
