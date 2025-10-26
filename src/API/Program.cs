@@ -1,15 +1,26 @@
+using RippleSync.API.Authentication;
 using RippleSync.API.Common.Middleware;
 using RippleSync.Application;
 using RippleSync.Infrastructure;
+using RippleSync.Infrastructure.Security;
 using Serilog;
 using DbMigrator;
-
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.File("logs/app.log", rollingInterval: RollingInterval.Day)
-    .CreateLogger();
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseDefaultServiceProvider(options =>
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        options.ValidateScopes = true;
+        options.ValidateOnBuild = true;
+    }
+});
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+    .WriteTo.File("logs/app.log", rollingInterval: RollingInterval.Day, formatProvider: CultureInfo.InvariantCulture)
+    .CreateLogger();
 
 /// Need connectionString
 //string? connString = builder.Configuration.GetConnectionString("Postgres");
@@ -22,15 +33,6 @@ var builder = WebApplication.CreateBuilder(args);
 //if (builder.Environment.IsDevelopment())
 //    if (DatabaseMigrator.MigrateDatabase(connString, true) == 0)
 //        DatabaseMigrator.MigrateDatabase(connString);
-
-builder.Host.UseDefaultServiceProvider(options =>
-{
-    if (builder.Environment.IsDevelopment())
-    {
-        options.ValidateScopes = true;
-        options.ValidateOnBuild = true;
-    }
-});
 
 // Add services to the container.
 
@@ -48,6 +50,19 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandling>();
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructure();
 
+builder.Services.AddOptions<PasswordHasherOptions>()
+    .Bind(builder.Configuration.GetSection("PasswordHasher"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<JwtOptions>()
+    .BindConfiguration("JWT")
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+JwtOptions jwtOptions = builder.Configuration.GetRequiredSection("JWT").Get<JwtOptions>()!;
+builder.Services.AddJwtAuthentication(jwtOptions);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -58,6 +73,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseExceptionHandler();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

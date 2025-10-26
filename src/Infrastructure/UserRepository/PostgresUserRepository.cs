@@ -1,4 +1,4 @@
 ﻿namespace RippleSync.Infrastructure.UserRepository;
-internal class PostgresUserRepository
+internal sealed class PostgresUserRepository
 {
 }
