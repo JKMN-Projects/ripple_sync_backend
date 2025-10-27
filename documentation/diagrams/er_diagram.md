@@ -37,6 +37,8 @@
     platform {
         int id PK
         text platform_name UK "twitter, youtube, facebook, etc"
+        text platform_description
+        text image_url
     }
 
     user_platform_integration {
