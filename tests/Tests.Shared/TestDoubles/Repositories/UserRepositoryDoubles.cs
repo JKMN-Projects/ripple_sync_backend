@@ -16,7 +16,8 @@ public static partial class UserRepositoryDoubles
         {
             public class AlwaysReturnsNull : Dummy
             {
-                public override Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default) => Task.FromResult<User?>(null);
+                public override Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default) 
+                    => Task.FromResult<User?>(null);
             }
 
             public class ReturnsSpecificUser : Dummy
@@ -26,7 +27,8 @@ public static partial class UserRepositoryDoubles
                 {
                     _userToReturn = userToReturn;
                 }
-                public override Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default) => Task.FromResult<User?>(_userToReturn);
+                public override Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default) 
+                    => Task.FromResult<User?>(_userToReturn);
             }
         }
     }

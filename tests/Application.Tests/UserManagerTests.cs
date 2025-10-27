@@ -1,5 +1,4 @@
-﻿
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using RippleSync.Application.Common.Exceptions;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
@@ -132,6 +131,7 @@ public abstract class UserManagerTests
                 .WithEmail(email)
                 .WithPassword("Password123!")
                 .Build();
+
             UserManager sut = GetSystemUnderTest(
                 userRepository: new UserRepositoryDoubles.Stubs.GetUserByEmail.ReturnsSpecificUser(user),
                 passwordHasher: new PasswordHasherDoubles.Stubs.Verify.AlwaysInvalid());

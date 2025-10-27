@@ -7,13 +7,13 @@ namespace RippleSync.Infrastructure.Security;
 
 public sealed class Rfc2898PasswordHasher : IPasswordHasher
 {
-    private readonly IOptionsMonitor<PasswordHasherOptions> optionsMonitor;
+    private readonly IOptionsMonitor<PasswordHasherOptions> _optionsMonitor;
 
-    private PasswordHasherOptions Options => optionsMonitor.CurrentValue;
+    private PasswordHasherOptions Options => _optionsMonitor.CurrentValue;
 
     public Rfc2898PasswordHasher(IOptionsMonitor<PasswordHasherOptions> optionsMonitor)
     {
-        this.optionsMonitor = optionsMonitor;
+        this._optionsMonitor = optionsMonitor;
     }
 
     public byte[] GenerateSalt()
