@@ -2,9 +2,7 @@
 using NpgsqlTypes;
 using RippleSync.Infrastructure.MicroORM.ClassAttributes;
 using RippleSync.Infrastructure.MicroORM.Exceptions;
-using System.Data.Common;
 using System.Reflection;
-using System.Reflection.Metadata;
 
 namespace RippleSync.Infrastructure.MicroORM.Extensions;
 internal static class NpgsqlExtensions
@@ -20,7 +18,7 @@ internal static class NpgsqlExtensions
     private static BindingFlags _acquirePropFlags = BindingFlags.FlattenHierarchy | BindingFlags.Default | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
     /// <summary>
-    /// Executes a query and returns the result as an enumerable of type T
+    /// Executes the query and returns the result as an enumerable of type T
     /// </summary>
     /// <typeparam name="T">The type to map the results to</typeparam>
     /// <param name="conn">The database connection</param>
@@ -31,21 +29,9 @@ internal static class NpgsqlExtensions
     /// <exception cref="Exception"></exception>
     internal static async Task<IEnumerable<T>> QueryAsync<T>(this NpgsqlConnection conn, string query, object? param = null, NpgsqlTransaction? trans = null, ParameterNameBehavior nameBehavior = ParameterNameBehavior.FailOnNotFound)
     {
-        List<T> data = new List<T>();
+        var constructor = GetSqlConstructor<T>();
 
-        var type = typeof(T);
-        var constructors = type.GetConstructors();
-        foreach (var constructorT in constructors)
-        {
-            var defined = Attribute.IsDefined(constructorT, typeof(SqlConstructor));
-            var attribute = constructorT.GetCustomAttributes().FirstOrDefault(a => a.GetType() == typeof(SqlConstructor));
-
-        }
-
-        var sqlConstructors = constructors.Where(c => Attribute.IsDefined(c, typeof(SqlConstructor)));
-
-        var constructor = typeof(T).GetConstructors().FirstOrDefault(c => Attribute.IsDefined(c, typeof(SqlConstructor)))
-                          ?? throw new Exception($"No {nameof(SqlConstructor)} was defined in {typeof(T).FullName}");
+        ParameterInfo[] parameters = [.. constructor.GetParameters().Where(p => p.Name != null)];
 
         List<object?[]> dbValues = [];
 
@@ -57,63 +43,33 @@ internal static class NpgsqlExtensions
             using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                List<object?> rowValues = new List<object?>();
-                foreach (var parameter in constructor.GetParameters())
-                {
-                    if (parameter.Name == null) continue;
-
-                    string name = char.ToLower(c: parameter.Name[0], System.Globalization.CultureInfo.InvariantCulture)
-                                      .ToString();
-
-                    if (parameter.Name.Length > 1)
-                        name += parameter.Name[1..];
-
-                    try
-                    {
-                        rowValues.Add(reader[name] == DBNull.Value ? GetDefaultValue(parameter.ParameterType) : reader[name]);
-                    }
-                    catch (IndexOutOfRangeException e)
-                    {
-                        switch (nameBehavior)
-                        {
-                            case ParameterNameBehavior.FailOnNotFound:
-                                throw;
-                            case ParameterNameBehavior.NullOnNotFound:
-                                rowValues.Add(null);
-                                break;
-                            case ParameterNameBehavior.DefaultOnNotFound:
-                                rowValues.Add(GetDefaultValue(parameter.ParameterType));
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                }
-                dbValues.Add(rowValues.ToArray());
+                dbValues.Add(ReadRow(reader, parameters, nameBehavior));
             }
         }
         catch (Exception e)
         { throw new QueryException("Querying to class error", query, e); }
 
-        foreach (var value in dbValues)
-        {
-            data.Add((T)constructor.Invoke(value));
-        }
-
-        return data;
+        return dbValues.Select(values => (T)constructor.Invoke(values));
     }
 
-
+    /// <summary>
+    /// Executes the query and returns a single result of type T or Default of type T
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="query"></param>
+    /// <param name="param"></param>
+    /// <param name="trans"></param>
+    /// <param name="nameBehavior"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    /// <exception cref="QueryException"></exception>
     internal static async Task<T?> QuerySingleOrDefaultAsync<T>(this NpgsqlConnection conn, string query, object? param = null, NpgsqlTransaction? trans = null, ParameterNameBehavior nameBehavior = ParameterNameBehavior.FailOnNotFound)
     {
-        T? data = default;
+        var constructor = GetSqlConstructor<T>();
 
-        var constructor = typeof(T).GetConstructors().First(c => Attribute.IsDefined(c, typeof(SqlConstructor)));
+        ParameterInfo[] parameters = [.. constructor.GetParameters().Where(p => p.Name != null)];
 
-        if (constructor == null)
-            throw new Exception($"No {typeof(SqlConstructor).Name} was defined in {typeof(T).FullName}");
-
-        ParameterInfo[] parameters = constructor.GetParameters().Where(p => p.Name != null).ToArray();
         object?[] dbValues = new object[parameters.Length];
 
         try
@@ -124,66 +80,32 @@ internal static class NpgsqlExtensions
             using var reader = await cmd.ExecuteReaderAsync();
             if (await reader.ReadAsync())
             {
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    if (parameters[i] == null || parameters[i].Name == null) continue;
-
-                    string parameterName = parameters[i].Name!;
-
-                    string name = char.ToLower(parameterName[0], System.Globalization.CultureInfo.InvariantCulture)
-                                      .ToString();
-
-                    if (parameterName.Length > 1)
-                        name += parameterName[1..];
-
-                    try
-                    {
-                        dbValues[i] = reader[name] == DBNull.Value ? GetDefaultValue(parameters[i].ParameterType) : reader[name];
-                    }
-                    catch (IndexOutOfRangeException e)
-                    {
-                        switch (nameBehavior)
-                        {
-                            case ParameterNameBehavior.FailOnNotFound:
-                                throw;
-                            case ParameterNameBehavior.NullOnNotFound:
-                                dbValues[i] = null;
-                                break;
-                            case ParameterNameBehavior.DefaultOnNotFound:
-                                dbValues[i] = GetDefaultValue(parameters[i].ParameterType);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                }
+                dbValues = ReadRow(reader, parameters, nameBehavior);
             }
         }
         catch (Exception e)
         { throw new QueryException("Querying to class error", query, e); }
 
-        data = (T)constructor.Invoke(dbValues);
-
-        return data;
+        return (T)constructor.Invoke(dbValues);
     }
 
     /// <summary>
+    /// Executes a select query and returns the result as an enumerable of type T
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="conn"></param>
-    /// <param name="whereClause"></param>
+    /// <param name="whereClause">Add a where clause, "WHERE" being optional</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
     internal static async Task<IEnumerable<T>> SelectAsync<T>(this NpgsqlConnection conn, string whereClause)
-    {
-        return await SelectAsync<T>(conn, null, whereClause, "", "");
-    }
+        => await SelectAsync<T>(conn, null, whereClause, "", "");
 
     /// <summary>
+    /// Executes a select query and returns the result as an enumerable of type T
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="conn"></param>
-    /// <param name="whereClause"></param>
+    /// <param name="whereClause">Add a where clause, "WHERE" being optional</param>
     /// <param name="overwriteSchemaName"></param>
     /// <param name="overwriteTableName"></param>
     /// <returns></returns>
@@ -199,28 +121,37 @@ internal static class NpgsqlExtensions
         return data;
     }
 
+    /// <summary>
+    /// Executes a select query and returns a single result of type T or Default of type T
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="trans"></param>
+    /// <param name="whereClause">Add a where clause, "WHERE" being optional</param>
+    /// <param name="param"></param>
+    /// <param name="overwriteSchemaName"></param>
+    /// <param name="overwriteTableName"></param>
+    /// <returns></returns>
     internal static async Task<T?> SelectSingleOrDefaultAsync<T>(this NpgsqlConnection conn, NpgsqlTransaction? trans = null, string whereClause = "", object? param = null, string overwriteSchemaName = "", string overwriteTableName = "")
     {
-        T? data = default;
-
         string query = SelectQuery<T>(whereClause, overwriteSchemaName, overwriteTableName);
 
-        data = await QuerySingleOrDefaultAsync<T>(conn, query, param, trans);
-
+        var data = await conn.QuerySingleOrDefaultAsync<T>(query, param, trans);
         return data;
     }
 
+    /// <summary>
+    /// Create Select Query to run in cmd
+    /// </summary>
+    /// <typeparam name="T"></typeparam>s
+    /// <param name="whereClause"></param>
+    /// <param name="overwriteSchemaName"></param>
+    /// <param name="overwriteTableName"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     private static string SelectQuery<T>(string whereClause = "", string overwriteSchemaName = "", string overwriteTableName = "")
     {
-        var constructor = typeof(T).GetConstructors().First(c => Attribute.IsDefined(c, typeof(SqlConstructor)));
-
-        if (constructor == null)
-            throw new Exception($"No {nameof(SqlConstructor)} was defined in {typeof(T).FullName}");
-
-        var sqlConstructor = constructor.GetCustomAttributes(false).OfType<SqlConstructor>().FirstOrDefault();
-
-        if (sqlConstructor == null)
-            throw new Exception($"No {nameof(SqlConstructor)} could be parsed from {typeof(T).FullName}");
+        var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
 
         var (schemaName, tableName) = GetSchemaAndTableName<T>(overwriteSchemaName, overwriteTableName, sqlConstructor);
 
@@ -236,6 +167,77 @@ internal static class NpgsqlExtensions
         return $"SELECT * FROM {schemaName}{tableName} {where}";
     }
 
+    /// <summary>
+    /// Reads a single row from the data reader and maps it to constructor parameters
+    /// </summary>
+    private static object?[] ReadRow(NpgsqlDataReader reader, ParameterInfo[] parameters, ParameterNameBehavior nameBehavior)
+    {
+        object?[] values = new object[parameters.Length];
+
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            string? parameterName = parameters[i].Name;
+            if (string.IsNullOrWhiteSpace(parameterName)) continue;
+
+            string name = char.ToLower(parameterName[0], System.Globalization.CultureInfo.InvariantCulture).ToString();
+
+            if (parameterName.Length > 1)
+                name += parameterName[1..];
+
+            try
+            {
+                values[i] = reader[name] == DBNull.Value ? GetDefaultValue(parameters[i].ParameterType) : reader[name];
+            }
+            catch (IndexOutOfRangeException)
+            {
+                switch (nameBehavior)
+                {
+                    case ParameterNameBehavior.FailOnNotFound:
+                        throw;
+                    case ParameterNameBehavior.NullOnNotFound:
+                        values[i] = null;
+                        break;
+                    case ParameterNameBehavior.DefaultOnNotFound:
+                        values[i] = GetDefaultValue(parameters[i].ParameterType);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        return values;
+    }
+
+    /// <summary>
+    /// Gets the constructor marked with SqlConstructor attribute
+    /// </summary>
+    private static ConstructorInfo GetSqlConstructor<T>()
+    {
+        return typeof(T).GetConstructors().FirstOrDefault(c => Attribute.IsDefined(c, typeof(SqlConstructor)))
+           ?? throw new InvalidOperationException($"No {nameof(SqlConstructor)} was defined in {typeof(T).FullName}");
+    }
+
+    /// <summary>
+    /// Gets the constructor marked with SqlConstructor attribute as an SqlConstructor
+    /// </summary>
+    private static SqlConstructor GetConstructorOfTypeSqlConstructor<T>()
+    {
+        var constructor = GetSqlConstructor<T>();
+
+        return constructor.GetCustomAttributes(false).OfType<SqlConstructor>().FirstOrDefault()
+            ?? throw new InvalidOperationException($"No {nameof(SqlConstructor)} could be parsed from {typeof(T).FullName}");
+    }
+
+    /// <summary>
+    /// Extrapolates Schema and Table name
+    ///     Prioritizes overwrites, followed by <see cref="SqlConstructor"/>, then by class name.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="overwriteTableName"></param>
+    /// <param name="overwriteSchemaName"></param>
+    /// <param name="ctorSqlAttribute"></param>
+    /// <returns>schema and table name as tuple</returns>
     private static (string schemaName, string tableName) GetSchemaAndTableName<T>(string overwriteTableName, string overwriteSchemaName, SqlConstructor? ctorSqlAttribute = null)
     {
         string table = overwriteTableName;
@@ -268,13 +270,16 @@ internal static class NpgsqlExtensions
         return (schema, table);
     }
 
-
+    /// <summary>
+    /// Adds <see cref="NpgsqlParameter"/>s to the cmd, from the parameter objects
+    /// </summary>
+    /// <param name="cmd"></param>
+    /// <param name="param"></param>
     internal static void InsertParameters(this NpgsqlCommand cmd, object? param)
     {
         if (param != null)
         {
             var properties = param.GetType().GetProperties();
-            int geometryParamIndex = 0;
 
             foreach (var property in properties)
             {
@@ -322,15 +327,8 @@ internal static class NpgsqlExtensions
     }
 
     public static object ToDbValue(this object? value)
-    {
-        return value ?? DBNull.Value;
-    }
+        => value ?? DBNull.Value;
 
     private static object? GetDefaultValue(Type? t)
-    {
-        if (t?.IsValueType ?? false)
-            return Activator.CreateInstance(t);
-
-        return null;
-    }
+        => t?.IsValueType ?? false ? Activator.CreateInstance(t) : null;
 }
