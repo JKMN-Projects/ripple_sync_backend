@@ -7,9 +7,11 @@ classDiagram
     }
 
     class CreatePostResponse {
+        string id
     }
 
     class CreatePostDto {
+        string id 
         string messageContent
         int64 scheduled_timestamp
         string[] mediaAttachment
