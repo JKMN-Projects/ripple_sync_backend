@@ -63,14 +63,19 @@ builder.Services.AddOptions<JwtOptions>()
 JwtOptions jwtOptions = builder.Configuration.GetRequiredSection("JWT").Get<JwtOptions>()!;
 builder.Services.AddJwtAuthentication(jwtOptions);
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
-app.UseCors(options =>
-{
-    options.AllowAnyOrigin()
-           .AllowAnyMethod()
-           .AllowAnyHeader();
-});
+app.UseCors();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
