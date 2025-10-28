@@ -18,7 +18,7 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
     //    new() { Id = 4, Name = "Instagram", Description = "Post photos and stories on Instagram"}
     //};
 
-    private static readonly List<UserIntegrationResponse> _integrations =
+    private static readonly List<IntegrationResponse> _integrations =
     [
         new (1, "Twitter", "Share updates on Twitter", false, ""),
         new (2, "Facebook", "Create posts on Facebook", false, ""),
@@ -26,8 +26,11 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
         new (4, "Instagram", "Post photos and stories on Instagram", false, "")
     ];
 
-    public async Task<IEnumerable<UserIntegrationResponse>> GetUserIntegrations(Guid userId)
+    public async Task<IEnumerable<IntegrationResponse>> GetIntegrations(Guid userId)
         => _integrations;
+
+    public async Task<IEnumerable<UserIntegrationResponse>> GetUserIntegrations(Guid userId)
+        => _integrations.Select(i => new UserIntegrationResponse(i.PlatformId, i.Name));
 
     public async Task CreateUserIntegration(Guid userId, int platformId, string accessToken)
     {

@@ -1,5 +1,6 @@
 ﻿@API_HostAddress = https://localhost:7275
 
+# @name Login
 POST {{API_HostAddress}}/api/authentication/Login
 Content-Type: application/json
 {
