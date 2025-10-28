@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace RippleSync.Infrastructure.UserPlatformIntegrationRepository;
-internal class PostgresUserPlatformIntegrationRepository
+internal class PostgresIntegrationRepository
 {
     public async Task GetUserIntegrations(Guid userId)
     {

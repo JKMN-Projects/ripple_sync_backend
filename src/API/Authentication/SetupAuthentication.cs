@@ -20,6 +20,18 @@ public static class SetupAuthentication
             string? secret = jwtOptions.Key;
             byte[] key = Encoding.ASCII.GetBytes(secret!);
 
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    context.Token = context.HttpContext.Request.Headers.TryGetValue("Authorization", out var value)
+                        ? (string?)value
+                        : context.Request.Cookies["AccessToken"];
+
+                    return Task.CompletedTask;
+                }
+            };
+
             options.IncludeErrorDetails = true;
             options.TokenValidationParameters = new TokenValidationParameters
             {

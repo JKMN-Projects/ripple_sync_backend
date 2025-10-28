@@ -1,6 +1,6 @@
 ## Create integration
 
-Post /api/integration
+POST /api/integration
 
 ``` mermaid
 ---

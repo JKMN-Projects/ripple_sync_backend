@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace RippleSync.Infrastructure.UserPlatformIntegrationRepository;
-internal class UserPlatformIntegrationEntity
+internal class IntegrationEntity
 {
     public Guid Id { get; set; }
     public string Name { get; set; }
@@ -13,7 +13,7 @@ internal class UserPlatformIntegrationEntity
     public bool Connected { get; set; }
     public string ImageUrl { get; set; }
 
-    private UserPlatformIntegrationEntity(Guid id, string name, string description, bool connected, string imageUrl)
+    private IntegrationEntity(Guid id, string name, string description, bool connected, string imageUrl)
     {
         Id = id;
         Name = name;

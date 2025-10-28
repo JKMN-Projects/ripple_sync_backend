@@ -1,5 +1,5 @@
-﻿namespace RippleSync.API.Integrations;
+﻿using System.ComponentModel.DataAnnotations;
 
-public class CreateIntegrationRequest
-{
-}
+namespace RippleSync.API.Integrations;
+
+public record class CreateIntegrationRequest([Range(1, int.MaxValue)] int PlatformId, [Required] string AccessToken);
