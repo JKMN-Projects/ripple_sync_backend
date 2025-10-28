@@ -53,7 +53,10 @@ internal sealed class GlobalExceptionHandling : IExceptionHandler
         }
 
         // Override the response
-        httpContext.Response.StatusCode = statusCode;
+        if (!httpContext.Response.HasStarted)
+        {
+            httpContext.Response.StatusCode = statusCode;
+        }
         await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
         return true;
     }
