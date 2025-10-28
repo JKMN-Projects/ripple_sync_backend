@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
 	  <RootNamespace>RippleSync.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 	  <AssemblyName>RippleSync.$(MSBuildProjectName)</AssemblyName>
+	  <UserSecretsId>f95efd63-b9a7-45a8-a9d2-723493b64c77</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

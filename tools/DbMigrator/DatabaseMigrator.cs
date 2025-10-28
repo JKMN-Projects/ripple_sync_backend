@@ -12,7 +12,6 @@ public class DatabaseMigrator
             throw new ArgumentNullException(nameof(connectionString));
         }
 
-        DbUp.Engine.UpgradeEngine? upgrader;
         DbUp.Engine.DatabaseUpgradeResult? result;
 
         UpgradeEngineBuilder builder = DeployChanges.To
@@ -30,7 +29,7 @@ public class DatabaseMigrator
             .LogToConsole();
 
         // Add test data scripts only in local environment
-        if (IsLocalEnvironment() && false)
+        if (IsLocalEnvironment())
         {
             builder = builder.WithScriptsEmbeddedInAssembly(
                 Assembly.GetExecutingAssembly(),
@@ -70,7 +69,7 @@ public class DatabaseMigrator
         }
         else
         {
-            Console.WriteLine("Áll migrations applied!");
+            Console.WriteLine("All migrations applied!");
         }
 
         Console.ResetColor();
