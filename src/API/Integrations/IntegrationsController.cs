@@ -22,12 +22,23 @@ public partial class IntegrationsController : ControllerBase
     }
 
     [HttpGet("")]
-    [ProducesResponseType<ListResponse<UserIntegrationResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ListResponse<IntegrationResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetIntegrations()
     {
         Guid userId = User.GetUserId();
 
         var response = await _integrationManager.GetIntegrations(userId);
+
+        return Ok(response);
+    }
+
+    [HttpGet("user")]
+    [ProducesResponseType<ListResponse<UserIntegrationResponse>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetUserIntegrations()
+    {
+        Guid userId = User.GetUserId();
+
+        var response = await _integrationManager.GetUserIntegrations(userId);
 
         return Ok(response);
     }

@@ -14,7 +14,10 @@ public sealed class IntegrationManager
         _integrationRepo = integrationRepo;
     }
 
-    public async Task<ListResponse<UserIntegrationResponse>> GetIntegrations(Guid userId)
+    public async Task<ListResponse<IntegrationResponse>> GetIntegrations(Guid userId)
+        => new ListResponse<IntegrationResponse>(await _integrationRepo.GetIntegrations(userId));
+
+    public async Task<ListResponse<UserIntegrationResponse>> GetUserIntegrations(Guid userId)
         => new ListResponse<UserIntegrationResponse>(await _integrationRepo.GetUserIntegrations(userId));
 
     public async Task CreateIntegration(Guid userId, int platformId, string accessToken)

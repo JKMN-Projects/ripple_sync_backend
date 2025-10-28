@@ -1,22 +1,19 @@
 ## Get integrations
 
-GET /api/integration
+GET /api/integration/user
 
 ``` mermaid
 classDiagram
-    class GetIntegrationsRequest {
+    class GetUserIntegrationsRequest {
     }
 
-    class GetIntegrationsResponse {
-        IntegrationDto[] integrations
+    class GetUserIntegrationsResponse {
+        UserIntegrationDto[] integrations
     }
 
-    class IntegrationDto {
+    class UserIntegrationDto {
         int32 platformId
         string name
-        string description
-        bool connected
-        string imageUrl
     }
 
     class ProblemDetails {
@@ -27,7 +24,7 @@ classDiagram
         string detail
     }
 
-    GetIntegrationsResponse <|--|> IntegrationDto
+    GetIntegrationsResponse <|--|> UserIntegrationDto
     GetIntegrationsRequest --> GetIntegrationsResponse : "200"
     GetIntegrationsRequest --> ProblemDetails : "400"
     GetIntegrationsRequest --> ProblemDetails : "401"
