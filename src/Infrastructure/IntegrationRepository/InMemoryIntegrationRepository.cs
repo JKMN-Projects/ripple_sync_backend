@@ -18,7 +18,7 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
     //    new() { Id = 4, Name = "Instagram", Description = "Post photos and stories on Instagram"}
     //};
 
-    private readonly List<UserIntegrationResponse> _integrations =
+    private static readonly List<UserIntegrationResponse> _integrations =
     [
         new (1, "Twitter", "Share updates on Twitter", false, ""),
         new (2, "Facebook", "Create posts on Facebook", false, ""),
@@ -40,9 +40,14 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
     }
 
     public async Task DeleteUserIntegration(Guid userId, int platformId)
-        => _ = _integrations
-            .Where(i => i.PlatformId == platformId)
-            .Select(_integrations.Remove);
+    {
+        var toEdit = _integrations.FirstOrDefault(i => i.PlatformId == platformId);
+
+        if (toEdit == null) return;
+
+        int toEditIndex = _integrations.IndexOf(toEdit);
+        _integrations[toEditIndex] = toEdit with { Connected = false };
+    }
 
     //class Platform
     //{

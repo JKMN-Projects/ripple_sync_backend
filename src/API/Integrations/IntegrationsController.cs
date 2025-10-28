@@ -55,7 +55,7 @@ public partial class IntegrationsController : ControllerBase
         }
     }
 
-    [HttpDelete("/{platformId}")]
+    [HttpDelete("{platformId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteIntegration([FromRoute][Range(1, int.MaxValue)] int platformId)
