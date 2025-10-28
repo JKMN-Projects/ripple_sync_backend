@@ -72,7 +72,7 @@ builder.Services.AddCors(options =>
             [
                 "http://localhost:4200",
                 "https://localhost:7275",
-                "https://www.ripplesync-backend.graybeach-8775421e.northeurope.azurecontainerapps.io",
+                "https://www.ripplesync-frontend.graybeach-8775421e.northeurope.azurecontainerapps.io",
                 "https://www.ripplesync.dk"
             ])
             .AllowAnyMethod()
