@@ -23,16 +23,17 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 /// Need connectionString
-//string? connString = builder.Configuration.GetConnectionString("Postgres");
+string? connString = builder.Configuration.GetConnectionString("Postgres");
+if (string.IsNullOrWhiteSpace(connString))
+{
+    throw new InvalidOperationException("Connection string not found");
+}
 
-//if (string.IsNullOrWhiteSpace(connString))
-//{
-//    throw new InvalidOperationException("Connection string not found");
-//}
-
-//if (builder.Environment.IsDevelopment())
-//    if (DatabaseMigrator.MigrateDatabase(connString, true) == 0)
-//        DatabaseMigrator.MigrateDatabase(connString);
+if (builder.Environment.IsDevelopment())
+{
+    if (DatabaseMigrator.MigrateDatabase(connString, true) == 0)
+        DatabaseMigrator.MigrateDatabase(connString);
+}
 
 // Add services to the container.
 

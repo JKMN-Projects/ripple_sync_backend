@@ -7,6 +7,7 @@ services:
     environment:
       POSTGRES_USER: JukmanDev
       POSTGRES_PASSWORD: Juk20Man25
+      POSTGRES_DB: ripple_sync
     ports:
       - "50003:5432"
     volumes:
