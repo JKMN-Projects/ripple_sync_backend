@@ -67,9 +67,17 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        policy
+            .WithOrigins(
+            [
+                "http://localhost:4200",
+                "https://localhost:7275",
+                "https://ripplesync-backend.graybeach-8775421e.northeurope.azurecontainerapps.io",
+                "http://ripplesync.dk"
+            ])
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 

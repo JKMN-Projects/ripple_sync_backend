@@ -1,0 +1,10 @@
+﻿@API_HostAddress = https://localhost:7275
+
+POST {{API_HostAddress}}/api/integrations
+Content-Type: application/json
+{
+  "email": "jukman@gmail.com",
+  "password": "Kode1234!"
+}
+
+###

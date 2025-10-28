@@ -24,7 +24,9 @@ CREATE TABLE user_token (
 
 CREATE TABLE platform (
 	id 								int PRIMARY KEY NOT NULL,
-	platform_name					TEXT UNIQUE NOT NULL
+	platform_name					TEXT UNIQUE NOT NULL,
+	platform_description			TEXT,
+	image_url						TEXT
 );
 
 
