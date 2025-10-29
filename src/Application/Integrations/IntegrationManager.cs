@@ -20,7 +20,7 @@ public sealed class IntegrationManager
     public async Task<ListResponse<UserIntegrationResponse>> GetUserIntegrations(Guid userId)
         => new ListResponse<UserIntegrationResponse>(await _integrationRepo.GetUserIntegrations(userId));
 
-    public async Task CreateIntegration(Guid userId, int platformId, string accessToken)
+    public async Task CreateIntegrationWithEncryption(Guid userId, int platformId, string accessToken)
     {
         if (string.IsNullOrWhiteSpace(accessToken)) throw new ArgumentNullException(nameof(accessToken));
 

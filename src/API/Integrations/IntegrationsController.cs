@@ -50,9 +50,15 @@ public partial class IntegrationsController : ControllerBase
     {
         Guid userId = User.GetUserId();
 
+        /// FRONTEND SHOULD CALL ANOTHER ENDPOINT THAT STARTS THE OAUTH PROCESS
+        /// THEN OAUTH REDIRECT SHOULD HAPPEN 
+        /// OAUTH SHOULD THEN REDIRECT TO THIS ENDPOINT
+        /// OAUTH REQUEST SHOULD BE ABLE TO HOLD USERS ID 
+        /// THEN THIS ENDPOINT SHOULD RETURN A REDIRECT BACK TO INTEGRATION PAGE
+
         try
         {
-            await _integrationManager.CreateIntegration(userId, request.PlatformId, request.AccessToken);
+            await _integrationManager.CreateIntegrationWithEncryption(userId, request.PlatformId, request.AccessToken);
 
             return Created();
         }

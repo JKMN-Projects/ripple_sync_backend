@@ -1,0 +1,16 @@
+﻿@API_HostAddress = https://localhost:7275
+
+
+GET {{API_HostAddress}}/api/oauth/initiate/1
+
+###
+
+# @name ShouldFail
+GET {{API_HostAddress}}/api/oauth/initiate/0
+
+###
+
+# @name PlatformRedirectCallback
+GET {{API_HostAddress}}/api/oauth/callback
+
+###
