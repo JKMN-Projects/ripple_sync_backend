@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: ripple_sync_postgres
+    environment:
+      POSTGRES_USER: JukmanDev
+      POSTGRES_PASSWORD: Juk20Man25
+      POSTGRES_DB: ripple_sync
+    ports:
+      - "50003:5432"
+    volumes:
+      - postgres_ripplesync_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U JukmanDev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ghcr.io/jkmn-projects/ripple_sync_backend:latest
+    container_name: ripple_sync_backend
+    pull_policy: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "50001:8080"
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/jkmn-projects/ripple_sync_frontend:latest
+    container_name: ripple_sync_frontend
+    pull_policy: always
+    depends_on:
+      - backend
+    ports:
+      - "50002:80"
+    restart: unless-stopped
+
+volumes:
+  postgres_ripplesync_data:

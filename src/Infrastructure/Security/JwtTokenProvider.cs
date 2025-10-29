@@ -10,13 +10,13 @@ namespace RippleSync.Infrastructure.Security;
 
 public sealed class JwtTokenProvider : IAuthenticationTokenProvider
 {
-    private readonly IOptionsMonitor<JwtOptions> optionsMonitor;
+    private readonly IOptionsMonitor<JwtOptions> _optionsMonitor;
 
-    private JwtOptions Options => optionsMonitor.CurrentValue;
+    private JwtOptions Options => _optionsMonitor.CurrentValue;
 
     public JwtTokenProvider(IOptionsMonitor<JwtOptions> optionsMonitor)
     {
-        this.optionsMonitor = optionsMonitor;
+        _optionsMonitor = optionsMonitor;
     }
 
     public Task<AuthenticationToken> GenerateTokenAsync(User user, CancellationToken cancellationToken = default)

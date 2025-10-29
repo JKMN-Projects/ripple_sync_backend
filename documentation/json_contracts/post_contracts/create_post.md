@@ -6,9 +6,6 @@ classDiagram
         CreatePostDto post
     }
 
-    class CreatePostResponse {
-    }
-
     class CreatePostDto {
         string messageContent
         int64 scheduled_timestamp
@@ -25,7 +22,6 @@ classDiagram
     }
 
     CreatePostRequest <|--|> CreatePostDto
-    CreatePostRequest --> CreatePostResponse : "201"
     CreatePostRequest --> ProblemDetails : "400"
     CreatePostRequest --> ProblemDetails : "401"
 ```

@@ -9,17 +9,17 @@ namespace RippleSync.Application.Users;
 
 public sealed class UserManager
 {
-    private readonly ILogger<UserManager> logger;
-    private readonly IUserRepository userRepository;
-    private readonly IPasswordHasher passwordHasher;
-    private readonly IAuthenticationTokenProvider authenticationTokenProvider;
+    private readonly ILogger<UserManager> _logger;
+    private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher _passwordHasher;
+    private readonly IAuthenticationTokenProvider _authenticationTokenProvider;
 
     public UserManager(ILogger<UserManager> logger, IUserRepository userRepository, IPasswordHasher passwordHasher, IAuthenticationTokenProvider authenticationTokenProvider)
     {
-        this.logger = logger;
-        this.userRepository = userRepository;
-        this.passwordHasher = passwordHasher;
-        this.authenticationTokenProvider = authenticationTokenProvider;
+        _logger = logger;
+        _userRepository = userRepository;
+        _passwordHasher = passwordHasher;
+        _authenticationTokenProvider = authenticationTokenProvider;
     }
 
     /// <summary>
@@ -46,7 +46,7 @@ public sealed class UserManager
         else if (!password.Any(char.IsLower)) throw new ArgumentException("Password must contain at least one lowercase letter.", nameof(password));
         else if (!password.Any(ch => !char.IsLetterOrDigit(ch))) throw new ArgumentException("Password must contain at least one special character.", nameof(password));
 
-        User? user = await userRepository.GetUserByEmailAsync(email, cancellationToken);
+        User? user = await _userRepository.GetUserByEmailAsync(email, cancellationToken);
 
         if (user is null)
         {
@@ -57,13 +57,13 @@ public sealed class UserManager
         byte[] salt = Convert.FromBase64String(user.Salt);
         byte[] passwordHash = Convert.FromBase64String(user.PasswordHash);
 
-        if (!passwordHasher.Verify(passwordBytes, salt, passwordHash))
+        if (!_passwordHasher.Verify(passwordBytes, salt, passwordHash))
         {
             throw new ArgumentException("Invalid password", nameof(password));
         }
 
-        logger.LogInformation("Generating authentication token for user with email {Email}", email);
-        AuthenticationToken token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
+        _logger.LogInformation("Generating authentication token for user with email {Email}", email);
+        AuthenticationToken token = await _authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
         return new AuthenticationTokenResponse(token.AccessToken, token.TokenType, token.ExpiresInSeconds);
     }
 }

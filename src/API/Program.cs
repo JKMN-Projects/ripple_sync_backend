@@ -23,16 +23,17 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 /// Need connectionString
-//string? connString = builder.Configuration.GetConnectionString("Postgres");
+string? connString = builder.Configuration.GetConnectionString("Postgres");
+if (string.IsNullOrWhiteSpace(connString))
+{
+    throw new InvalidOperationException("Connection string not found");
+}
 
-//if (string.IsNullOrWhiteSpace(connString))
-//{
-//    throw new InvalidOperationException("Connection string not found");
-//}
-
-//if (builder.Environment.IsDevelopment())
-//    if (DatabaseMigrator.MigrateDatabase(connString, true) == 0)
-//        DatabaseMigrator.MigrateDatabase(connString);
+if (builder.Environment.IsDevelopment())
+{
+    if (DatabaseMigrator.MigrateDatabase(connString, true) == 0)
+        DatabaseMigrator.MigrateDatabase(connString);
+}
 
 // Add services to the container.
 
@@ -63,7 +64,30 @@ builder.Services.AddOptions<JwtOptions>()
 JwtOptions jwtOptions = builder.Configuration.GetRequiredSection("JWT").Get<JwtOptions>()!;
 builder.Services.AddJwtAuthentication(jwtOptions);
 
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy
+            .WithOrigins(
+            [
+                "http://localhost:4200",
+                "https://localhost:7275",
+                "https://www.ripplesync-frontend.graybeach-8775421e.northeurope.azurecontainerapps.io",
+                "https://www.ripplesync.dk",
+                "https://ripplesync.dk"
+            ])
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
+
+app.UseCors();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

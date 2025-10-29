@@ -2,6 +2,7 @@
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
 using RippleSync.Infrastructure.Security;
+using RippleSync.Infrastructure.UserPlatformIntegrationRepository;
 using RippleSync.Infrastructure.UserRepository;
 
 namespace RippleSync.Infrastructure;
@@ -14,6 +15,7 @@ public static class DependencyInjection
         services.AddSingleton<IAuthenticationTokenProvider, JwtTokenProvider>();
 
         services.AddScoped<IUserRepository, InMemoryUserRepository>();
+        services.AddScoped<IIntegrationRepository, InMemoryIntegrationRepository>();
 
         return services;
     }
