@@ -58,27 +58,7 @@ public abstract class UserManagerTests
             ArgumentException argEx = await Assert.ThrowsAnyAsync<ArgumentException>(async () => await sut.GetAuthenticationTokenAsync(email, invalidPassword!));
             Assert.Equal("password", argEx.ParamName);
         }
-
-        [Theory]
-        [InlineData("password")]
-        [InlineData("p@ssword")]
-        [InlineData("p4ssw0rd")]
-        [InlineData("Password")]
-        [InlineData("PASSWORD")]
-        [InlineData("P@SSWORD")]
-        [InlineData("PASSWORD123")]
-        [InlineData("P@55")]
-        public async Task Should_ThrowArgumentException_WhenPasswordDoesNotMeetComplexityRequirements(string weakPassword)
-        {
-            // Arrange
-            string email = "jukman@gmail.com";
-            UserManager sut = GetSystemUnderTest();
-
-            // Act & Assert
-            ArgumentException argEx = await Assert.ThrowsAnyAsync<ArgumentException>(async () => await sut.GetAuthenticationTokenAsync(email, weakPassword));
-            Assert.Equal("password", argEx.ParamName);
-        }
-
+        
         [Fact]
         public async Task Should_ThrowEntityNotFoundException_WhenUserDoesNotExist()
         {
@@ -220,6 +200,111 @@ public abstract class UserManagerTests
             (IEnumerable<(string Key, string Value)> Claims, DateTimeOffset Expiration) = AuthenticationTokenProviderDoubles.Fakes.JsonSerializedTokenProvider.DecodeToken(tokenResponse.Token);
             string? emailClaim = Claims.FirstOrDefault(c => c.Key == "email").Value;
             Assert.Equal(email, emailClaim);
+        }
+    }
+
+    public sealed class RegisterUserAsync : UserManagerTests
+    {
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("notAnEmail")]
+        [InlineData("notAnEmail@")]
+        [InlineData("@email.com")]
+        [InlineData("notAnEmail@email.")]
+        public async Task Should_ThrowArgumentException_WhenEmailIsInvalid(string? email)
+        {
+            // Arrange
+            string password = "Password123!";
+            UserManager sut = GetSystemUnderTest();
+
+            // Act & Assert
+            ArgumentException argEx = await Assert.ThrowsAnyAsync<ArgumentException>(async () => await sut.RegisterUserAsync(email!, password));
+            Assert.Equal("email", argEx.ParamName);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("password")]
+        [InlineData("p@ssword")]
+        [InlineData("p4ssw0rd")]
+        [InlineData("Password")]
+        [InlineData("PASSWORD")]
+        [InlineData("P@SSWORD")]
+        [InlineData("PASSWORD123")]
+        [InlineData("P@55")]
+        public async Task Should_ThrowArgumentException_WhenPasswordIsInvalid(string? invalidPassword)
+        {
+            // Arrange
+            string email = "jukman@gmail.com";
+            UserManager sut = GetSystemUnderTest();
+
+            // Act & Assert
+            ArgumentException argEx = await Assert.ThrowsAnyAsync<ArgumentException>(async () => await sut.RegisterUserAsync(email, invalidPassword!));
+            Assert.Equal("password", argEx.ParamName);
+        }
+
+        [Fact]
+        public async Task Should_ThrowInvalidOperationException_WhenUserWithEmailAlreadyExists()
+        {
+            // Arrange
+            string email = "jukman@gmail.com";
+            string password = "Password123!";
+            User existingUser = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .WithEmail(email)
+                .WithPassword(password)
+                .Build();
+            UserManager sut = GetSystemUnderTest(
+                userRepository: new UserRepositoryDoubles.Stubs.GetUserByEmail.ReturnsSpecificUser(existingUser));
+
+            // Act & Assert
+            InvalidOperationException invalidOpEx = await Assert.ThrowsAnyAsync<InvalidOperationException>(async () => await sut.RegisterUserAsync(email, password));
+            Assert.Equal("User with email 'jukman@gmail.com' already exists.", invalidOpEx.Message);
+        }
+
+        [Fact]
+        public async Task Should_CheckIfUserExistsInRepository_WhenEmailIsValid()
+        {
+            // Arrange
+            string email = "jukman@gmail.com";
+            string password = "Password123!";
+            UserRepositoryDoubles.Spies.GetUserByEmail userRepositorySpy = new(
+                spiedRepository: new UserRepositoryDoubles.Stubs.GetUserByEmail.AlwaysReturnsNull());
+            UserManager sut = GetSystemUnderTest(
+                userRepository: new UserRepositoryDoubles.Composite(userRepositorySpy, new UserRepositoryDoubles.Stubs.InsertUser.AlwaysReturnsNewGuid()),
+                passwordHasher: new PasswordHasherDoubles.Fakes.Base64Hasher());
+
+            // Act
+            await sut.RegisterUserAsync(email, password);
+
+            // Assert
+            Assert.Equal(1, userRepositorySpy.InvokationCount);
+            Assert.Equal(email, userRepositorySpy.LastReceivedEmail);
+        }
+
+        [Fact]
+        public async Task Should_CreateSaveUserInRepository_WhenEmailAndPasswordAreValid()
+        {
+            // Arrange
+            string email = "jukman@gmail.com";
+            string password = "Password123!";
+            UserRepositoryDoubles.Spies.InsertUser insertUserSpy = new(
+                spiedRepository: new UserRepositoryDoubles.Stubs.InsertUser.AlwaysReturnsNewGuid());
+            UserManager sut = GetSystemUnderTest(
+                userRepository: new UserRepositoryDoubles.Composite(insertUserSpy, new UserRepositoryDoubles.Stubs.GetUserByEmail.AlwaysReturnsNull()),
+                passwordHasher: new PasswordHasherDoubles.Fakes.Base64Hasher());
+
+            // Act
+            await sut.RegisterUserAsync(email, password);
+
+            // Assert
+            Assert.Equal(1, insertUserSpy.InvokationCount);
+            User savedUser = insertUserSpy.LastReceivedUser!;
+            Assert.Equal(email, savedUser.Email);
+            Assert.NotEqual(password, savedUser.PasswordHash);
         }
     }
 }
