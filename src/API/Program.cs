@@ -64,12 +64,7 @@ builder.Services.AddOptions<JwtOptions>()
 JwtOptions jwtOptions = builder.Configuration.GetRequiredSection("JWT").Get<JwtOptions>()!;
 builder.Services.AddJwtAuthentication(jwtOptions);
 
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Clear();
-    options.KnownProxies.Clear();
-});
+
 
 builder.Services.AddCors(options =>
 {
@@ -81,7 +76,8 @@ builder.Services.AddCors(options =>
                 "http://localhost:4200",
                 "https://localhost:7275",
                 "https://www.ripplesync-frontend.graybeach-8775421e.northeurope.azurecontainerapps.io",
-                "https://www.ripplesync.dk"
+                "https://www.ripplesync.dk",
+                "https://ripplesync.dk"
             ])
             .AllowAnyMethod()
             .AllowAnyHeader()
@@ -91,7 +87,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-app.UseForwardedHeaders();
 app.UseCors();
 
 // Configure the HTTP request pipeline.
