@@ -31,7 +31,7 @@ public sealed class AuthenticationController : ControllerBase
         try
         {
             AuthenticationTokenResponse tokenResponse = await _userManager.GetAuthenticationTokenAsync(request.Email, request.Password);
-            HttpContext.Response.Cookies.Append("AccessToken", tokenResponse.Token);
+            HttpContext.Response.Cookies.Append("AccessToken", tokenResponse.Token, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
             return Ok(tokenResponse);
         }
         catch (ArgumentException ex)
