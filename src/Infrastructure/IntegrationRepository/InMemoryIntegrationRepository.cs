@@ -26,13 +26,13 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
         new (4, "Instagram", "Post photos and stories on Instagram", false, "")
     ];
 
-    public async Task<IEnumerable<IntegrationResponse>> GetIntegrations(Guid userId)
+    public async Task<IEnumerable<IntegrationResponse>> GetIntegrations(Guid userId, CancellationToken cancellationToken = default)
         => _integrations;
 
-    public async Task<IEnumerable<UserIntegrationResponse>> GetUserIntegrations(Guid userId)
+    public async Task<IEnumerable<UserIntegrationResponse>> GetUserIntegrations(Guid userId, CancellationToken cancellationToken = default)
         => _integrations.Select(i => new UserIntegrationResponse(i.PlatformId, i.Name));
 
-    public async Task CreateUserIntegration(Guid userId, int platformId, string accessToken)
+    public async Task CreateUserIntegration(Guid userId, int platformId, string accessToken, CancellationToken cancellationToken = default)
     {
         var toEdit = _integrations.FirstOrDefault(i => i.PlatformId == platformId);
 
@@ -42,7 +42,7 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
         _integrations[toEditIndex] = toEdit with { Connected = true };
     }
 
-    public async Task DeleteUserIntegration(Guid userId, int platformId)
+    public async Task DeleteUserIntegration(Guid userId, int platformId, CancellationToken cancellationToken = default)
     {
         var toEdit = _integrations.FirstOrDefault(i => i.PlatformId == platformId);
 

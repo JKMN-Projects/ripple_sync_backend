@@ -4,19 +4,15 @@ using RippleSync.Infrastructure.MicroORM.Exceptions;
 using RippleSync.Infrastructure.MicroORM.Extensions;
 
 namespace RippleSync.Infrastructure.UserRepository;
-internal sealed class PostgresUserRepository
+internal sealed class PostgresUserRepository(NpgsqlConnection dbConnection)
 {
     public async Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
-        string connString = "";
-
         UserEntity? userEntity = null;
 
         try
         {
-            await using NpgsqlConnection npgConn = new(connString);
-
-            userEntity = await npgConn.SelectSingleOrDefaultAsync<UserEntity>(whereClause: "email = @email", param: new { email });
+            userEntity = await dbConnection.SelectSingleOrDefaultAsync<UserEntity>(whereClause: "email = @email", param: new { email }, ct: cancellationToken);
         }
         catch (Exception e)
         {

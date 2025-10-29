@@ -1,5 +1,11 @@
-﻿namespace RippleSync.Infrastructure.UserPlatformIntegrationRepository;
-internal class IntegrationEntity
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace RippleSync.Infrastructure.UserPlatformIntegrationRepository;
+internal class UserIntegrationEntity
 {
     public int Id { get; set; }
     public string Name { get; set; }
@@ -7,7 +13,7 @@ internal class IntegrationEntity
     public bool Connected { get; set; }
     public string ImageUrl { get; set; }
 
-    private IntegrationEntity(int id, string name, string description, bool connected, string imageUrl)
+    private UserIntegrationEntity(int id, string name, string description, bool connected, string imageUrl)
     {
         Id = id;
         Name = name;
