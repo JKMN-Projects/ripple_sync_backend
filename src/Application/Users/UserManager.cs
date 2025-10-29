@@ -64,6 +64,6 @@ public sealed class UserManager
 
         _logger.LogInformation("Generating authentication token for user with email {Email}", email);
         AuthenticationToken token = await _authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
-        return new AuthenticationTokenResponse(token.AccessToken, token.TokenType, token.ExpiresInSeconds);
+        return new AuthenticationTokenResponse(token.AccessToken, token.TokenType, token.ExpiresInMilliSeconds);
     }
 }

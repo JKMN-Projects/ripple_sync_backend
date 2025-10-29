@@ -3,4 +3,4 @@
 public sealed record AuthenticationToken(
     string AccessToken,
     string TokenType,
-    int ExpiresInSeconds);
+    long ExpiresInMilliSeconds);
