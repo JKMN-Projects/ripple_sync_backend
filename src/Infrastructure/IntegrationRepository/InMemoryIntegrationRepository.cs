@@ -1,13 +1,7 @@
 ﻿using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Integrations;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
-namespace RippleSync.Infrastructure.UserPlatformIntegrationRepository;
+namespace RippleSync.Infrastructure.IntegrationRepository;
 public class InMemoryIntegrationRepository : IIntegrationRepository
 {
     //private List<Platform> _platforms = new List<Platform>()
@@ -38,7 +32,7 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
 
         if (toEdit == null) return;
 
-        int toEditIndex = _integrations.IndexOf(toEdit);
+        var toEditIndex = _integrations.IndexOf(toEdit);
         _integrations[toEditIndex] = toEdit with { Connected = true };
     }
 
@@ -48,7 +42,7 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
 
         if (toEdit == null) return;
 
-        int toEditIndex = _integrations.IndexOf(toEdit);
+        var toEditIndex = _integrations.IndexOf(toEdit);
         _integrations[toEditIndex] = toEdit with { Connected = false };
     }
 

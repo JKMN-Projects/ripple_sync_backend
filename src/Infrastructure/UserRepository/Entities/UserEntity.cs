@@ -1,6 +1,6 @@
 ﻿using RippleSync.Infrastructure.MicroORM.ClassAttributes;
 
-namespace RippleSync.Infrastructure.UserRepository;
+namespace RippleSync.Infrastructure.UserRepository.Entities;
 internal class UserEntity
 {
     public Guid Id { get; }
@@ -10,7 +10,7 @@ internal class UserEntity
 
 
     [SqlConstructor("ripple_sync", "user")]
-    public UserEntity(Guid id, string email, string password_hash, string salt)
+    internal UserEntity(Guid id, string email, string password_hash, string salt)
     {
         Id = id;
         Email = email;

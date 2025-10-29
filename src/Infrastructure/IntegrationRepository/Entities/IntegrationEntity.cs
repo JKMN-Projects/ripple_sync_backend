@@ -1,4 +1,6 @@
-﻿namespace RippleSync.Infrastructure.UserPlatformIntegrationRepository;
+﻿using RippleSync.Infrastructure.MicroORM.ClassAttributes;
+
+namespace RippleSync.Infrastructure.IntegrationRepository.Entities;
 internal class IntegrationEntity
 {
     public int Id { get; set; }
@@ -7,7 +9,9 @@ internal class IntegrationEntity
     public bool Connected { get; set; }
     public string ImageUrl { get; set; }
 
-    private IntegrationEntity(int id, string name, string description, bool connected, string imageUrl)
+
+    [SqlConstructor("ripple_sync")]
+    internal IntegrationEntity(int id, string name, string description, bool connected, string imageUrl)
     {
         Id = id;
         Name = name;

@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using RippleSync.Infrastructure.MicroORM.ClassAttributes;
 
-namespace RippleSync.Infrastructure.UserPlatformIntegrationRepository;
+namespace RippleSync.Infrastructure.IntegrationRepository.Entities;
 internal class UserIntegrationEntity
 {
     public int Id { get; set; }
@@ -13,7 +9,9 @@ internal class UserIntegrationEntity
     public bool Connected { get; set; }
     public string ImageUrl { get; set; }
 
-    private UserIntegrationEntity(int id, string name, string description, bool connected, string imageUrl)
+
+    [SqlConstructor("ripple_sync")]
+    internal UserIntegrationEntity(int id, string name, string description, bool connected, string imageUrl)
     {
         Id = id;
         Name = name;

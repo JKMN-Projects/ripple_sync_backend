@@ -2,6 +2,7 @@
 using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.MicroORM.Exceptions;
 using RippleSync.Infrastructure.MicroORM.Extensions;
+using RippleSync.Infrastructure.UserRepository.Entities;
 
 namespace RippleSync.Infrastructure.UserRepository;
 internal sealed class PostgresUserRepository(NpgsqlConnection dbConnection)

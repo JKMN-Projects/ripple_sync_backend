@@ -7,7 +7,9 @@ using System.Reflection;
 namespace RippleSync.Infrastructure.MicroORM.Extensions;
 internal static class NpgsqlExtensions
 {
-
+    /// <summary>
+    /// How the ORM should behave when names aren't found
+    /// </summary>
     internal enum ParameterNameBehavior
     {
         FailOnNotFound,
@@ -15,7 +17,10 @@ internal static class NpgsqlExtensions
         DefaultOnNotFound
     }
 
-    private static BindingFlags _acquirePropFlags = BindingFlags.FlattenHierarchy | BindingFlags.Default | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+    /// <summary>
+    /// Flags for acquiring all instance properties (public and private) from a type and its base classes.
+    /// </summary>
+    private static readonly BindingFlags _acquirePropFlags = BindingFlags.FlattenHierarchy | BindingFlags.Default | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
     /// <summary>
     /// Executes the query and returns the result as an enumerable of type T
@@ -24,7 +29,9 @@ internal static class NpgsqlExtensions
     /// <param name="conn">The database connection</param>
     /// <param name="query">The SQL query to execute</param>
     /// <param name="param">The parameters object (anonymous object or DynamicParameters)</param>
+    /// <param name="trans"></param>
     /// <param name="nameBehavior">Parameter name behavior</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>An enumerable of type T</returns>
     /// <exception cref="Exception"></exception>
     internal static async Task<IEnumerable<T>> QueryAsync<T>(this NpgsqlConnection conn, string query, object? param = null, NpgsqlTransaction? trans = null, ParameterNameBehavior nameBehavior = ParameterNameBehavior.FailOnNotFound, CancellationToken ct = default)
@@ -61,6 +68,7 @@ internal static class NpgsqlExtensions
     /// <param name="param"></param>
     /// <param name="trans"></param>
     /// <param name="nameBehavior"></param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
     /// <exception cref="QueryException"></exception>
@@ -95,6 +103,7 @@ internal static class NpgsqlExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="conn"></param>
     /// <param name="whereClause">Add a where clause, "WHERE" being optional</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
     internal static async Task<IEnumerable<T>> SelectAsync<T>(this NpgsqlConnection conn, string whereClause, CancellationToken ct = default)
@@ -105,9 +114,12 @@ internal static class NpgsqlExtensions
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="conn"></param>
+    /// <param name="trans"></param>
     /// <param name="whereClause">Add a where clause, "WHERE" being optional</param>
+    /// <param name="param"></param>
     /// <param name="overwriteSchemaName"></param>
     /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
     internal static async Task<IEnumerable<T>> SelectAsync<T>(this NpgsqlConnection conn, NpgsqlTransaction? trans = null, string whereClause = "", object? param = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
@@ -131,6 +143,7 @@ internal static class NpgsqlExtensions
     /// <param name="param"></param>
     /// <param name="overwriteSchemaName"></param>
     /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns></returns>
     internal static async Task<T?> SelectSingleOrDefaultAsync<T>(this NpgsqlConnection conn, NpgsqlTransaction? trans = null, string whereClause = "", object? param = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
     {
@@ -158,11 +171,176 @@ internal static class NpgsqlExtensions
     }
 
     /// <summary>
+    /// Inserts a record into the database table corresponding to Type T.
+    /// Insertion is based on properties not marked with <see cref="QueryAction.IgnoreInsert"/>.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="datas"></param>
+    /// <param name="trans">The transaction to use</param>
+    /// <param name="overwriteSchemaName">If defined, overrides the schema name</param>
+    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Number of affected rows</returns>
+    internal static async Task<int> InsertAsync<T>(this NpgsqlConnection conn, T data, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
+        => await conn.InsertAsync(new[] { data }, trans, overwriteSchemaName, overwriteTableName, ct);
+
+    /// <summary>
+    /// Inserts multiple records into the database table corresponding to Type T.
+    /// Insertion is based on properties not marked with <see cref="QueryAction.IgnoreInsert"/>.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="datas"></param>
+    /// <param name="trans">The transaction to use</param>
+    /// <param name="overwriteSchemaName">If defined, overrides the schema name</param>
+    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Number of affected rows</returns>
+    internal static async Task<int> InsertAsync<T>(this NpgsqlConnection conn, IEnumerable<T> datas, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
+    {
+        if (datas == null || !datas.Any())
+            return 0;
+
+        var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
+
+        var (schemaName, tableName) = GetSchemaAndTableName<T>(overwriteSchemaName, overwriteTableName, sqlConstructor);
+
+        string insert = $"INSERT INTO {schemaName}{tableName}(";
+        string sqlValStart = ") VALUES ";
+
+        List<string> colFields = [];
+
+        foreach (var property in typeof(T).GetProperties(_acquirePropFlags))
+        {
+            var attribute = property.GetCustomAttributes(false).OfType<SqlProperty>().FirstOrDefault();
+            if (attribute != null && attribute.Action == QueryAction.IgnoreInsert)
+            {
+                continue;
+            }
+
+            string name = GetPropertyName(attribute, property);
+
+            colFields.Add($"\"{name}\"");
+        }
+
+        var parameters = new List<NpgsqlParameter>();
+        var rowValuePlaceholders = new List<string>();
+        int paramIndex = 0;
+
+        foreach (var data in datas)
+        {
+            List<string> rowPlaceholders = new List<string>();
+
+            foreach (var property in data?.GetType().GetProperties(_acquirePropFlags) ?? Enumerable.Empty<PropertyInfo>())
+            {
+                var attribute = property.GetCustomAttributes(false).OfType<SqlProperty>().FirstOrDefault();
+                if (attribute != null && attribute.Action == QueryAction.IgnoreInsert)
+                {
+                    continue;
+                }
+
+                var (propParams, placeholder) = CreatePropertyParameter(property, data, ref paramIndex);
+                parameters.AddRange(propParams);
+                rowPlaceholders.Add(placeholder);
+            }
+
+            rowValuePlaceholders.Add($"({string.Join(", ", rowPlaceholders)})");
+        }
+
+        string query = insert + string.Join(", ", colFields) + sqlValStart + string.Join(", ", rowValuePlaceholders);
+
+        using var cmd = new NpgsqlCommand(query, conn, trans);
+        cmd.Parameters.AddRange(parameters.ToArray());
+
+        int rowsAffected = await LoggedExecuteNonQueryAsync(cmd, ct);
+
+        return rowsAffected;
+    }
+
+    /// <summary>
+    /// Removes a record from the database table corresponding to Type T.
+    /// Deletion is based on properties marked with <see cref="UpdateAction.Where"/>.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="datas"></param>
+    /// <param name="trans">The transaction to use</param>
+    /// <param name="overwriteSchemaName">If defined, overrides the schema name</param>
+    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Number of affected rows</returns>
+    /// <exception cref="InvalidOperationException">If no <see cref="UpdateAction.Where"/> were defined on Type T</exception>
+    internal static async Task<int> RemoveAsync<T>(this NpgsqlConnection conn, T data, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
+        => await conn.RemoveAsync(new[] { data }, trans, overwriteSchemaName, overwriteTableName, ct);
+
+    /// <summary>
+    /// Removes multiple records from the database table corresponding to Type T.
+    /// Deletion is based on properties marked with <see cref="UpdateAction.Where"/>.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="datas"></param>
+    /// <param name="trans">The transaction to use</param>
+    /// <param name="overwriteSchemaName">If defined, overrides the schema name</param>
+    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Number of affected rows</returns>
+    /// <exception cref="InvalidOperationException">If no <see cref="UpdateAction.Where"/> were defined on Type T</exception>
+    internal static async Task<int> RemoveAsync<T>(this NpgsqlConnection conn, IEnumerable<T> datas, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
+    {
+        if (datas == null || !datas.Any())
+            return 0;
+
+        var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
+
+        var (schemaName, tableName) = GetSchemaAndTableName<T>(overwriteSchemaName, overwriteTableName, sqlConstructor);
+
+        var parameters = new List<NpgsqlParameter>();
+        var whereConditions = new List<string>();
+        int paramIndex = 0;
+
+        foreach (var data in datas)
+        {
+            List<string> rowConditions = [];
+            foreach (var property in data?.GetType().GetProperties(_acquirePropFlags) ?? Enumerable.Empty<PropertyInfo>())
+            {
+                var attribute = property.GetCustomAttributes(false).OfType<SqlProperty>().FirstOrDefault();
+
+                if (attribute == null || attribute.Update != UpdateAction.Where)
+                {
+                    continue;
+                }
+
+                string name = GetPropertyName(attribute, property);
+                var (propParams, placeholder) = CreatePropertyParameter(property, data, ref paramIndex);
+
+                parameters.AddRange(propParams);
+                rowConditions.Add($"\"{name}\" = {placeholder}");
+            }
+
+            if (rowConditions.Count == 0)
+                throw new InvalidOperationException($"Type {typeof(T).Name} has no properties marked with UpdateAction.Where for deletion.");
+
+            whereConditions.Add($"({string.Join(" AND ", rowConditions)})");
+        }
+
+        string query = $"DELETE FROM {schemaName}{tableName} WHERE {string.Join(" OR ", whereConditions)}";
+
+        using var cmd = new NpgsqlCommand(query, conn, trans);
+        cmd.Parameters.AddRange(parameters.ToArray());
+
+        int rowsAffected = await LoggedExecuteNonQueryAsync(cmd, ct);
+
+        return rowsAffected;
+    }
+
+    /// <summary>
     /// Create Select Query to run in cmd
     /// </summary>
     /// <typeparam name="T"></typeparam>s
     /// <param name="whereClause"></param>
-    /// <param name="overwriteSchemaName"></param>
+    /// <param name="overwriteSchemaName">If defined, overrides the schema name</param>
     /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
@@ -187,6 +365,10 @@ internal static class NpgsqlExtensions
     /// <summary>
     /// Reads a single row from the data reader and maps it to constructor parameters
     /// </summary>
+    /// <param name="reader"></param>
+    /// <param name="parameters"></param>
+    /// <param name="nameBehavior"></param>
+    /// <returns></returns>
     private static object?[] ReadRow(NpgsqlDataReader reader, ParameterInfo[] parameters, ParameterNameBehavior nameBehavior)
     {
         object?[] values = new object[parameters.Length];
@@ -230,6 +412,7 @@ internal static class NpgsqlExtensions
     /// Checks for connection and transaction validity before execution. On error, logs query information.
     /// </summary>
     /// <param name="cmd"></param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
     /// <exception cref="QueryException"></exception>
@@ -256,6 +439,9 @@ internal static class NpgsqlExtensions
     /// <summary>
     /// Gets the constructor marked with SqlConstructor attribute
     /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     private static ConstructorInfo GetSqlConstructor<T>()
     {
         return typeof(T).GetConstructors().FirstOrDefault(c => Attribute.IsDefined(c, typeof(SqlConstructor)))
@@ -265,6 +451,9 @@ internal static class NpgsqlExtensions
     /// <summary>
     /// Gets the constructor marked with SqlConstructor attribute as an SqlConstructor
     /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     private static SqlConstructor GetConstructorOfTypeSqlConstructor<T>()
     {
         var constructor = GetSqlConstructor<T>();
@@ -376,10 +565,7 @@ internal static class NpgsqlExtensions
     /// <param name="data">The data object containing the property value</param>
     /// <param name="paramIndex">Current parameter index (will be updated)</param>
     /// <returns>Tuple containing the parameters created and the placeholder string to use in query</returns>
-    private static (List<NpgsqlParameter> parameters, string placeholder) CreatePropertyParameter<T>(
-        PropertyInfo property,
-        T data,
-        ref int paramIndex)
+    private static (List<NpgsqlParameter> parameters, string placeholder) CreatePropertyParameter<T>(PropertyInfo property, T data, ref int paramIndex)
     {
         var parameters = new List<NpgsqlParameter>();
         Type type = property.PropertyType;
@@ -407,6 +593,8 @@ internal static class NpgsqlExtensions
     /// <summary>
     /// Maps C# types to their corresponding NpgsqlDbType
     /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
     private static NpgsqlDbType GetNpgsqlDbType(Type type)
     {
         var actualType = Nullable.GetUnderlyingType(type) ?? type;
@@ -430,9 +618,11 @@ internal static class NpgsqlExtensions
         };
     }
 
-    public static object ToDbValue(this object? value)
-        => value ?? DBNull.Value;
-
+    /// <summary>
+    /// Get default value of type, if not possible to extract, then null.
+    /// </summary>
+    /// <param name="t"></param>
+    /// <returns></returns>
     private static object? GetDefaultValue(Type? t)
         => t?.IsValueType ?? false ? Activator.CreateInstance(t) : null;
 }

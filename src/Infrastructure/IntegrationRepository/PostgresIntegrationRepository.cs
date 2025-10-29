@@ -1,23 +1,15 @@
 ﻿using Npgsql;
 using RippleSync.Application.Integrations;
-using RippleSync.Domain.Users;
+using RippleSync.Infrastructure.IntegrationRepository.Entities;
 using RippleSync.Infrastructure.MicroORM.Exceptions;
 using RippleSync.Infrastructure.MicroORM.Extensions;
-using RippleSync.Infrastructure.UserRepository;
-using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace RippleSync.Infrastructure.UserPlatformIntegrationRepository;
+namespace RippleSync.Infrastructure.IntegrationRepository;
 internal class PostgresIntegrationRepository(NpgsqlConnection dbConnection)
 {
     public async Task<IEnumerable<IntegrationResponse>> GetIntegrations(Guid userId, CancellationToken cancellationToken = default)
     {
-        string getIntegrationsQuery =
+        var getIntegrationsQuery =
             @"SELECT 
                 p.id,
                 p.platform_name AS name,
@@ -38,7 +30,7 @@ internal class PostgresIntegrationRepository(NpgsqlConnection dbConnection)
         }
         catch (Exception e)
         {
-            ExceptionFactory.ThrowRepositoryException(this.GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
+            ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
 
         return integrationEntities.Any() ? integrationEntities.Select(i => new IntegrationResponse(i.Id, i.Name, i.Description, i.Connected, i.ImageUrl)) : [];
@@ -46,7 +38,7 @@ internal class PostgresIntegrationRepository(NpgsqlConnection dbConnection)
 
     public async Task<IEnumerable<UserIntegrationResponse>> GetUserIntegrations(Guid userId, CancellationToken cancellationToken = default)
     {
-        string getIntegrationsQuery =
+        var getIntegrationsQuery =
             @"SELECT 
                 p.id,
                 p.platform_name AS name
@@ -64,7 +56,7 @@ internal class PostgresIntegrationRepository(NpgsqlConnection dbConnection)
         }
         catch (Exception e)
         {
-            ExceptionFactory.ThrowRepositoryException(this.GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
+            ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
 
         return userIntegrationEntites.Any() ? userIntegrationEntites.Select(i => new UserIntegrationResponse(i.Id, i.Name)) : [];
@@ -72,19 +64,11 @@ internal class PostgresIntegrationRepository(NpgsqlConnection dbConnection)
 
     public async Task CreateUserIntegration(Guid userId, int platformId, string accessToken, CancellationToken cancellationToken = default)
     {
-        string getIntegrationsQuery =
-            @"SELECT 
-                p.id,
-                p.platform_name AS name
-            FROM platform p
-            INNER JOIN user_platform_integration upi 
-                ON p.id = upi.platform_id 
-                AND upi.user_account_id = @userId
-            ORDER BY p.platform_name;";
+        var userPlatformIntegration = UserPlatformIntegrationEntity.New(userId, platformId, accessToken);
 
         try
         {
-            int rowsAffected = await dbConnection.ExecuteAsync(getIntegrationsQuery, param: new { userId }, ct: cancellationToken);
+            int rowsAffected = await dbConnection.InsertAsync(userPlatformIntegration, ct: cancellationToken);
 
             if (rowsAffected <= 0)
                 throw new RepositoryException("No rows were affected");
@@ -92,17 +76,25 @@ internal class PostgresIntegrationRepository(NpgsqlConnection dbConnection)
         }
         catch (Exception e)
         {
-            ExceptionFactory.ThrowRepositoryException(this.GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
+            ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
     }
 
     public async Task DeleteUserIntegration(Guid userId, int platformId, CancellationToken cancellationToken = default)
     {
-        var toEdit = _integrations.FirstOrDefault(i => i.PlatformId == platformId);
+        var userPlatformIntegration = UserPlatformIntegrationEntity.New(userId, platformId);
 
-        if (toEdit == null) return;
+        try
+        {
+            int rowsAffected = await dbConnection.RemoveAsync(userPlatformIntegration, ct: cancellationToken);
 
-        int toEditIndex = _integrations.IndexOf(toEdit);
-        _integrations[toEditIndex] = toEdit with { Connected = false };
+            if (rowsAffected <= 0)
+                throw new RepositoryException("No rows were affected");
+
+        }
+        catch (Exception e)
+        {
+            ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
+        }
     }
 }
