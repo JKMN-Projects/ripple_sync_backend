@@ -91,6 +91,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseCors();
 
 // Configure the HTTP request pipeline.
