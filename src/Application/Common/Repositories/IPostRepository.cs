@@ -5,5 +5,5 @@ namespace RippleSync.Application.Common.Repositories;
 
 public interface IPostRepository
 {
-    Task<IEnumerable<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId,string? status, CancellationToken cancellationToken = default);
 }

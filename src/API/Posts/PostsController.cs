@@ -19,11 +19,11 @@ public class PostsController : ControllerBase
     }
     [HttpGet("byUser")]
     [ProducesResponseType<ListResponse<GetPostsByUserResponse>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetPostsByUser()
+    public async Task<IActionResult> GetPostsByUser([FromQuery] string? status = default)
     {
         Guid userId = User.GetUserId();
 
-        var response = await _postManager.GetPostsByUserAsync(userId);
+        var response = await _postManager.GetPostsByUserAsync(userId, status);
 
         return Ok(response);
     }
