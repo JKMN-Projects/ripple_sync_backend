@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
+using RippleSync.Application.Users.Exceptions;
 using RippleSync.Domain.Users;
 using System.Text;
 
@@ -40,12 +41,6 @@ public sealed class UserManager
         ArgumentException.ThrowIfNullOrWhiteSpace(email, nameof(email));
         ArgumentException.ThrowIfNullOrWhiteSpace(password, nameof(password));
 
-        if (password.Length < 8) throw new ArgumentException("Password must be at least 8 characters long.", nameof(password));
-        else if (!password.Any(char.IsDigit)) throw new ArgumentException("Password must contain at least one digit.", nameof(password));
-        else if (!password.Any(char.IsUpper)) throw new ArgumentException("Password must contain at least one uppercase letter.", nameof(password));
-        else if (!password.Any(char.IsLower)) throw new ArgumentException("Password must contain at least one lowercase letter.", nameof(password));
-        else if (!password.Any(ch => !char.IsLetterOrDigit(ch))) throw new ArgumentException("Password must contain at least one special character.", nameof(password));
-
         User? user = await _userRepository.GetUserByEmailAsync(email, cancellationToken);
 
         if (user is null)
@@ -65,5 +60,49 @@ public sealed class UserManager
         _logger.LogInformation("Generating authentication token for user with email {Email}", email);
         AuthenticationToken token = await _authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
         return new AuthenticationTokenResponse(token.AccessToken, token.TokenType, token.ExpiresInMilliSeconds);
+    }
+
+    /// <summary>
+    /// Registers a new user with the given email and password.
+    /// </summary>
+    /// <param name="email"></param>
+    /// <param name="password"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="InvalidOperationException"></exception>
+    public async Task RegisterUserAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Registering new user with email {Email}", email);
+        ArgumentException.ThrowIfNullOrWhiteSpace(email, nameof(email));
+        if (!email.Contains('@') || !email.Contains('.')) throw new ArgumentException("Invalid email format", nameof(email));
+        if (email.Split('@', StringSplitOptions.RemoveEmptyEntries).Length != 2) throw new ArgumentException("Invalid email format", nameof(email));
+        if (email.Split('.', StringSplitOptions.RemoveEmptyEntries).Length < 2) throw new ArgumentException("Invalid email format", nameof(email));
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(password, nameof(password));
+        if (password.Length < 8) throw new ArgumentException("Password must be at least 8 characters long.", nameof(password));
+        else if (!password.Any(char.IsDigit)) throw new ArgumentException("Password must contain at least one digit.", nameof(password));
+        else if (!password.Any(char.IsUpper)) throw new ArgumentException("Password must contain at least one uppercase letter.", nameof(password));
+        else if (!password.Any(char.IsLower)) throw new ArgumentException("Password must contain at least one lowercase letter.", nameof(password));
+        else if (!password.Any(ch => !char.IsLetterOrDigit(ch))) throw new ArgumentException("Password must contain at least one special character.", nameof(password));
+
+        User? existingUser = await _userRepository.GetUserByEmailAsync(email, cancellationToken);
+        if (existingUser is not null) throw new EmailAlreadyInUseException(email);
+
+        byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+        byte[] userSalt = _passwordHasher.GenerateSalt();
+        byte[] passwordHash = _passwordHasher.Hash(passwordBytes, userSalt);
+        User newUser = User.Create(
+            email,
+            Convert.ToBase64String(passwordHash),
+            Convert.ToBase64String(userSalt)
+        );
+
+        await _userRepository.InsertUserAsync(newUser, cancellationToken);
+        _logger.LogInformation("User with email {Email} registered successfully", email);
     }
 }
