@@ -1,22 +1,104 @@
 ﻿
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Posts;
+using RippleSync.Domain.Posts;
 
 namespace RippleSync.Infrastructure.PostRepository;
 
 internal class InMemoryPostRepository : IPostRepository
 {
-    private static readonly List<GetPostsByUserResponse> _posts =
+
+    private static Guid _userId = Guid.NewGuid();
+    private static readonly List<Post> _postEntities =
     [
-        new  (1,"My first post","Posted",[],1761571800000,["Instagram","Facebook"]),
-        new  (2,"My Scheduled post","Scheduled",[],1761571800000,["Instagram"]),
-        new  (3,"Stuck while processing","Processing",[],1761371800000,["Facebook"]),
-        new  (4,"My post will not upload","Failed",[],1761371800000,["X","Youtube"]),
-        new  (5,"Just created this post - NOT DONE","Draft",[],null,["LinkedIn"])
+        new (Guid.NewGuid(),"My first post",DateTime.UtcNow, DateTime.UtcNow.AddDays(2),
+        [
+            new() {
+                PostId = Guid.NewGuid(),
+                UserId = _userId,
+                Status = PostStatus.Posted,
+                PlatformPostIdentifier = "123456",
+                PlatformResponse = null
+            }
+        ]),
+        new (Guid.NewGuid(),"My Scheduled post",DateTime.UtcNow, DateTime.UtcNow.AddDays(5),[
+            new() {
+                PostId = Guid.NewGuid(),
+                UserId = _userId,
+                Status = PostStatus.Scheduled,
+                PlatformPostIdentifier = "654321",
+                PlatformResponse = null
+            }
+        ]),
+        new (Guid.NewGuid(),"Stuck while processing",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
+            new() {
+                PostId = Guid.NewGuid(),
+                UserId = _userId,
+                Status = PostStatus.Processing,
+                PlatformPostIdentifier = "",
+                PlatformResponse = null
+            }
+        ]),
+        new (Guid.NewGuid(),"My post will not upload",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
+            new() {
+                PostId = Guid.NewGuid(),
+                UserId = _userId,
+                Status = PostStatus.Failed,
+                PlatformPostIdentifier = "",
+                PlatformResponse = "Error"
+            }
+        ]),
+        new (Guid.NewGuid(),"Just created this post - NOT DONE",DateTime.UtcNow, null,[
+            new() {
+                PostId = Guid.NewGuid(),
+                UserId = _userId,
+                Status = PostStatus.Draft,
+                PlatformPostIdentifier = "",
+                PlatformResponse = null
+            }
+        ])
     ];
-    public async Task<IEnumerable<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId,string? status, CancellationToken cancellationToken = default)
+
+    /// <summary>
+    /// In-Memory implementation of GetPostsByUserAsync
+    /// Does not check userId in this in-memory implementation
+    /// 
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="status"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<IEnumerable<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status, CancellationToken cancellationToken = default)
     {
-        return _posts.Where(p => status is null || p.StatusName.Equals(status, StringComparison.OrdinalIgnoreCase));
+
+        var post = _postEntities.Where(post =>
+            status is null ||
+            post.PostEvents.MaxBy(pe => pe.Status)!.Status.ToString().Equals(status, StringComparison.OrdinalIgnoreCase)
+        );
+
+        var response = post.Select(p => new GetPostsByUserResponse(
+            p.Id,
+            p.MessageContent,
+            p.PostEvents.MaxBy(pe => pe.Status)!.Status.ToString(),
+            [],
+            p.ScheduledFor.HasValue ? new DateTimeOffset(p.ScheduledFor.Value).ToUnixTimeMilliseconds() : null,
+            ["Facebook", "LinkedIn"]
+        ));
+
+        return response;
+    }
+    public Task DeletePost(Post post)
+    {
+
+        var postToDelete = _postEntities.Single(p => p.Id == post.Id);
+
+        _postEntities.Remove(postToDelete);
+        return Task.CompletedTask;
+    }
+    public async Task<Post> GetPostById(Guid postId)
+    {
+        var postEntity = _postEntities.SingleOrDefault(p => p.Id == postId);
+        return postEntity;
     }
 
 }
