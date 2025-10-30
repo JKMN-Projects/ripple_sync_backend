@@ -8,50 +8,51 @@ namespace RippleSync.Infrastructure.PostRepository;
 internal class InMemoryPostRepository : IPostRepository
 {
 
-    private static Guid _userId = Guid.NewGuid();
+
+    private static Guid _userId = Guid.Parse("a9856986-14e4-464b-acc7-dcb84ddf9f36");
     private static readonly List<Post> _postEntities =
     [
-        new (Guid.NewGuid(),"My first post",DateTime.UtcNow, DateTime.UtcNow.AddDays(2),
+        new (_userId,"My first post",DateTime.UtcNow, DateTime.UtcNow.AddDays(2),
         [
             new() {
                 PostId = Guid.NewGuid(),
-                UserId = _userId,
+                UserPlatformIntegrationId = Guid.NewGuid(),
                 Status = PostStatus.Posted,
                 PlatformPostIdentifier = "123456",
                 PlatformResponse = null
             }
         ]),
-        new (Guid.NewGuid(),"My Scheduled post",DateTime.UtcNow, DateTime.UtcNow.AddDays(5),[
+        new (_userId,"My Scheduled post",DateTime.UtcNow, DateTime.UtcNow.AddDays(5),[
             new() {
                 PostId = Guid.NewGuid(),
-                UserId = _userId,
+                UserPlatformIntegrationId = Guid.NewGuid(),
                 Status = PostStatus.Scheduled,
                 PlatformPostIdentifier = "654321",
                 PlatformResponse = null
             }
         ]),
-        new (Guid.NewGuid(),"Stuck while processing",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
+        new (_userId,"Stuck while processing",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
             new() {
                 PostId = Guid.NewGuid(),
-                UserId = _userId,
+                UserPlatformIntegrationId = Guid.NewGuid(),
                 Status = PostStatus.Processing,
                 PlatformPostIdentifier = "",
                 PlatformResponse = null
             }
         ]),
-        new (Guid.NewGuid(),"My post will not upload",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
+        new (_userId,"My post will not upload",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
             new() {
                 PostId = Guid.NewGuid(),
-                UserId = _userId,
+                UserPlatformIntegrationId = Guid.NewGuid(),
                 Status = PostStatus.Failed,
                 PlatformPostIdentifier = "",
                 PlatformResponse = "Error"
             }
         ]),
-        new (Guid.NewGuid(),"Just created this post - NOT DONE",DateTime.UtcNow, null,[
+        new (_userId,"Just created this post - NOT DONE",DateTime.UtcNow, null,[
             new() {
                 PostId = Guid.NewGuid(),
-                UserId = _userId,
+                UserPlatformIntegrationId = Guid.NewGuid(),
                 Status = PostStatus.Draft,
                 PlatformPostIdentifier = "",
                 PlatformResponse = null

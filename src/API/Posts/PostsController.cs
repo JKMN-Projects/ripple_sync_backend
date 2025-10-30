@@ -29,7 +29,8 @@ public class PostsController : ControllerBase
         return Ok(response);
     }
 
-    [HttpDelete("{postId:int}")]
+    [HttpDelete("{postId:Guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeletePost([FromRoute] Guid postId)
     {
         Guid userId = User.GetUserId();
