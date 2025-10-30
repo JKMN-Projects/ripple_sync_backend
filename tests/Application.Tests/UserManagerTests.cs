@@ -3,6 +3,7 @@ using RippleSync.Application.Common.Exceptions;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
 using RippleSync.Application.Users;
+using RippleSync.Application.Users.Exceptions;
 using RippleSync.Domain.Users;
 using RippleSync.Tests.Shared.Factories.Users;
 using RippleSync.Tests.Shared.TestDoubles.Logging;
@@ -248,7 +249,7 @@ public abstract class UserManagerTests
         }
 
         [Fact]
-        public async Task Should_ThrowInvalidOperationException_WhenUserWithEmailAlreadyExists()
+        public async Task Should_ThrowEmailAlreadyInUseException_WhenUserWithEmailAlreadyExists()
         {
             // Arrange
             string email = "jukman@gmail.com";
@@ -261,8 +262,8 @@ public abstract class UserManagerTests
                 userRepository: new UserRepositoryDoubles.Stubs.GetUserByEmail.ReturnsSpecificUser(existingUser));
 
             // Act & Assert
-            InvalidOperationException invalidOpEx = await Assert.ThrowsAnyAsync<InvalidOperationException>(async () => await sut.RegisterUserAsync(email, password));
-            Assert.Equal("User with email 'jukman@gmail.com' already exists.", invalidOpEx.Message);
+            EmailAlreadyInUseException ex = await Assert.ThrowsAnyAsync<EmailAlreadyInUseException>(async () => await sut.RegisterUserAsync(email, password));
+            Assert.Equal(email, ex.Data["Email"]);
         }
 
         [Fact]

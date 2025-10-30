@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RippleSync.Application.Common.Exceptions;
 using RippleSync.Application.Users;
+using RippleSync.Application.Users.Exceptions;
 
 namespace RippleSync.API.Authentication;
 [Route("api/[controller]")]
@@ -57,22 +58,40 @@ public sealed class AuthenticationController : ControllerBase
             await _userManager.RegisterUserAsync(request.Email, request.Password, cancellationToken);
             return Created();
         }
+        catch (EmailAlreadyInUseException ex)
+        {
+            var result = Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Email already in use.",
+                detail: ex.Message,
+                extensions: new Dictionary<string, object?>
+                {
+                    { "validationErrors", new Dictionary<string, string[]>
+                        {
+                            { "email", [ex.Message, "TEST ERROR"] }
+                        }
+                    }
+                });
+            _logger.LogInformation("Failed register attempt with email {Email}. Email already in use.", request.Email);
+            return result;
+        }
         catch (ArgumentException ex)
         {
             Dictionary<string, string[]> validationErrors = [];
+            string trimmedMessage = ex.Message.Replace($"(Parameter '{ex.ParamName}')", "").Trim();
             if (ex.ParamName is not null)
             {
-                validationErrors[ex.ParamName] = [ex.Message];
+                validationErrors[ex.ParamName.ToLowerInvariant()] = [trimmedMessage];
             }
             else
             {
-                validationErrors["unknown"] = [ex.Message];
+                validationErrors["unknown"] = [trimmedMessage];
             }
 
             var result = Problem(
                 statusCode: StatusCodes.Status400BadRequest,
                 title: "Invalid registration data.",
-                detail: ex.Message,
+                detail: ex.Message.Replace($"(Parameter '{ex.ParamName}')", "").Trim(),
                 extensions: new Dictionary<string, object?>
                 {
                     { "validationErrors", validationErrors }
@@ -89,15 +108,6 @@ public sealed class AuthenticationController : ControllerBase
                     _logger.LogWarning(ex, "Failed register attempt with email {Email}.", request.Email);
                     break;
             }
-            return result;
-        }
-        catch (InvalidOperationException ex)
-        {
-            var result = Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "Invalid registration data.",
-                detail: ex.Message);
-            _logger.LogInformation(ex, "Failed register attempt with email {Email}. User already exists.", request.Email);
             return result;
         }
     }

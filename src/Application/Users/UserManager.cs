@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
+using RippleSync.Application.Users.Exceptions;
 using RippleSync.Domain.Users;
 using System.Text;
 
@@ -90,7 +91,7 @@ public sealed class UserManager
         else if (!password.Any(ch => !char.IsLetterOrDigit(ch))) throw new ArgumentException("Password must contain at least one special character.", nameof(password));
 
         User? existingUser = await _userRepository.GetUserByEmailAsync(email, cancellationToken);
-        if (existingUser is not null) throw new InvalidOperationException($"User with email '{email}' already exists.");
+        if (existingUser is not null) throw new EmailAlreadyInUseException(email);
 
         byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
         byte[] userSalt = _passwordHasher.GenerateSalt();
