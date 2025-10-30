@@ -32,7 +32,10 @@ public sealed class AuthenticationController : ControllerBase
         {
             AuthenticationTokenResponse tokenResponse = await _userManager.GetAuthenticationTokenAsync(request.Email, request.Password);
             HttpContext.Response.Cookies.Append("AccessToken", tokenResponse.Token, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
-            return Ok(tokenResponse);
+
+            AuthenticationResponse response = new AuthenticationResponse(request.Email, tokenResponse.ExpiresAt);
+
+            return Ok(response);
         }
         catch (ArgumentException ex)
         {

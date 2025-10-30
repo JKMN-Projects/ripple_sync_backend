@@ -35,11 +35,11 @@ public sealed class JwtTokenProvider : IAuthenticationTokenProvider
         JwtSecurityTokenHandler jwtSecurityTokenHandler = new();
         SecurityToken securityToken = jwtSecurityTokenHandler.CreateToken(securityTokenDescriptor);
         string token = jwtSecurityTokenHandler.WriteToken(securityToken);
-        int expiresInSeconds = (int)(expireDate - DateTimeOffset.UtcNow).TotalSeconds;
+        long expiresInMilliSeconds = expireDate.ToUnixTimeMilliseconds();
         AuthenticationToken authenticationToken = new(
             AccessToken: token,
             TokenType: "Bearer",
-            ExpiresInSeconds: expiresInSeconds);
+            ExpiresInMilliSeconds: expiresInMilliSeconds);
         return Task.FromResult(authenticationToken);
     }
 
