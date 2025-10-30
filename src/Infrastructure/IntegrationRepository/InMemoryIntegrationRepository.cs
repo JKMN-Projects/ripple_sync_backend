@@ -1,7 +1,8 @@
 ﻿using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Integrations;
 
-namespace RippleSync.Infrastructure.UserPlatformIntegrationRepository;
+namespace RippleSync.Infrastructure.IntegrationRepository;
+
 public class InMemoryIntegrationRepository : IIntegrationRepository
 {
     public record Integration(int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope);

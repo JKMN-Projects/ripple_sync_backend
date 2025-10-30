@@ -1,12 +1,8 @@
 ﻿using RippleSync.Application.Integrations;
 using RippleSync.Domain.Platforms;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RippleSync.Infrastructure;
+
 internal class InMemoryData
 {
     internal static readonly List<IntegrationResponse> IntegrationResponses =
