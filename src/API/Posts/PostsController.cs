@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using RippleSync.API.Common.Extensions;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Posts;
+using System.Net.NetworkInformation;
 
 namespace RippleSync.API.Posts;
 
@@ -108,6 +109,17 @@ public class PostsController : ControllerBase
         }
 
         return mediaAttachments;
+    }
+
+    [HttpDelete("{postId:int}")]
+    public async Task<IActionResult> DeletePost([FromRoute] Guid postId)
+    {
+        Guid userId = User.GetUserId();
+
+        await _postManager.DeletePostByIdOnUser(userId, postId);
+
+        return NoContent();
+
     }
 }
 

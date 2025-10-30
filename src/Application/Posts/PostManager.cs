@@ -23,5 +23,26 @@ public class PostManager
     public async Task<bool> UpdatePostAsync(int postId, string messageContent, long? timestamp, string[]? mediaAttachments, int[] integrationIds)
     => await _postRepository.UpdatePostAsync(postId, messageContent, timestamp, mediaAttachments, integrationIds);
 
+    public async Task DeletePostByIdOnUser(Guid userId, Guid postId)
+    {
+        //Request post first
+        var post = await _postRepository.GetPostById(postId);
+
+        // Check if post belongs to user and if its deletable
+        if (post == null || post.UserId != userId)
+        {
+            throw new UnauthorizedAccessException("Post does not belong to the user.");
+        }
+        if (post.IsDeletable() is false)
+        {
+            throw new InvalidOperationException("Post cannot be deleted in its current state.");
+        }
+
+        // Then delete
+        await _postRepository.DeletePost(post);
+    }
+
+
+
 
 }
