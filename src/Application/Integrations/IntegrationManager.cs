@@ -24,6 +24,8 @@ public sealed class IntegrationManager
     {
         if (string.IsNullOrWhiteSpace(accessToken)) throw new ArgumentNullException(nameof(accessToken));
 
+        /// ENCRYPT ACCESSTOKEN HERE
+
         await _integrationRepo.CreateUserIntegration(userId, platformId, accessToken);
     }
 

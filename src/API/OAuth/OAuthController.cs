@@ -91,8 +91,8 @@ public partial class OAuthController : ControllerBase
             int platformId = 0;
 
             // Use state and code to get real token
-
-            string accessToken= string.Empty;
+            // Send get req
+            string accessToken = string.Empty;
 
             // Store
             await _integrationManager.CreateIntegrationWithEncryption(userId, platformId, accessToken);
