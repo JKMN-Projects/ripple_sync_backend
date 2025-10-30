@@ -24,9 +24,9 @@ public sealed class IntegrationManager
     {
         if (string.IsNullOrWhiteSpace(accessToken)) throw new ArgumentNullException(nameof(accessToken));
 
-        await _integrationRepo.CreateUserIntegration(userId, platformId, accessToken);
+        await _integrationRepo.CreateIntegration(userId, platformId, accessToken);
     }
 
     public async Task DeleteIntegration(Guid userId, int platformId)
-        => await _integrationRepo.DeleteUserIntegration(userId, platformId);
+        => await _integrationRepo.DeleteIntegration(userId, platformId);
 }

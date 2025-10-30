@@ -1,11 +1,12 @@
 ﻿using Npgsql;
+using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Integrations;
 using RippleSync.Infrastructure.IntegrationRepository.Entities;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 
 namespace RippleSync.Infrastructure.IntegrationRepository;
-internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection)
+internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IIntegrationRepository
 {
     public async Task<IEnumerable<IntegrationResponse>> GetIntegrations(Guid userId, CancellationToken cancellationToken = default)
     {
@@ -62,7 +63,7 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection)
         return userIntegrationEntites.Any() ? userIntegrationEntites.Select(i => new UserIntegrationResponse(i.Id, i.Name)) : [];
     }
 
-    public async Task CreateUserIntegration(Guid userId, int platformId, string accessToken, CancellationToken cancellationToken = default)
+    public async Task CreateIntegration(Guid userId, int platformId, string accessToken, CancellationToken cancellationToken = default)
     {
         var userPlatformIntegration = UserPlatformIntegrationEntity.New(userId, platformId, accessToken);
 
@@ -80,7 +81,7 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection)
         }
     }
 
-    public async Task DeleteUserIntegration(Guid userId, int platformId, CancellationToken cancellationToken = default)
+    public async Task DeleteIntegration(Guid userId, int platformId, CancellationToken cancellationToken = default)
     {
         var userPlatformIntegration = UserPlatformIntegrationEntity.New(userId, platformId);
 
