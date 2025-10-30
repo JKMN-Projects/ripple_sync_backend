@@ -46,6 +46,10 @@
         uuid user_account_id FK, UK
         int platform_id FK, UK
         text access_token "encrypted"
+        text refresh_token "encrypted"
+        timestamptz expiration
+        text token_type
+        text scope
     }
 
     post {
