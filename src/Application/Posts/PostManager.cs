@@ -14,8 +14,8 @@ public class PostManager
     public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status)
         => new(await _postRepository.GetPostsByUserAsync(userId, status));
 
-    public async Task<ListResponse<GetPostsByUserResponse>> GetImageByIdAsync(Guid userId, string? status)
-    => new(await _postRepository.GetImageByIdAsync(userId, status));
+    public async Task<string> GetImageByIdAsync(Guid userId)
+    => new(await _postRepository.GetImageByIdAsync(userId));
 
     public async Task<bool> CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, int[] integrationIds)
         => await _postRepository.CreatePostAsync(userId, messageContent, timestamp, mediaAttachments, integrationIds);

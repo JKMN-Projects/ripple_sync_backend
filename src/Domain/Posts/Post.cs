@@ -9,8 +9,9 @@ public class Post
     public DateTime UpdatedAt { get; set; }
     public DateTime? ScheduledFor { get; set; }
     public IEnumerable<PostEvent> PostEvents { get; set; }
+    public IEnumerable<PostMedia>? PostMedias { get; set; }
 
-    public Post(Guid UserId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents)
+    public Post(Guid UserId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents, IEnumerable<PostMedia>? postMedias)
     {
         Id = Guid.NewGuid();
         this.UserId = UserId;
@@ -18,6 +19,7 @@ public class Post
         UpdatedAt = updatedAt;
         ScheduledFor = scheduledFor;
         PostEvents = postsEvents;
+        PostMedias = postMedias;
     }
 
     public bool IsDeletable()
@@ -25,7 +27,6 @@ public class Post
         var latestStatus = PostEvents.MaxBy(pe => pe.Status)?.Status;
         return latestStatus is PostStatus.Draft or PostStatus.Scheduled;
     }
-
 }
 
 public class PostEvent
@@ -36,6 +37,13 @@ public class PostEvent
     public string PlatformPostIdentifier { get; set; }
     public object PlatformResponse { get; set; }
 
+}
+
+public class PostMedia
+{
+    public Guid Id { get; set; }
+    public Guid PostId { get; set; }
+    public required string ImageUrl { get; set; }
 }
 
 public enum PostStatus

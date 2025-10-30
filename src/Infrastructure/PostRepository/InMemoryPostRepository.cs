@@ -20,7 +20,8 @@ internal class InMemoryPostRepository : IPostRepository
                 PlatformPostIdentifier = "123456",
                 PlatformResponse = null
             }
-        ]),
+        ],
+        null),
         new (Guid.NewGuid(),"My Scheduled post",DateTime.UtcNow, DateTime.UtcNow.AddDays(5),[
             new() {
                 PostId = Guid.NewGuid(),
@@ -29,7 +30,8 @@ internal class InMemoryPostRepository : IPostRepository
                 PlatformPostIdentifier = "654321",
                 PlatformResponse = null
             }
-        ]),
+        ],
+        null),
         new (Guid.NewGuid(),"Stuck while processing",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
             new() {
                 PostId = Guid.NewGuid(),
@@ -38,7 +40,8 @@ internal class InMemoryPostRepository : IPostRepository
                 PlatformPostIdentifier = "",
                 PlatformResponse = null
             }
-        ]),
+        ],
+        null),
         new (Guid.NewGuid(),"My post will not upload",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
             new() {
                 PostId = Guid.NewGuid(),
@@ -47,7 +50,8 @@ internal class InMemoryPostRepository : IPostRepository
                 PlatformPostIdentifier = "",
                 PlatformResponse = "Error"
             }
-        ]),
+        ],
+        null),
         new (Guid.NewGuid(),"Just created this post - NOT DONE",DateTime.UtcNow, null,[
             new() {
                 PostId = Guid.NewGuid(),
@@ -56,7 +60,8 @@ internal class InMemoryPostRepository : IPostRepository
                 PlatformPostIdentifier = "",
                 PlatformResponse = null
             }
-        ])
+        ],
+        null)
     ];
 
     /// <summary>
@@ -103,30 +108,124 @@ internal class InMemoryPostRepository : IPostRepository
 
     public Task<string> GetImageByIdAsync(Guid imageId, CancellationToken cancellationToken = default)
     {
+        var imageUrl = _postEntities
+            .SelectMany(p => p.PostMedias)
+            .Where(pm => pm.Id == imageId)
+            .Select(pm => pm.ImageUrl)
+            .FirstOrDefault();
+
+        return Task.FromResult(imageUrl ?? "");
     }
 
 
-    public async Task<bool> CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, int[] integrationsIds, CancellationToken cancellationToken = default)
+    public async Task<bool> CreatePostAsync(
+        Guid userId,
+        string messageContent,
+        long? timestamp,
+        string[]? mediaAttachments,
+        int[] integrationsIds,
+        CancellationToken cancellationToken = default)
     {
-        GetPostsByUserResponse post = new GetPostsByUserResponse(_posts.Count + 1, messageContent, GetStatusName(timestamp), mediaAttachments ?? [], timestamp ?? 0, [.. GetPlatformStringArray(integrationsIds)]);
+        await Task.Yield();
 
-        _posts.Add(post);
+        DateTime? scheduledFor = timestamp.HasValue
+            ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
+            : null;
+
+        var postMedias = mediaAttachments?.Select(url => new PostMedia
+        {
+            Id = Guid.NewGuid(),
+            PostId = Guid.Empty, // temporary, updated below once Post.Id is known
+            ImageUrl = url
+        }).ToList();
+
+        var postEvents = integrationsIds.Select(id => new PostEvent
+        {
+            PostId = Guid.Empty, // temporary, updated below once Post.Id is known
+            UserId = userId,
+            Status = scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft,
+            PlatformPostIdentifier = "",
+            PlatformResponse = new { CreatedAt = DateTime.UtcNow }
+        }).ToList();
+
+        var post = new Post(
+            userId,
+            messageContent,
+            DateTime.UtcNow,
+            scheduledFor,
+            postEvents,
+            postMedias
+        );
+
+        foreach (var e in post.PostEvents)
+            e.PostId = post.Id;
+
+        if (post.PostMedias != null)
+        {
+            foreach (var m in post.PostMedias)
+                m.PostId = post.Id;
+        }
+
+        _postEntities.Add(post);
 
         return true;
     }
 
-    public async Task<bool> UpdatePostAsync(int postId, string messageContent, long? timestamp, string[]? mediaAttachments, int[] integrationsIds, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdatePostAsync(
+        Guid postId,
+        string messageContent,
+        long? timestamp,
+        string[]? mediaAttachments,
+        int[] integrationsIds,
+        CancellationToken cancellationToken = default)
     {
-        GetPostsByUserResponse post = new GetPostsByUserResponse(postId, messageContent, GetStatusName(timestamp), mediaAttachments ?? [], timestamp ?? 0, [.. GetPlatformStringArray(integrationsIds)]);
+        await Task.Yield();
 
-        if (post == null) return false;
+        Post? post = _postEntities.FirstOrDefault(p => p.Id == postId);
 
-        _posts = [.. _posts.Select(p => p.id == postId ? post : p)];
+        if (post == null)
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(messageContent))
+            post.MessageContent = messageContent;
+
+        post.ScheduledFor = timestamp.HasValue
+            ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
+            : null;
+
+        if (mediaAttachments != null)
+        {
+            post.PostMedias = [.. mediaAttachments.Select(url => new PostMedia
+            {
+                Id = Guid.NewGuid(),
+                PostId = post.Id,
+                ImageUrl = url
+            })];
+        }
+
+        if (integrationsIds != null && integrationsIds.Length > 0)
+        {
+            post.PostEvents = [.. integrationsIds.Select(id => new PostEvent
+            {
+                PostId = post.Id,
+                UserId = post.UserId,
+                Status = PostStatus.Scheduled,
+                PlatformPostIdentifier = "",
+                PlatformResponse = new { UpdatedAt = DateTime.UtcNow }
+            })];
+        }
+
+        post.UpdatedAt = DateTime.UtcNow;
 
         return true;
     }
 
-    private static string GetStatusName(long? timestamp) => timestamp == null ? "Draft" : timestamp > new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds() ? "Scheduled" : "Posted";
+    private static PostStatus GetPostStatus(long? timestamp)
+        => timestamp == null
+        ? PostStatus.Draft
+        : timestamp > new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds()
+        ? PostStatus.Scheduled
+        : PostStatus.Posted;
 
     private static List<string> GetPlatformStringArray(int[] integrationsIds)
     {
