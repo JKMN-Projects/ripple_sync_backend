@@ -11,7 +11,8 @@ internal class InMemoryPostRepository : IPostRepository
         new  (1,"My first post","Posted",[],1761571800000,["Instagram","Facebook"]),
         new  (2,"My Scheduled post","Scheduled",[],1761571800000,["Instagram"]),
         new  (3,"Stuck while processing","Processing",[],1761371800000,["Facebook"]),
-        new  (4,"My post will not upload","Failed",[],1761371800000,["X","Youtube"])
+        new  (4,"My post will not upload","Failed",[],1761371800000,["X","Youtube"]),
+        new  (5,"Just created this post - NOT DONE","Draft",[],null,["LinkedIn"])
     ];
     public async Task<IEnumerable<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId,string? status, CancellationToken cancellationToken = default)
     {
