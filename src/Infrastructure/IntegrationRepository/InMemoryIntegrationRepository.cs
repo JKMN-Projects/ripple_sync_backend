@@ -20,10 +20,11 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
 
     private static readonly List<IntegrationResponse> _integrations =
     [
-        new (1, "Twitter", "Share updates on Twitter", false, ""),
+        new (1, "X", "Share updates on X", false, ""),
         new (2, "Facebook", "Create posts on Facebook", false, ""),
         new (3, "LinkedIn", "Share professional updates on LinkedIn", true, ""),
-        new (4, "Instagram", "Post photos and stories on Instagram", false, "")
+        new (4, "Instagram", "Post photos and stories on Instagram", false, ""),
+        new (5, "YouTube", "Post photos and messages on YouTube", false, "")
     ];
 
     public async Task<IEnumerable<IntegrationResponse>> GetIntegrations(Guid userId)
