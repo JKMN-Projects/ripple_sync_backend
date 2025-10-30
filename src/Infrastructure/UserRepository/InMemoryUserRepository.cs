@@ -5,7 +5,7 @@ namespace RippleSync.Infrastructure.UserRepository;
 internal sealed class InMemoryUserRepository : IUserRepository
 {
     private static readonly List<User> _users = [
-            User.Reconstitute(Guid.NewGuid(), "jukman@gmail.com", "hyT8uOvqa5HsVzoYa7f8x5Fc79whJ85hnUVlthmk2Ak=", "VGVzdGluZ0FTYWx0VmFsdWVXcml0dGVuSW5QbGFpblRleHQ=")
+            User.Reconstitute(Guid.Parse("a9856986-14e4-464b-acc7-dcb84ddf9f36"), "jukman@gmail.com", "hyT8uOvqa5HsVzoYa7f8x5Fc79whJ85hnUVlthmk2Ak=", "VGVzdGluZ0FTYWx0VmFsdWVXcml0dGVuSW5QbGFpblRleHQ=")
         ];
 
     public async Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
