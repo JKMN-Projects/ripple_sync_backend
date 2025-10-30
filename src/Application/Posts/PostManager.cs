@@ -10,8 +10,8 @@ public class PostManager
     {
         _postRepository = postRepository;
     }
-    public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId)
-        => new(await _postRepository.GetPostsByUserAsync(userId));
+    public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status)
+        => new(await _postRepository.GetPostsByUserAsync(userId,status));
 
 
 }
