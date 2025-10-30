@@ -1,29 +1,27 @@
 ﻿using System.Reflection;
 
-namespace RippleSync.Infrastructure.MicroORM.Exceptions;
-internal class ExceptionFactory
+namespace RippleSync.Infrastructure.JukmanORM.Exceptions;
+public class ExceptionFactory
 {
-    internal static void ThrowRepositoryException(Type currentClass, MethodBase? currentMethod, Exception? otherException = null, string currentQuery = "", object? param = null)
+    public static void ThrowRepositoryException(Type currentClass, MethodBase? currentMethod, Exception? otherException = null, string currentQuery = "", object? param = null)
     {
         QueryException? queryException = null;
 
         if (otherException is QueryException)
             queryException = otherException as QueryException;
 
-        string className = currentClass.FullName != null ? $"in class: {currentClass.FullName}" : "class name is unknown";
+        var className = currentClass.FullName != null ? $"in class: {currentClass.FullName}" : "class name is unknown";
 
-        string methodName = currentMethod?.DeclaringType != null ? $"in method: {currentMethod.DeclaringType.Name}" : "method name is unknown";
+        var methodName = currentMethod?.DeclaringType != null ? $"in method: {currentMethod.DeclaringType.Name}" : "method name is unknown";
 
 
-        string query = queryException != null ? queryException.FailedQuery : currentQuery;
-        string fullQuery = queryException != null ? InsertParametersIntoQuery(queryException.FailedQuery, queryException.Param) : InsertParametersIntoQuery(currentQuery, param);
+        var query = queryException != null ? queryException.FailedQuery : currentQuery;
+        var fullQuery = queryException != null ? InsertParametersIntoQuery(queryException.FailedQuery, queryException.Param) : InsertParametersIntoQuery(currentQuery, param);
 
-        string queryMsg = $"\n\tFailed query: {fullQuery}";
+        var queryMsg = $"\n\tFailed query: {fullQuery}";
 
         if (string.IsNullOrWhiteSpace(query))
-        {
             queryMsg = "- No query provided";
-        }
 
         throw new RepositoryException($"Exception encountered - {className}, {methodName} {queryMsg}", queryException, otherException);
     }
@@ -39,7 +37,7 @@ internal class ExceptionFactory
         if (string.IsNullOrWhiteSpace(query) || param == null)
             return query;
 
-        string result = query;
+        var result = query;
         var properties = param.GetType().GetProperties();
 
         foreach (var property in properties)

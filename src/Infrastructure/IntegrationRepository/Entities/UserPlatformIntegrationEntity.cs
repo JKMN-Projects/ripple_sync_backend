@@ -1,4 +1,5 @@
-﻿using RippleSync.Infrastructure.MicroORM.ClassAttributes;
+﻿using Infrastructure.JukmanORM.Enums;
+using RippleSync.Infrastructure.MicroORM.ClassAttributes;
 
 namespace RippleSync.Infrastructure.IntegrationRepository.Entities;
 internal class UserPlatformIntegrationEntity

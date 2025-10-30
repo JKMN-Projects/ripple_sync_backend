@@ -1,5 +1,5 @@
-﻿namespace RippleSync.Infrastructure.MicroORM.Exceptions;
-internal class RepositoryException : Exception
+﻿namespace RippleSync.Infrastructure.JukmanORM.Exceptions;
+public class RepositoryException : Exception
 {
     public string BackendMessage;
     public QueryException? QException;

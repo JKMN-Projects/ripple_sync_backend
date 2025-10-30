@@ -1,11 +1,11 @@
 ﻿using Npgsql;
 using RippleSync.Domain.Users;
-using RippleSync.Infrastructure.MicroORM.Exceptions;
-using RippleSync.Infrastructure.MicroORM.Extensions;
+using RippleSync.Infrastructure.JukmanORM.Exceptions;
+using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.UserRepository.Entities;
 
 namespace RippleSync.Infrastructure.UserRepository;
-internal sealed class PostgresUserRepository(NpgsqlConnection dbConnection)
+internal sealed class NpgsqlUserRepository(NpgsqlConnection dbConnection)
 {
     public async Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
     {

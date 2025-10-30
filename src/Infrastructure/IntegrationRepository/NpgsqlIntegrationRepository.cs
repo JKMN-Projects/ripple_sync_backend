@@ -1,11 +1,11 @@
 ﻿using Npgsql;
 using RippleSync.Application.Integrations;
 using RippleSync.Infrastructure.IntegrationRepository.Entities;
-using RippleSync.Infrastructure.MicroORM.Exceptions;
-using RippleSync.Infrastructure.MicroORM.Extensions;
+using RippleSync.Infrastructure.JukmanORM.Exceptions;
+using RippleSync.Infrastructure.JukmanORM.Extensions;
 
 namespace RippleSync.Infrastructure.IntegrationRepository;
-internal class PostgresIntegrationRepository(NpgsqlConnection dbConnection)
+internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection)
 {
     public async Task<IEnumerable<IntegrationResponse>> GetIntegrations(Guid userId, CancellationToken cancellationToken = default)
     {
