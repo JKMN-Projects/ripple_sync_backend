@@ -1,6 +1,6 @@
 ﻿namespace RippleSync.Domain.Platforms;
 
-public enum Platforms
+public enum Platform
 {
     X = 1,
     LinkedIn = 2,

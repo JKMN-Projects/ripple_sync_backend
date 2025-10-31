@@ -31,12 +31,12 @@ public partial class OAuthController(
                 detail: $"Platform ID {platformId} is not supported.");
 
         //Checks if platformId is supported
-        if (!Enum.IsDefined(typeof(Platforms), platformId))
+        if (!Enum.IsDefined(typeof(Platform), platformId))
         {
             return safeResult;
         }
 
-        Platforms platform = (Platforms)platformId;
+        Platform platform = (Platform)platformId;
 
         //URL of platform OAuth
         Uri? authorizationUrl = null;
@@ -77,7 +77,7 @@ public partial class OAuthController(
         {
             //Provide state and more to OAuth.
 
-            case Platforms.X:
+            case Platform.X:
                 string clientId = secrets["ClientId"]
                     ?? throw new InvalidOperationException("No ClientId found for X");
 
@@ -92,13 +92,13 @@ public partial class OAuthController(
 
                 authorizationUrl = new Uri("https://x.com/i/oauth2/authorize" + queries.ToUriComponent());
                 break;
-            case Platforms.LinkedIn:
+            case Platform.LinkedIn:
                 break;
-            case Platforms.Facebook:
+            case Platform.Facebook:
                 break;
-            case Platforms.Instagram:
+            case Platform.Instagram:
                 break;
-            case Platforms.Threads:
+            case Platform.Threads:
                 break;
             default:
                 return safeResult;
@@ -130,7 +130,7 @@ public partial class OAuthController(
                 async cancel => (OAuthStateData?)null, cancellationToken: cancellationToken) // Returns null if not found
                     ?? throw new InvalidOperationException("Invalid or expired state");
 
-            Platforms platform = (Platforms)oauthData.PlatformId;
+            Platform platform = (Platform)oauthData.PlatformId;
 
             // Use state and code to get real token
             // Send get req
@@ -142,7 +142,7 @@ public partial class OAuthController(
 
             switch (platform)
             {
-                case Platforms.X:
+                case Platform.X:
                     //string clientId = secrets["ClientId"]
                     //    ?? throw new InvalidOperationException("No ClientId found for X");
 
@@ -174,13 +174,13 @@ public partial class OAuthController(
                     accessTokenUrl = new Uri("https://api.x.com/2/oauth2/token");
                     requestContent = new FormUrlEncodedContent(formData);
                     break;
-                case Platforms.LinkedIn:
+                case Platform.LinkedIn:
                     break;
-                case Platforms.Facebook:
+                case Platform.Facebook:
                     break;
-                case Platforms.Instagram:
+                case Platform.Instagram:
                     break;
-                case Platforms.Threads:
+                case Platform.Threads:
                     break;
                 default:
                     return safeResult;

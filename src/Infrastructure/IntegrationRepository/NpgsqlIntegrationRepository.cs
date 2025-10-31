@@ -4,6 +4,7 @@ using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Integrations;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
+using RippleSync.Domain.Platforms;
 using RippleSync.Infrastructure.IntegrationRepository.Entities;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
@@ -39,7 +40,7 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
 
     public async Task CreateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        var userPlatformIntegration = UserPlatformIntegrationEntity.New(integration.UserId, integration.PlatformId, integration.AccessToken);
+        var userPlatformIntegration = UserPlatformIntegrationEntity.New(integration.UserId, (int)integration.Platform, integration.AccessToken);
 
         try
         {
@@ -55,9 +56,9 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
         }
     }
 
-    public async Task DeleteAsync(Guid userId, int platformId, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid userId, Platform platform, CancellationToken cancellationToken = default)
     {
-        var userPlatformIntegration = UserPlatformIntegrationEntity.New(userId, platformId);
+        var userPlatformIntegration = UserPlatformIntegrationEntity.New(userId, (int)platform);
 
         try
         {
