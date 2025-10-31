@@ -44,7 +44,7 @@ public static class AuthenticationTokenProviderDoubles
                 AuthenticationToken fakeToken = new(
                     AccessToken: Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
                     TokenType: "Fake",
-                    ExpiresInSeconds: 3600);
+                    ExpiresInMilliSeconds: 3600);
                 return Task.FromResult(fakeToken);
             }
         }
@@ -86,7 +86,7 @@ public static class AuthenticationTokenProviderDoubles
                 AuthenticationToken fakeToken = new(
                     AccessToken: token,
                     TokenType: TokenType,
-                    ExpiresInSeconds: expiresInSeconds);
+                    ExpiresInMilliSeconds: expiresInSeconds);
                 return Task.FromResult(fakeToken);
             }
 

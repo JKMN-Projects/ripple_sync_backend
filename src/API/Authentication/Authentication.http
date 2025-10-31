@@ -4,8 +4,16 @@
 POST {{API_HostAddress}}/api/authentication/Login
 Content-Type: application/json
 {
-  "email": "jukman@gmail.com",
+  "email": "jukman2@gmail.com",
   "password": "Kode1234!"
 }
 
 ###
+
+# @name Register
+POST {{API_HostAddress}}/api/authentication/Register
+Content-Type: application/json
+{
+  "email": "jukman2@gmail.com",
+  "password": "Kode1234!"
+}

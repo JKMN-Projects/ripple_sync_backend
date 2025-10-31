@@ -3,6 +3,7 @@ using Npgsql;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
 using RippleSync.Infrastructure.IntegrationRepository;
+using RippleSync.Infrastructure.PostRepository;
 using RippleSync.Infrastructure.Security;
 using RippleSync.Infrastructure.UserRepository;
 using System.Data;
@@ -20,6 +21,7 @@ public static class DependencyInjection
 
         services.AddScoped<IUserRepository, InMemoryUserRepository>();
         services.AddScoped<IIntegrationRepository, InMemoryIntegrationRepository>();
+        services.AddScoped<IPostRepository, InMemoryPostRepository>();
 
         return services;
     }

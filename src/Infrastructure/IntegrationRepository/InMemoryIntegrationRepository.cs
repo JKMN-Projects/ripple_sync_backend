@@ -5,14 +5,7 @@ using System;
 namespace RippleSync.Infrastructure.IntegrationRepository;
 public class InMemoryIntegrationRepository : IIntegrationRepository
 {
-    private static readonly List<IntegrationResponse> _integrations =
-    [
-        new (1, "Twitter", "Share updates on Twitter", false, ""),
-        new (2, "Facebook", "Create posts on Facebook", false, ""),
-        new (3, "LinkedIn", "Share professional updates on LinkedIn", true, ""),
-        new (4, "Instagram", "Post photos and stories on Instagram", false, "")
-    ];
-
+    public record Integration(int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope);
     public async Task<IEnumerable<IntegrationResponse>> GetIntegrations(Guid userId, CancellationToken cancellationToken = default)
         => _integrations;
 
@@ -24,11 +17,10 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
 
     public async Task DeleteIntegration(Guid userId, int platformId, CancellationToken cancellationToken = default)
         => await UpdateIntegration(platformId, false);
-    
 
     private async Task UpdateIntegration(int platformId, bool connected)
     {
-        var toEdit = _integrations.FirstOrDefault(i => i.PlatformId == platformId);
+        var toEdit = InMemoryData.IntegrationResponses.FirstOrDefault(i => i.PlatformId == platformId);
 
         if (toEdit == null) return;
 

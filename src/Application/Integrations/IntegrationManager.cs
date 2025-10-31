@@ -20,11 +20,14 @@ public sealed class IntegrationManager
     public async Task<ListResponse<UserIntegrationResponse>> GetUserIntegrations(Guid userId)
         => new ListResponse<UserIntegrationResponse>(await _integrationRepo.GetUserIntegrations(userId));
 
-    public async Task CreateIntegration(Guid userId, int platformId, string accessToken)
+    public async Task CreateIntegrationWithEncryption(Guid userId, int platformId, string accessToken, string? refreshToken, int expiresIn, string tokenType, string scope)
     {
         if (string.IsNullOrWhiteSpace(accessToken)) throw new ArgumentNullException(nameof(accessToken));
 
-        await _integrationRepo.CreateIntegration(userId, platformId, accessToken);
+        /// ENCRYPT ACCESSTOKEN HERE
+        DateTime expiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
+        
+        await _integrationRepo.CreateIntegration(userId, platformId, accessToken, refreshToken, expiresAt, tokenType, scope);
     }
 
     public async Task DeleteIntegration(Guid userId, int platformId)
