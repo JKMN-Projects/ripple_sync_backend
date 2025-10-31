@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Hybrid;
 using RippleSync.API.Common.Extensions;
-using RippleSync.API.OAuth;
 using RippleSync.Application.Integrations;
 using RippleSync.Domain.Platforms;
 using System.ComponentModel.DataAnnotations;
@@ -10,9 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace RippleSync.API.Integrations;
-
-
+namespace RippleSync.API.OAuth;
 
 [Route("api/[controller]")]
 [Authorize]
@@ -33,7 +30,7 @@ public partial class OAuthController : ControllerBase
     }
 
     [HttpGet("initiate/{platformId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status302Found)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> InitiateOauthForPlatform([FromRoute][Range(1, int.MaxValue)] int platformId)
     {
@@ -119,11 +116,11 @@ public partial class OAuthController : ControllerBase
         if (authorizationUrl == null) return safeResult;
 
         //Frontend handles redirect, frontend can create a better redirect experience, with loading and such
-        return Ok(new { redirectUrl = authorizationUrl.ToString() });
+        return Redirect(authorizationUrl.ToString());
     }
 
     [HttpGet("callback")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status302Found)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> OAuthCallBack([FromQuery] string state, [FromQuery] string code)
     {

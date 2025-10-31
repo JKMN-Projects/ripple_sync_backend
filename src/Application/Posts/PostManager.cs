@@ -35,7 +35,7 @@ public class PostManager
     public async Task DeletePostByIdOnUser(Guid userId, Guid postId)
     {
         //Request post first
-        var post = await _postRepository.GetPostById(postId);
+        var post = await _postRepository.GetPostByIdAsync(postId);
 
         // Check if post belongs to user and if its deletable
         if (post == null || post.UserId != userId)

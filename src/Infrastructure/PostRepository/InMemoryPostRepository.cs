@@ -88,7 +88,7 @@ internal class InMemoryPostRepository : IPostRepository
 
         return response;
     }
-    public Task DeletePost(Post post)
+    public Task DeletePostAsync(Post post, CancellationToken cancellationToken = default)
     {
 
         var postToDelete = _postEntities.Single(p => p.Id == post.Id);
@@ -96,7 +96,7 @@ internal class InMemoryPostRepository : IPostRepository
         _postEntities.Remove(postToDelete);
         return Task.CompletedTask;
     }
-    public async Task<Post> GetPostById(Guid postId)
+    public async Task<Post> GetPostByIdAsync(Guid postId, CancellationToken cancellationToken = default)
     {
         var postEntity = _postEntities.SingleOrDefault(p => p.Id == postId);
         return postEntity;
