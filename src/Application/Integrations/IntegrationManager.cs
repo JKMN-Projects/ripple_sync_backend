@@ -32,7 +32,7 @@ public sealed class IntegrationManager(
 
         /// ENCRYPT ACCESSTOKEN HERE
         DateTime expiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
-        
+
         Integration integration = Integration.Create(userId, platformId, accessToken, refreshToken, expiresAt, tokenType, scope);
         await integrationRepo.CreateAsync(integration, cancellationToken);
     }

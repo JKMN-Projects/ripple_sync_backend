@@ -20,7 +20,7 @@ internal class InMemoryData
         Integration.Reconstitute(
             Guid.NewGuid(),
             _userId,
-            (int)Platforms.X,
+            (int)Platform.X,
             "",
             "",
             DateTime.UtcNow.AddHours(1),
@@ -30,7 +30,7 @@ internal class InMemoryData
         Integration.Reconstitute(
             Guid.NewGuid(),
             _userId,
-            (int)Platforms.LinkedIn,
+            (int)Platform.LinkedIn,
             "",
             "",
             DateTime.UtcNow.AddHours(2),
@@ -41,11 +41,11 @@ internal class InMemoryData
 
     internal static readonly List<PlatformWithUserIntegrationResponse> IntegrationResponses =
     [
-        new ((int)Platforms.X, "X.com", "Share updates on X", false, ""),
-        new ((int)Platforms.LinkedIn, "LinkedIn", "Share professional updates on LinkedIn", true, ""),
-        new ((int)Platforms.Facebook, "Facebook", "Create posts on Facebook", false, ""),
-        new ((int)Platforms.Instagram, "Instagram", "Post photos and stories on Instagram", false, ""),
-        new ((int)Platforms.Threads, "Threads", "Post photos and stories on Instagram", false, "")
+        new ((int)Platform.X, "X.com", "Share updates on X", false, ""),
+        new ((int)Platform.LinkedIn, "LinkedIn", "Share professional updates on LinkedIn", true, ""),
+        new ((int)Platform.Facebook, "Facebook", "Create posts on Facebook", false, ""),
+        new ((int)Platform.Instagram, "Instagram", "Post photos and stories on Instagram", false, ""),
+        new ((int)Platform.Threads, "Threads", "Post photos and stories on Instagram", false, "")
     ];
 
     internal static readonly List<Post> Posts =

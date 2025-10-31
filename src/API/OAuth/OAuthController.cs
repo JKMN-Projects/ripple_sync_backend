@@ -18,8 +18,10 @@ public partial class OAuthController(
     ILogger<OAuthController> logger,
     IConfiguration configuration,
     HybridCache cache,
-    IntegrationManager integrationManager) : ControllerBase
+    IntegrationManager integrationManager
+    /*, OAuthManager oAuthManager*/) : ControllerBase
 {
+
     [HttpGet("initiate/{platformId:int}")]
     [ProducesResponseType(StatusCodes.Status302Found)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -31,83 +33,17 @@ public partial class OAuthController(
                 detail: $"Platform ID {platformId} is not supported.");
 
         //Checks if platformId is supported
-        if (!Enum.IsDefined(typeof(Platforms), platformId))
+        if (!Enum.IsDefined(typeof(Platform), platformId))
         {
             return safeResult;
         }
 
-        Platforms platform = (Platforms)platformId;
+        Platform platform = (Platform)platformId;
 
-        //URL of platform OAuth
-        Uri? authorizationUrl = null;
-
-        string state = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
-        string codeVerifier = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
-            .TrimEnd('=')
-            .Replace('+', '-')
-            .Replace('/', '_');
-
-        string codeChallenge;
-        using (var sha256 = SHA256.Create())
-        {
-            byte[] challengeBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(codeVerifier));
-            codeChallenge = Convert.ToBase64String(challengeBytes)
-                .TrimEnd('=')
-                .Replace('+', '-')
-                .Replace('/', '_');
-        }
-
-        //Save userId and platformId in temp storage using new state generated
-        // Storing
-        OAuthStateData oauthData = new(User.GetUserId(), platformId, codeVerifier);
-
-        await cache.SetAsync(
-            $"oauth:{state}",
-            oauthData,
-            new HybridCacheEntryOptions
-            {
-                Expiration = TimeSpan.FromMinutes(10)
-            }, cancellationToken: cancellationToken);
-
-        var secrets = configuration.GetSection("Integrations").GetSection(platform.ToString());
-
-        string redirectUri = IsLocalEnvironment() ? "https://localhost:7275/api/oauth/callback" : "https://api.ripplesync.dk/api/oauth/callback";
-
-        switch (platform)
-        {
-            //Provide state and more to OAuth.
-
-            case Platforms.X:
-                string clientId = secrets["ClientId"]
-                    ?? throw new InvalidOperationException("No ClientId found for X");
-
-                QueryString queries = new QueryString()
-                    .Add("response_type", "code")
-                    .Add("client_id", clientId)
-                    .Add("redirect_uri", redirectUri)
-                    .Add("scope", "tweet.read+tweet.write+users.read+offline.access")
-                    .Add("state", state)
-                    .Add("code_challenge", codeChallenge)
-                    .Add("code_challenge_method", "S256");
-
-                authorizationUrl = new Uri("https://x.com/i/oauth2/authorize" + queries.ToUriComponent());
-                break;
-            case Platforms.LinkedIn:
-                break;
-            case Platforms.Facebook:
-                break;
-            case Platforms.Instagram:
-                break;
-            case Platforms.Threads:
-                break;
-            default:
-                return safeResult;
-        }
-
-        if (authorizationUrl == null) return safeResult;
+        
 
         //Frontend handles redirect, frontend can create a better redirect experience, with loading and such
-        return Redirect(authorizationUrl.ToString());
+        return Ok(new { redirectUrl = authorizationUrl.ToString() });
     }
 
     [HttpGet("callback")]
@@ -130,7 +66,7 @@ public partial class OAuthController(
                 async cancel => (OAuthStateData?)null, cancellationToken: cancellationToken) // Returns null if not found
                     ?? throw new InvalidOperationException("Invalid or expired state");
 
-            Platforms platform = (Platforms)oauthData.PlatformId;
+            Platform platform = (Platform)oauthData.PlatformId;
 
             // Use state and code to get real token
             // Send get req
@@ -138,34 +74,29 @@ public partial class OAuthController(
             HttpContent? requestContent = null;
 
             var secrets = configuration.GetSection("Integrations").GetSection(platform.ToString());
-            string redirectUri = IsLocalEnvironment() ? "https://localhost:7275/integrations" : "https://www.ripplesync.dk/integrations";
+
+            string redirectUri = configuration.GetSection("OAuth")["RedirectUrl"]
+                ?? throw new InvalidOperationException("No Redirect found");
+
+            string? credentials;
+            string clientId;
+            string clientSecret;
+            Dictionary<string, string> formData;
+
+            using var httpClient = new HttpClient();
 
             switch (platform)
             {
-                case Platforms.X:
-                    //string clientId = secrets["ClientId"]
-                    //    ?? throw new InvalidOperationException("No ClientId found for X");
-
-                    //string clientSecret = secrets["ClientSecret"]
-                    //    ?? throw new InvalidOperationException("No ClientSecret found for X");
-
-                    //QueryString queries = new QueryString()
-                    //    .Add("grant_type", "authorization_code")
-                    //    .Add("client_id", clientId)
-                    //    .Add("client_secret", clientSecret)
-                    //    .Add("redirect_uri", redirectUri)
-                    //    .Add("code", code)
-                    //    .Add("code_verifier", oauthData.CodeVerifier);
-
-                    //accessTokenUrl = new Uri("https://api.x.com/2/oauth2/token" + queries.ToUriComponent());
-
-                    string clientId = secrets["ClientId"]
+                case Platform.X:
+                    clientId = secrets["ClientId"]
                         ?? throw new InvalidOperationException("No ClientId found for X");
 
-                    var formData = new Dictionary<string, string>
+                    clientSecret = secrets["ClientSecret"]
+                        ?? throw new InvalidOperationException("No ClientSecret found for X");
+
+                    formData = new Dictionary<string, string>
                     {
                         ["grant_type"] = "authorization_code",
-                        ["client_id"] = clientId,
                         ["redirect_uri"] = redirectUri,
                         ["code"] = code,
                         ["code_verifier"] = oauthData.CodeVerifier
@@ -173,14 +104,36 @@ public partial class OAuthController(
 
                     accessTokenUrl = new Uri("https://api.x.com/2/oauth2/token");
                     requestContent = new FormUrlEncodedContent(formData);
+
+                    // Add Basic Auth header
+                    credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
+                    httpClient.DefaultRequestHeaders.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
                     break;
-                case Platforms.LinkedIn:
+                case Platform.LinkedIn:
+                    clientId = secrets["ClientId"]
+                        ?? throw new InvalidOperationException("No ClientId found for LinkedIn");
+
+                    clientSecret = secrets["ClientSecret"]
+                        ?? throw new InvalidOperationException("No ClientSecret found for LinkedIn");
+
+                    formData = new Dictionary<string, string>
+                    {
+                        ["grant_type"] = "authorization_code",
+                        ["client_id"] = clientId,
+                        ["client_secret"] = clientSecret,
+                        ["redirect_uri"] = redirectUri,
+                        ["code"] = code
+                    };
+
+                    accessTokenUrl = new Uri("https://www.linkedin.com/oauth/v2/accessToken");
+                    requestContent = new FormUrlEncodedContent(formData);
                     break;
-                case Platforms.Facebook:
+                case Platform.Facebook:
                     break;
-                case Platforms.Instagram:
+                case Platform.Instagram:
                     break;
-                case Platforms.Threads:
+                case Platform.Threads:
                     break;
                 default:
                     return safeResult;
@@ -189,7 +142,6 @@ public partial class OAuthController(
             if (accessTokenUrl == null)
                 return safeResult;
 
-            using var httpClient = new HttpClient();
             var response = await httpClient.PostAsync(accessTokenUrl, requestContent, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
@@ -215,19 +167,17 @@ public partial class OAuthController(
                 oauthData.UserId, oauthData.PlatformId,
                 tokenResponse.AccessToken, tokenResponse.RefreshToken, tokenResponse.ExpiresIn, tokenResponse.TokenType, tokenResponse.Scope, cancellationToken);
 
+
+            string redirectBackUri = configuration.GetSection("OAuth")["RedirectBackUrl"]
+                ?? throw new InvalidOperationException("No Redirect found");
+
             //Redirect back
-            return Redirect("https://www.ripplesync.dk/integrations");
+            return Redirect(redirectBackUri);
         }
         catch (InvalidOperationException ex)
         {
             logger.LogWarning(ex, ex.Message);
             return safeResult;
         }
-    }
-
-    private static bool IsLocalEnvironment()
-    {
-        string? env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-        return env == "Development" || env == "Local";
     }
 }
