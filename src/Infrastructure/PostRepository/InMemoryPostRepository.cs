@@ -1,78 +1,24 @@
 ﻿
+using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Posts;
 using RippleSync.Domain.Posts;
 
 namespace RippleSync.Infrastructure.PostRepository;
 
-internal class InMemoryPostRepository : IPostRepository
+internal class InMemoryPostRepository : IPostRepository, IPostQueries
 {
-
-
-    private static readonly Guid _userId = Guid.Parse("a9856986-14e4-464b-acc7-dcb84ddf9f36");
-    private static readonly List<Post> _postEntities =
-    [
-        Post.Reconstitute(Guid.NewGuid(), _userId,"My first post",DateTime.UtcNow, DateTime.UtcNow.AddDays(2),
-        [
-            new() {
-                PostId = Guid.NewGuid(),
-                UserPlatformIntegrationId = Guid.NewGuid(),
-                Status = PostStatus.Posted,
-                PlatformPostIdentifier = "123456",
-                PlatformResponse = null
-            }
-        ]),
-        Post.Reconstitute(Guid.NewGuid(), _userId,"My Scheduled post",DateTime.UtcNow, DateTime.UtcNow.AddDays(5),[
-            new() {
-                PostId = Guid.NewGuid(),
-                UserPlatformIntegrationId = Guid.NewGuid(),
-                Status = PostStatus.Scheduled,
-                PlatformPostIdentifier = "654321",
-                PlatformResponse = null
-            }
-        ]),
-        Post.Reconstitute(Guid.NewGuid(), _userId,"Stuck while processing",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
-            new() {
-                PostId = Guid.NewGuid(),
-                UserPlatformIntegrationId = Guid.NewGuid(),
-                Status = PostStatus.Processing,
-                PlatformPostIdentifier = "",
-                PlatformResponse = null
-            }
-        ]),
-        Post.Reconstitute(Guid.NewGuid(), _userId,"My post will not upload",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
-            new() {
-                PostId = Guid.NewGuid(),
-                UserPlatformIntegrationId = Guid.NewGuid(),
-                Status = PostStatus.Failed,
-                PlatformPostIdentifier = "",
-                PlatformResponse = "Error"
-            }
-        ]),
-        Post.Reconstitute(Guid.NewGuid(), _userId,"Just created this post - NOT DONE",DateTime.UtcNow, null,[
-            new() {
-                PostId = Guid.NewGuid(),
-                UserPlatformIntegrationId = Guid.NewGuid(),
-                Status = PostStatus.Draft,
-                PlatformPostIdentifier = "",
-                PlatformResponse = null
-            }
-        ])
-    ];
-
     /// <summary>
     /// In-Memory implementation of GetPostsByUserAsync
     /// Does not check userId in this in-memory implementation
-    /// 
     /// </summary>
     /// <param name="userId"></param>
     /// <param name="status"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<IEnumerable<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status, CancellationToken cancellationToken = default)
+    public Task<IEnumerable<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status, CancellationToken cancellationToken = default)
     {
-
-        var post = _postEntities.Where(post =>
+        var post = InMemoryData.Posts.Where(post =>
             status is null ||
             post.PostEvents.MaxBy(pe => pe.Status)!.Status.ToString().Equals(status, StringComparison.OrdinalIgnoreCase)
         );
@@ -86,20 +32,20 @@ internal class InMemoryPostRepository : IPostRepository
             ["Facebook", "LinkedIn"]
         ));
 
-        return response;
+        return Task.FromResult(response);
     }
-    public Task DeletePostAsync(Post post, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(Post post, CancellationToken cancellationToken = default)
     {
 
-        var postToDelete = _postEntities.Single(p => p.Id == post.Id);
+        var postToDelete = InMemoryData.Posts.Single(p => p.Id == post.Id);
 
-        _postEntities.Remove(postToDelete);
+        InMemoryData.Posts.Remove(postToDelete);
         return Task.CompletedTask;
     }
-    public async Task<Post> GetPostByIdAsync(Guid postId, CancellationToken cancellationToken = default)
+    public Task<Post?> GetByIdAsync(Guid postId, CancellationToken cancellationToken = default)
     {
-        var postEntity = _postEntities.SingleOrDefault(p => p.Id == postId);
-        return postEntity;
+        var postEntity = InMemoryData.Posts.SingleOrDefault(p => p.Id == postId);
+        return Task.FromResult<Post>(postEntity);
     }
 
 }

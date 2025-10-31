@@ -1,23 +1,22 @@
 ﻿
+using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
+using RippleSync.Domain.Posts;
 
 namespace RippleSync.Application.Posts;
 
-public class PostManager
+public class PostManager(
+    IPostRepository postRepository,
+    IPostQueries postQueries)
 {
-    private readonly IPostRepository _postRepository;
-    public PostManager(IPostRepository postRepository)
-    {
-        _postRepository = postRepository;
-    }
-    public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status)
-        => new(await _postRepository.GetPostsByUserAsync(userId, status));
+    public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status, CancellationToken cancellationToken = default)
+        => new(await postQueries.GetPostsByUserAsync(userId, status, cancellationToken));
 
     public async Task<TotalPostStatsResponse> GetPostStatForPeriodAsync(Guid userId, DateTime from, CancellationToken cancellationToken = default)
     {
         // TODO: Why is Status required here?
-        IEnumerable<GetPostsByUserResponse> posts = await _postRepository.GetPostsByUserAsync(userId, null, cancellationToken);
+        IEnumerable<GetPostsByUserResponse> posts = await postQueries.GetPostsByUserAsync(userId, null, cancellationToken);
 
         // TODO: Get stats from post via integrations
 
@@ -32,10 +31,10 @@ public class PostManager
             TotalLikes: -1);
     }
 
-    public async Task DeletePostByIdOnUser(Guid userId, Guid postId)
+    public async Task DeletePostByIdAsync(Guid userId, Guid postId, CancellationToken cancellationToken = default)
     {
         //Request post first
-        var post = await _postRepository.GetPostByIdAsync(postId);
+        Post? post = await postRepository.GetByIdAsync(postId, cancellationToken);
 
         // Check if post belongs to user and if its deletable
         if (post == null || post.UserId != userId)
@@ -48,6 +47,6 @@ public class PostManager
         }
 
         // Then delete
-        await _postRepository.DeletePostAsync(post);
+        await postRepository.DeleteAsync(post, cancellationToken);
     }
 }

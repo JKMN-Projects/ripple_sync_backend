@@ -14,25 +14,16 @@ namespace RippleSync.API.OAuth;
 [Route("api/[controller]")]
 [Authorize]
 [ApiController]
-public partial class OAuthController : ControllerBase
+public partial class OAuthController(
+    ILogger<OAuthController> logger,
+    IConfiguration configuration,
+    HybridCache cache,
+    IntegrationManager integrationManager) : ControllerBase
 {
-    private readonly ILogger<OAuthController> _logger;
-    private readonly IConfiguration _configuration;
-    private readonly HybridCache _cache;
-    private readonly IntegrationManager _integrationManager;
-
-    public OAuthController(ILogger<OAuthController> logger, IConfiguration configuration, HybridCache cache, IntegrationManager integrationManager)
-    {
-        _logger = logger;
-        _configuration = configuration;
-        _cache = cache;
-        _integrationManager = integrationManager;
-    }
-
     [HttpGet("initiate/{platformId:int}")]
     [ProducesResponseType(StatusCodes.Status302Found)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> InitiateOauthForPlatform([FromRoute][Range(1, int.MaxValue)] int platformId)
+    public async Task<IActionResult> InitiateOauthForPlatform([FromRoute][Range(1, int.MaxValue)] int platformId, CancellationToken cancellationToken = default)
     {
         IActionResult safeResult = Problem(
                 statusCode: StatusCodes.Status400BadRequest,
@@ -70,15 +61,15 @@ public partial class OAuthController : ControllerBase
         // Storing
         OAuthStateData oauthData = new(User.GetUserId(), platformId, codeVerifier);
 
-        await _cache.SetAsync(
+        await cache.SetAsync(
             $"oauth:{state}",
             oauthData,
             new HybridCacheEntryOptions
             {
                 Expiration = TimeSpan.FromMinutes(10)
-            });
+            }, cancellationToken: cancellationToken);
 
-        var secrets = _configuration.GetSection("Integrations").GetSection(platform.ToString());
+        var secrets = configuration.GetSection("Integrations").GetSection(platform.ToString());
 
         string redirectUri = IsLocalEnvironment() ? "https://localhost:7275/api/oauth/callback" : "https://api.ripplesync.dk/api/oauth/callback";
 
@@ -122,7 +113,7 @@ public partial class OAuthController : ControllerBase
     [HttpGet("callback")]
     [ProducesResponseType(StatusCodes.Status302Found)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> OAuthCallBack([FromQuery] string state, [FromQuery] string code)
+    public async Task<IActionResult> OAuthCallBack([FromQuery] string state, [FromQuery] string code, CancellationToken cancellationToken = default)
     {
         IActionResult safeResult = Problem(
                 statusCode: StatusCodes.Status400BadRequest,
@@ -134,9 +125,9 @@ public partial class OAuthController : ControllerBase
         try
         {
             // Get userId and platformId from temp storage using state recieved
-            var oauthData = await _cache.GetOrCreateAsync(
+            var oauthData = await cache.GetOrCreateAsync(
                 $"oauth:{state}",
-                async cancel => (OAuthStateData?)null) // Returns null if not found
+                async cancel => (OAuthStateData?)null, cancellationToken: cancellationToken) // Returns null if not found
                     ?? throw new InvalidOperationException("Invalid or expired state");
 
             Platforms platform = (Platforms)oauthData.PlatformId;
@@ -146,7 +137,7 @@ public partial class OAuthController : ControllerBase
             Uri? accessTokenUrl = null;
             HttpContent? requestContent = null;
 
-            var secrets = _configuration.GetSection("Integrations").GetSection(platform.ToString());
+            var secrets = configuration.GetSection("Integrations").GetSection(platform.ToString());
             string redirectUri = IsLocalEnvironment() ? "https://localhost:7275/integrations" : "https://www.ripplesync.dk/integrations";
 
             switch (platform)
@@ -199,37 +190,37 @@ public partial class OAuthController : ControllerBase
                 return safeResult;
 
             using var httpClient = new HttpClient();
-            var response = await httpClient.PostAsync(accessTokenUrl, requestContent);
+            var response = await httpClient.PostAsync(accessTokenUrl, requestContent, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
                 return Problem(
                     statusCode: (int)response.StatusCode,
                     title: "Token exchange failed",
-                    detail: await response.Content.ReadAsStringAsync());
+                    detail: await response.Content.ReadAsStringAsync(cancellationToken));
             }
 
             var tokenResponse = await JsonSerializer.DeserializeAsync<TokenResponse>(
-                await response.Content.ReadAsStreamAsync());
+                await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
 
             if (tokenResponse == null)
             {
                 return Problem("Failed to deserialize token response");
             }
 
-            await _cache.RemoveAsync($"oauth:{state}");
+            await cache.RemoveAsync($"oauth:{state}", cancellationToken);
 
             // Store
-            await _integrationManager.CreateIntegrationWithEncryption(
+            await integrationManager.CreateIntegrationWithEncryptionAsync(
                 oauthData.UserId, oauthData.PlatformId,
-                tokenResponse.AccessToken, tokenResponse.RefreshToken, tokenResponse.ExpiresIn, tokenResponse.TokenType, tokenResponse.Scope);
+                tokenResponse.AccessToken, tokenResponse.RefreshToken, tokenResponse.ExpiresIn, tokenResponse.TokenType, tokenResponse.Scope, cancellationToken);
 
             //Redirect back
             return Redirect("https://www.ripplesync.dk/integrations");
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, ex.Message);
+            logger.LogWarning(ex, ex.Message);
             return safeResult;
         }
     }

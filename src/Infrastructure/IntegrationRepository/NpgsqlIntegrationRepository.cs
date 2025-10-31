@@ -1,43 +1,17 @@
 ﻿using Npgsql;
+using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Integrations;
+using RippleSync.Application.Platforms;
+using RippleSync.Domain.Integrations;
 using RippleSync.Infrastructure.IntegrationRepository.Entities;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 
 namespace RippleSync.Infrastructure.IntegrationRepository;
-internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IIntegrationRepository
+internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IIntegrationRepository, IIntegrationQueries
 {
-    public async Task<IEnumerable<IntegrationResponse>> GetIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
-    {
-        var getIntegrationsQuery =
-            @"SELECT 
-                p.id,
-                p.platform_name AS name,
-                CASE WHEN upi.id IS NOT NULL THEN true ELSE false END AS connected,
-                p.platform_description AS description,
-                p.image_url AS ""imageUrl""
-            FROM platform p
-            LEFT JOIN user_platform_integration upi 
-                ON p.id = upi.platform_id 
-                AND upi.user_account_id = @userId
-            ORDER BY p.platform_name;";
-
-        IEnumerable<IntegrationEntity> integrationEntities = [];
-
-        try
-        {
-            integrationEntities = await dbConnection.QueryAsync<IntegrationEntity>(getIntegrationsQuery, param: new { userId }, ct: cancellationToken);
-        }
-        catch (Exception e)
-        {
-            ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
-        }
-
-        return integrationEntities.Any() ? integrationEntities.Select(i => new IntegrationResponse(i.Id, i.Name, i.Description, i.Connected, i.ImageUrl)) : [];
-    }
-
-    public async Task<IEnumerable<UserIntegrationResponse>> GetUserIntegrations(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ConnectedIntegrationsResponse>> GetConnectedIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var getIntegrationsQuery =
             @"SELECT 
@@ -60,12 +34,12 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
 
-        return userIntegrationEntites.Any() ? userIntegrationEntites.Select(i => new UserIntegrationResponse(i.Id, i.Name)) : [];
+        return userIntegrationEntites.Any() ? userIntegrationEntites.Select(i => new ConnectedIntegrationsResponse(i.Id, i.Name)) : [];
     }
 
-    public async Task CreateIntegration(Guid userId, int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope, CancellationToken cancellationToken = default)
+    public async Task CreateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        var userPlatformIntegration = UserPlatformIntegrationEntity.New(userId, platformId, accessToken);
+        var userPlatformIntegration = UserPlatformIntegrationEntity.New(integration.UserId, integration.PlatformId, integration.AccessToken);
 
         try
         {
@@ -81,7 +55,7 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
         }
     }
 
-    public async Task DeleteIntegration(Guid userId, int platformId, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid userId, int platformId, CancellationToken cancellationToken = default)
     {
         var userPlatformIntegration = UserPlatformIntegrationEntity.New(userId, platformId);
 
@@ -98,4 +72,5 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
     }
+
 }

@@ -21,7 +21,7 @@ public static partial class UserRepositoryDoubles
     public class Dummy : IUserRepository
     {
         public virtual Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-        public virtual Task<Guid> InsertUserAsync(User user, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public virtual Task<Guid> InsertAsync(User user, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }
 
     public class Composite : IUserRepository
@@ -45,15 +45,15 @@ public static partial class UserRepositoryDoubles
                 return _second.GetUserByEmailAsync(email, cancellationToken);
             }
         }
-        public Task<Guid> InsertUserAsync(User user, CancellationToken cancellationToken = default)
+        public Task<Guid> InsertAsync(User user, CancellationToken cancellationToken = default)
         {
             try
             {
-                return _first.InsertUserAsync(user, cancellationToken);
+                return _first.InsertAsync(user, cancellationToken);
             }
             catch (NotImplementedException)
             {
-                return _second.InsertUserAsync(user, cancellationToken);
+                return _second.InsertAsync(user, cancellationToken);
             }
         }
     }
@@ -84,7 +84,7 @@ public static partial class UserRepositoryDoubles
         {
             public class AlwaysReturnsNewGuid : Dummy
             {
-                public override Task<Guid> InsertUserAsync(User user, CancellationToken cancellationToken = default) 
+                public override Task<Guid> InsertAsync(User user, CancellationToken cancellationToken = default) 
                     => Task.FromResult(Guid.NewGuid());
             }
         }
@@ -121,11 +121,11 @@ public static partial class UserRepositoryDoubles
             {
                 this.spiedRepository = spiedRepository;
             }
-            public override Task<Guid> InsertUserAsync(User user, CancellationToken cancellationToken = default)
+            public override Task<Guid> InsertAsync(User user, CancellationToken cancellationToken = default)
             {
                 LastReceivedUser = user;
                 InvokationCount++;
-                return spiedRepository.InsertUserAsync(user, cancellationToken);
+                return spiedRepository.InsertAsync(user, cancellationToken);
             }
         }
     }

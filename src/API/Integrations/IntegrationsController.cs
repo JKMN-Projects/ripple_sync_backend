@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using RippleSync.API.Common.Extensions;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Integrations;
+using RippleSync.Application.Platforms;
 using System.ComponentModel.DataAnnotations;
 
 namespace RippleSync.API.Integrations;
@@ -22,23 +23,23 @@ public partial class IntegrationsController : ControllerBase
     }
 
     [HttpGet("")]
-    [ProducesResponseType<ListResponse<IntegrationResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ListResponse<PlatformWithUserIntegrationResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetIntegrations()
     {
         Guid userId = User.GetUserId();
 
-        var response = await _integrationManager.GetIntegrations(userId);
+        var response = await _integrationManager.GetPlatformsWithUserIntegrationsAsync(userId);
 
         return Ok(response);
     }
 
     [HttpGet("user")]
-    [ProducesResponseType<ListResponse<UserIntegrationResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ListResponse<ConnectedIntegrationsResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUserIntegrations()
     {
         Guid userId = User.GetUserId();
 
-        var response = await _integrationManager.GetUserIntegrations(userId);
+        var response = await _integrationManager.GetConnectedIntegrationsAsync(userId);
 
         return Ok(response);
     }
@@ -79,7 +80,7 @@ public partial class IntegrationsController : ControllerBase
     {
         Guid userId = User.GetUserId();
 
-        await _integrationManager.DeleteIntegration(userId, platformId);
+        await _integrationManager.DeleteIntegrationAsync(userId, platformId);
 
         return NoContent();
     }

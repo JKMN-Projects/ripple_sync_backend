@@ -1,26 +1,22 @@
-﻿using RippleSync.Application.Common.Repositories;
+﻿using RippleSync.Application.Common.Queries;
+using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Integrations;
-using System;
+using RippleSync.Domain.Integrations;
 
 namespace RippleSync.Infrastructure.IntegrationRepository;
 
-public class InMemoryIntegrationRepository : IIntegrationRepository
+public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegrationQueries
 {
-    public record Integration(int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope);
+    public Task<IEnumerable<ConnectedIntegrationsResponse>> GetConnectedIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
+        => Task.FromResult(InMemoryData.IntegrationResponses.Select(i => new ConnectedIntegrationsResponse(i.PlatformId, i.Name)));
 
-    public Task<IEnumerable<IntegrationResponse>> GetIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IEnumerable<IntegrationResponse>>(InMemoryData.IntegrationResponses);
-
-    public Task<IEnumerable<UserIntegrationResponse>> GetUserIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
-        => Task.FromResult(InMemoryData.IntegrationResponses.Select(i => new UserIntegrationResponse(i.PlatformId, i.Name)));
-
-    public Task CreateIntegrationAsync(Guid userId, int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope, CancellationToken cancellationToken = default)
+    public Task CreateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        UpdateIntegration(platformId, true);
+        UpdateIntegration(integration.PlatformId, true);
         return Task.CompletedTask;
     }
 
-    public Task DeleteIntegrationAsync(Guid userId, int platformId, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(Guid userId, int platformId, CancellationToken cancellationToken = default)
     {
         UpdateIntegration(platformId, false);
         return Task.CompletedTask;

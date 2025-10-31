@@ -22,7 +22,7 @@ public sealed class AuthenticationController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType<AuthenticationTokenResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken = default)
     {
         IActionResult safeResult = Problem(
                 statusCode: StatusCodes.Status400BadRequest,
@@ -31,7 +31,7 @@ public sealed class AuthenticationController : ControllerBase
 
         try
         {
-            AuthenticationTokenResponse tokenResponse = await _userManager.GetAuthenticationTokenAsync(request.Email, request.Password);
+            AuthenticationTokenResponse tokenResponse = await _userManager.GetAuthenticationTokenAsync(request.Email, request.Password, cancellationToken);
             HttpContext.Response.Cookies.Append("AccessToken", tokenResponse.Token, new CookieOptions
             {
                 //Expires = DateTimeOffset.FromUnixTimeMilliseconds(tokenResponse.ExpiresAt).UtcDateTime,
