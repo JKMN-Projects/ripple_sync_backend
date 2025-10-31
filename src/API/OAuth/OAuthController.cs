@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Hybrid;
 using RippleSync.API.Common.Extensions;
-using RippleSync.API.OAuth;
 using RippleSync.Application.Integrations;
 using RippleSync.Domain.Platforms;
 using System.ComponentModel.DataAnnotations;
@@ -10,9 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace RippleSync.API.Integrations;
-
-
+namespace RippleSync.API.OAuth;
 
 [Route("api/[controller]")]
 [Authorize]
