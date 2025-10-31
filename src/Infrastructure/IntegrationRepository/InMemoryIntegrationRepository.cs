@@ -7,12 +7,12 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
 {
     public record Integration(int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope);
     public async Task<IEnumerable<IntegrationResponse>> GetIntegrations(Guid userId, CancellationToken cancellationToken = default)
-        => _integrations;
+        => InMemoryData.IntegrationResponses;
 
     public async Task<IEnumerable<UserIntegrationResponse>> GetUserIntegrations(Guid userId, CancellationToken cancellationToken = default)
-        => _integrations.Select(i => new UserIntegrationResponse(i.PlatformId, i.Name));
+        => InMemoryData.IntegrationResponses.Select(i => new UserIntegrationResponse(i.PlatformId, i.Name));
 
-    public async Task CreateIntegration(Guid userId, int platformId, string accessToken, CancellationToken cancellationToken = default)
+    public async Task CreateIntegration(Guid userId, int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope, CancellationToken cancellationToken = default)
         => await UpdateIntegration(platformId, true);
 
     public async Task DeleteIntegration(Guid userId, int platformId, CancellationToken cancellationToken = default)
@@ -24,7 +24,7 @@ public class InMemoryIntegrationRepository : IIntegrationRepository
 
         if (toEdit == null) return;
 
-        var toEditIndex = _integrations.IndexOf(toEdit);
-        _integrations[toEditIndex] = toEdit with { Connected = connected };
+        var toEditIndex = InMemoryData.IntegrationResponses.IndexOf(toEdit);
+        InMemoryData.IntegrationResponses[toEditIndex] = toEdit with { Connected = connected };
     }
 }

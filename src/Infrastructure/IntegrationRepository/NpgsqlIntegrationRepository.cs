@@ -63,7 +63,7 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
         return userIntegrationEntites.Any() ? userIntegrationEntites.Select(i => new UserIntegrationResponse(i.Id, i.Name)) : [];
     }
 
-    public async Task CreateIntegration(Guid userId, int platformId, string accessToken, CancellationToken cancellationToken = default)
+    public async Task CreateIntegration(Guid userId, int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope, CancellationToken cancellationToken = default)
     {
         var userPlatformIntegration = UserPlatformIntegrationEntity.New(userId, platformId, accessToken);
 
