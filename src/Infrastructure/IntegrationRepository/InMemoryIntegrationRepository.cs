@@ -7,19 +7,26 @@ namespace RippleSync.Infrastructure.IntegrationRepository;
 public class InMemoryIntegrationRepository : IIntegrationRepository
 {
     public record Integration(int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope);
-    public async Task<IEnumerable<IntegrationResponse>> GetIntegrations(Guid userId, CancellationToken cancellationToken = default)
-        => InMemoryData.IntegrationResponses;
 
-    public async Task<IEnumerable<UserIntegrationResponse>> GetUserIntegrations(Guid userId, CancellationToken cancellationToken = default)
-        => InMemoryData.IntegrationResponses.Select(i => new UserIntegrationResponse(i.PlatformId, i.Name));
+    public Task<IEnumerable<IntegrationResponse>> GetIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IEnumerable<IntegrationResponse>>(InMemoryData.IntegrationResponses);
 
-    public async Task CreateIntegration(Guid userId, int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope, CancellationToken cancellationToken = default)
-        => await UpdateIntegration(platformId, true);
+    public Task<IEnumerable<UserIntegrationResponse>> GetUserIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
+        => Task.FromResult(InMemoryData.IntegrationResponses.Select(i => new UserIntegrationResponse(i.PlatformId, i.Name)));
 
-    public async Task DeleteIntegration(Guid userId, int platformId, CancellationToken cancellationToken = default)
-        => await UpdateIntegration(platformId, false);
+    public Task CreateIntegrationAsync(Guid userId, int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope, CancellationToken cancellationToken = default)
+    {
+        UpdateIntegration(platformId, true);
+        return Task.CompletedTask;
+    }
 
-    private async Task UpdateIntegration(int platformId, bool connected)
+    public Task DeleteIntegrationAsync(Guid userId, int platformId, CancellationToken cancellationToken = default)
+    {
+        UpdateIntegration(platformId, false);
+        return Task.CompletedTask;
+    }
+
+    private static void UpdateIntegration(int platformId, bool connected)
     {
         var toEdit = InMemoryData.IntegrationResponses.FirstOrDefault(i => i.PlatformId == platformId);
 

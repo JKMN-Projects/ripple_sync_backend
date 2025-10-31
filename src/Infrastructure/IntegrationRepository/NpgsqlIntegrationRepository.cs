@@ -8,7 +8,7 @@ using RippleSync.Infrastructure.JukmanORM.Extensions;
 namespace RippleSync.Infrastructure.IntegrationRepository;
 internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IIntegrationRepository
 {
-    public async Task<IEnumerable<IntegrationResponse>> GetIntegrations(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<IntegrationResponse>> GetIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var getIntegrationsQuery =
             @"SELECT 
