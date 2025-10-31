@@ -20,7 +20,7 @@ internal class InMemoryData
         Integration.Reconstitute(
             Guid.NewGuid(),
             _userId,
-            (int)Platform.X,
+            Platform.X,
             "",
             "",
             DateTime.UtcNow.AddHours(1),
@@ -30,7 +30,7 @@ internal class InMemoryData
         Integration.Reconstitute(
             Guid.NewGuid(),
             _userId,
-            (int)Platform.LinkedIn,
+            Platform.LinkedIn,
             "",
             "",
             DateTime.UtcNow.AddHours(2),

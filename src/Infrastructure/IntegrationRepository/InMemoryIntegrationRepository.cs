@@ -2,6 +2,7 @@
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Integrations;
 using RippleSync.Domain.Integrations;
+using RippleSync.Domain.Platforms;
 
 namespace RippleSync.Infrastructure.IntegrationRepository;
 
@@ -12,19 +13,19 @@ public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegratio
 
     public Task CreateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        UpdateIntegration(integration.PlatformId, true);
+        UpdateIntegration(integration.Platform, true);
         return Task.CompletedTask;
     }
 
-    public Task DeleteAsync(Guid userId, int platformId, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(Guid userId, Platform platform, CancellationToken cancellationToken = default)
     {
-        UpdateIntegration(platformId, false);
+        UpdateIntegration(platform, false);
         return Task.CompletedTask;
     }
 
-    private static void UpdateIntegration(int platformId, bool connected)
+    private static void UpdateIntegration(Platform platform, bool connected)
     {
-        var toEdit = InMemoryData.IntegrationResponses.FirstOrDefault(i => i.PlatformId == platformId);
+        var toEdit = InMemoryData.IntegrationResponses.FirstOrDefault(i => i.PlatformId == (int)platform);
 
         if (toEdit == null) return;
 

@@ -4,6 +4,7 @@ using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
+using RippleSync.Domain.Platforms;
 
 namespace RippleSync.Application.Integrations;
 public sealed class IntegrationManager(
@@ -29,14 +30,18 @@ public sealed class IntegrationManager(
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(accessToken)) throw new ArgumentNullException(nameof(accessToken));
+        if (!Enum.IsDefined(typeof(Platform), platformId))
+        {
+            throw new ArgumentOutOfRangeException(nameof(platformId), "Invalid platform ID");
+        }
 
         /// ENCRYPT ACCESSTOKEN HERE
         DateTime expiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
 
-        Integration integration = Integration.Create(userId, platformId, accessToken, refreshToken, expiresAt, tokenType, scope);
+        Integration integration = Integration.Create(userId, (Platform)platformId, accessToken, refreshToken, expiresAt, tokenType, scope);
         await integrationRepo.CreateAsync(integration, cancellationToken);
     }
 
-    public async Task DeleteIntegrationAsync(Guid userId, int platformId, CancellationToken cancellationToken = default)
-        => await integrationRepo.DeleteAsync(userId, platformId, cancellationToken);
+    public async Task DeleteIntegrationAsync(Guid userId, Platform platform, CancellationToken cancellationToken = default)
+        => await integrationRepo.DeleteAsync(userId, platform, cancellationToken);
 }

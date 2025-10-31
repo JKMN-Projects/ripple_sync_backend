@@ -4,6 +4,7 @@ using RippleSync.API.Common.Extensions;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Integrations;
 using RippleSync.Application.Platforms;
+using RippleSync.Domain.Platforms;
 using System.ComponentModel.DataAnnotations;
 
 namespace RippleSync.API.Integrations;
@@ -79,8 +80,16 @@ public partial class IntegrationsController : ControllerBase
     public async Task<IActionResult> DeleteIntegration([FromRoute][Range(1, int.MaxValue)] int platformId)
     {
         Guid userId = User.GetUserId();
+        if (!Enum.IsDefined(typeof(Platform), platformId))
+        {
+            _logger.LogWarning("Invalid platform ID: {PlatformId}", platformId);
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Invalid request.",
+                detail: "Invalid Platform ID");
+        }
 
-        await _integrationManager.DeleteIntegrationAsync(userId, platformId);
+        await _integrationManager.DeleteIntegrationAsync(userId, (Platform)platformId);
 
         return NoContent();
     }

@@ -2,13 +2,16 @@
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
+using RippleSync.Application.Platforms;
+using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
 
 namespace RippleSync.Application.Posts;
 
 public class PostManager(
     IPostRepository postRepository,
-    IPostQueries postQueries)
+    IPostQueries postQueries,
+    IPlatformFactory platformFactory)
 {
     public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status, CancellationToken cancellationToken = default)
         => new(await postQueries.GetPostsByUserAsync(userId, status, cancellationToken));
@@ -17,8 +20,13 @@ public class PostManager(
     {
         // TODO: Why is Status required here?
         IEnumerable<GetPostsByUserResponse> posts = await postQueries.GetPostsByUserAsync(userId, null, cancellationToken);
+        IEnumerable<Integration> userIntegrations = []; // TODO: Get user integrations 
 
-        // TODO: Get stats from post via integrations
+        foreach (var integration in userIntegrations)
+        {
+            IPlatform platform = platformFactory.Create(integration.Platform);
+            PlatformStats stats = await platform.GetInsightsFromIntegrationAsync(integration);
+        }
 
         int publishedPosts = posts.Count(p => p.StatusName.Equals("Published", StringComparison.OrdinalIgnoreCase));
         int scheduledPosts = posts.Count(p => p.StatusName.Equals("Scheduled", StringComparison.OrdinalIgnoreCase));

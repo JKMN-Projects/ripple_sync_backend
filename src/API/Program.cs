@@ -2,7 +2,9 @@ using DbMigrator;
 using Microsoft.Extensions.Caching.Hybrid;
 using RippleSync.API.Authentication;
 using RippleSync.API.Common.Middleware;
+using RippleSync.API.Platforms;
 using RippleSync.Application;
+using RippleSync.Application.Platforms;
 using RippleSync.Infrastructure;
 using RippleSync.Infrastructure.Security;
 using Serilog;
@@ -51,6 +53,8 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandling>();
 
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructure(connString);
+
+builder.Services.AddSingleton<IPlatformFactory, DependencyInjectionPlatformFactory>();
 
 builder.Services.AddOptions<PasswordHasherOptions>()
     .Bind(builder.Configuration.GetSection("PasswordHasher"))

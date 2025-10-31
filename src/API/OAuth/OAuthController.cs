@@ -40,7 +40,74 @@ public partial class OAuthController(
 
         Platform platform = (Platform)platformId;
 
-        
+        //URL of platform OAuth
+        Uri? authorizationUrl = null;
+
+        string state = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        string codeVerifier = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+
+        string codeChallenge;
+        using (var sha256 = SHA256.Create())
+        {
+            byte[] challengeBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(codeVerifier));
+            codeChallenge = Convert.ToBase64String(challengeBytes)
+                .TrimEnd('=')
+                .Replace('+', '-')
+                .Replace('/', '_');
+        }
+
+        //Save userId and platformId in temp storage using new state generated
+        // Storing
+        OAuthStateData oauthData = new(User.GetUserId(), platformId, codeVerifier);
+
+        await cache.SetAsync(
+            $"oauth:{state}",
+            oauthData,
+            new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(10)
+            }, cancellationToken: cancellationToken);
+
+        var secrets = configuration.GetSection("Integrations").GetSection(platform.ToString());
+
+        string redirectUri = configuration.GetSection("OAuth")["RedirectUrl"]
+                ?? throw new InvalidOperationException("No Redirect found");
+                
+        switch (platform)
+        {
+            //Provide state and more to OAuth.
+
+            case Platform.X:
+                string clientId = secrets["ClientId"]
+                    ?? throw new InvalidOperationException("No ClientId found for X");
+
+                QueryString queries = new QueryString()
+                    .Add("response_type", "code")
+                    .Add("client_id", clientId)
+                    .Add("redirect_uri", redirectUri)
+                    .Add("scope", "tweet.read+tweet.write+users.read+offline.access")
+                    .Add("state", state)
+                    .Add("code_challenge", codeChallenge)
+                    .Add("code_challenge_method", "S256");
+
+                authorizationUrl = new Uri("https://x.com/i/oauth2/authorize" + queries.ToUriComponent());
+                break;
+            case Platform.LinkedIn:
+                break;
+            case Platform.Facebook:
+                break;
+            case Platform.Instagram:
+                break;
+            case Platform.Threads:
+                break;
+            default:
+                return safeResult;
+        }
+
+        if (authorizationUrl == null) return safeResult;
 
         //Frontend handles redirect, frontend can create a better redirect experience, with loading and such
         return Ok(new { redirectUrl = authorizationUrl.ToString() });
