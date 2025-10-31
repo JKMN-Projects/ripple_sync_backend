@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-
+using RippleSync.Application.Common.Security;
 namespace RippleSync.Infrastructure.Security;
-internal class OAuthHasher
+internal class OAuthSecurer : IOAuthSecurer
 {
     public (string State, string CodeVerifier, string CodeChallenge) GetOAuthStateAndCodes()
     {
@@ -23,5 +19,10 @@ internal class OAuthHasher
             .Replace('/', '_');
 
         return (state, codeVerifier, codeChallenge);
+    }
+
+    public Task EncryptToken(string token)
+    {
+        return Task.CompletedTask;
     }
 }

@@ -3,8 +3,10 @@ using Npgsql;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
+using RippleSync.Application.Platforms;
 using RippleSync.Infrastructure.IntegrationRepository;
 using RippleSync.Infrastructure.PlatformRepository;
+using RippleSync.Infrastructure.Platforms;
 using RippleSync.Infrastructure.PostRepository;
 using RippleSync.Infrastructure.Security;
 using RippleSync.Infrastructure.UserRepository;
@@ -17,6 +19,11 @@ public static class DependencyInjection
     {
         services.AddSingleton<IPasswordHasher, Rfc2898PasswordHasher>();
         services.AddSingleton<IAuthenticationTokenProvider, JwtTokenProvider>();
+
+        services.AddSingleton<IOAuthSecurer, OAuthSecurer>();
+
+        services.AddScoped<ISoMePlatform, SoMePlatformLinkedIn>();
+        services.AddScoped<ISoMePlatform, SoMePlatformX>();
 
         services.AddScoped<NpgsqlConnection>(sp => new NpgsqlConnection(connectionString));
 

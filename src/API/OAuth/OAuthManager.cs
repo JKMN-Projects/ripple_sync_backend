@@ -1,100 +1,94 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
+using RippleSync.Application.Common.Security;
+using RippleSync.Application.Integrations;
+using RippleSync.Application.Platforms;
 using RippleSync.Domain.Platforms;
 using RippleSync.Domain.Users;
 using System;
+using System.Text.Json;
 using System.Threading;
 
 namespace RippleSync.API.OAuth;
 
-public class OAuthManager
+public class OAuthManager(
+    IConfiguration configuration,
+    HybridCache cache,
+    IOAuthSecurer oauthSecurer,
+    IPlatformFactory platformFactory,
+    IntegrationManager integrationManager)
 {
-    public async Task SaveToCache()
+    public async Task<string> GetAuthorizationUrl(Guid userId, Platform platform, CancellationToken cancellationToken = default)
     {
-        await cache.SetAsync(
-            $"oauth:{state}",
-            oauthData,
-            new HybridCacheEntryOptions
-            {
-                Expiration = TimeSpan.FromMinutes(10)
-            }, cancellationToken: cancellationToken);
+        ISoMePlatform soMePlatform = platformFactory.Create(platform);
 
+        var (state, codeVerifier, codeChallenge) = oauthSecurer.GetOAuthStateAndCodes();
+
+        var secrets = configuration.GetSection("Integrations").GetSection(platform.ToString() ?? "")
+                ?? throw new InvalidOperationException("No secrets found for " + platform.ToString());
+
+        string redirectUri = configuration.GetSection("OAuth")["RedirectUrl"]
+                ?? throw new InvalidOperationException("No Redirect found");
+
+        string clientId = secrets["ClientId"]
+                   ?? throw new InvalidOperationException("No ClientId found for X");
+
+        AuthorizationConfiguration authConfigs = new AuthorizationConfiguration(clientId, redirectUri, state, codeChallenge);
+
+        var authUrl = soMePlatform.GetAuthorizationUrl(authConfigs);
+
+        await this.SaveToCache(state, new OAuthStateData(userId, (int)platform, codeVerifier), cancellationToken);
+
+        return authUrl;
     }
-    public async TokenResponse LoadFromCache()
+
+    public async Task StoreToken(string state, string code, CancellationToken cancellationToken = default)
     {
+        var authData = await LoadFromCache(state, cancellationToken);
+        await cache.RemoveAsync($"oauth:{state}", cancellationToken);
+        
+        var platform = (Platform)authData.PlatformId;
+        ISoMePlatform soMePlatform = platformFactory.Create(platform);
 
-    }
-
-    public async GetPlatformAuthorizationUrl()
-    {
-        //URL of platform OAuth
-        Uri? authorizationUrl = null;
-
-        //Save userId and platformId in temp storage using new state generated
-        // Storing
-        OAuthStateData oauthData = new(User.GetUserId(), platformId, codeVerifier);
-
-        await cache.SetAsync(
-            $"oauth:{state}",
-            oauthData,
-            new HybridCacheEntryOptions
-            {
-                Expiration = TimeSpan.FromMinutes(10)
-            }, cancellationToken: cancellationToken);
-
-        var secrets = configuration.GetSection("Integrations").GetSection(platform.ToString());
+        var secrets = configuration.GetSection("Integrations").GetSection(platform.ToString() ?? "");
 
         string redirectUri = configuration.GetSection("OAuth")["RedirectUrl"]
             ?? throw new InvalidOperationException("No Redirect found");
 
-        string clientId;
-        QueryString queries;
+        string clientId = secrets["ClientId"]
+            ?? throw new InvalidOperationException("No ClientId found for X");
 
-        switch (platform)
-        {
-            //Provide state and more to OAuth.
+        string clientSecret = secrets["ClientSecret"]
+                    ?? throw new InvalidOperationException("No ClientSecret found for X");
 
-            case Platform.X:
-                clientId = secrets["ClientId"]
-                    ?? throw new InvalidOperationException("No ClientId found for X");
+        TokenAccessConfiguration tokenConfigs = new TokenAccessConfiguration(clientId, clientSecret, redirectUri, code, authData.CodeVerifier);
 
-                queries = new QueryString()
-                    .Add("response_type", "code")
-                    .Add("client_id", clientId)
-                    .Add("redirect_uri", redirectUri)
-                    .Add("scope", "tweet.read+tweet.write+users.read+offline.access")
-                    .Add("state", state)
-                    .Add("code_challenge", codeChallenge)
-                    .Add("code_challenge_method", "S256");
+        var tokenResponse = await soMePlatform.GetTokenUrlAsync(tokenConfigs, cancellationToken);
 
-                authorizationUrl = new Uri("https://x.com/i/oauth2/authorize" + queries.ToUriComponent());
-                break;
-            case Platform.LinkedIn:
-                clientId = secrets["ClientId"]
-                    ?? throw new InvalidOperationException("No ClientId found for X");
+        await integrationManager.CreateIntegrationWithEncryptionAsync(
+                authData.UserId, authData.PlatformId,
+                tokenResponse, cancellationToken);
 
-                queries = new QueryString()
-                    .Add("response_type", "code")
-                    .Add("client_id", clientId)
-                    .Add("redirect_uri", redirectUri)
-                    .Add("scope", "w_member_social")
-                    .Add("state", state)
-                    .Add("code_challenge", codeChallenge)
-                    .Add("code_challenge_method", "S256");
+    }
 
-                authorizationUrl = new Uri("https://www.linkedin.com/oauth/v2/authorization" + queries.ToUriComponent());
-                break;
-            case Platform.Facebook:
-                break;
-            case Platform.Instagram:
-                break;
-            case Platform.Threads:
-                break;
-            default:
-                return safeResult;
-        }
+    private async Task SaveToCache(string state, OAuthStateData oauthData, CancellationToken cancellationToken = default)
+    {
+        await cache.SetAsync(
+            $"oauth:{state}",
+            oauthData,
+            new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(10)
+            }, cancellationToken: cancellationToken);
 
-        if (authorizationUrl == null) return safeResult;
+    }
+
+    private async Task<OAuthStateData> LoadFromCache(string state, CancellationToken cancellationToken = default)
+    {
+        return await cache.GetOrCreateAsync(
+                $"oauth:{state}",
+                async cancel => (OAuthStateData?)null, cancellationToken: cancellationToken) // Returns null if not found
+                    ?? throw new InvalidOperationException("Invalid or expired state");
     }
 }

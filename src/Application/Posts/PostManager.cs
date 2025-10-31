@@ -24,7 +24,7 @@ public class PostManager(
 
         foreach (var integration in userIntegrations)
         {
-            IPlatform platform = platformFactory.Create(integration.Platform);
+            ISoMePlatform platform = platformFactory.Create(integration.Platform);
             PlatformStats stats = await platform.GetInsightsFromIntegrationAsync(integration);
         }
 

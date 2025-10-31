@@ -22,23 +22,19 @@ public sealed class IntegrationManager(
     public async Task CreateIntegrationWithEncryptionAsync(
         Guid userId,
         int platformId,
-        string accessToken,
-        string? refreshToken,
-        int expiresIn,
-        string tokenType,
-        string scope,
+        TokenResponse tokenResponse,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(accessToken)) throw new ArgumentNullException(nameof(accessToken));
+        if (string.IsNullOrWhiteSpace(tokenResponse.AccessToken)) throw new ArgumentNullException(nameof(tokenResponse));
         if (!Enum.IsDefined(typeof(Platform), platformId))
         {
             throw new ArgumentOutOfRangeException(nameof(platformId), "Invalid platform ID");
         }
 
         /// ENCRYPT ACCESSTOKEN HERE
-        DateTime expiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
+        DateTime expiresAt = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
 
-        Integration integration = Integration.Create(userId, (Platform)platformId, accessToken, refreshToken, expiresAt, tokenType, scope);
+        Integration integration = Integration.Create(userId, (Platform)platformId, tokenResponse.AccessToken, tokenResponse.RefreshToken, expiresAt, tokenResponse.TokenType, tokenResponse.Scope);
         await integrationRepo.CreateAsync(integration, cancellationToken);
     }
 
