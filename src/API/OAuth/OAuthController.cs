@@ -33,7 +33,7 @@ public partial class OAuthController : ControllerBase
     }
 
     [HttpGet("initiate/{platformId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status302Found)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> InitiateOauthForPlatform([FromRoute][Range(1, int.MaxValue)] int platformId)
     {
@@ -119,11 +119,11 @@ public partial class OAuthController : ControllerBase
         if (authorizationUrl == null) return safeResult;
 
         //Frontend handles redirect, frontend can create a better redirect experience, with loading and such
-        return Ok(new { redirectUrl = authorizationUrl.ToString() });
+        return Redirect(authorizationUrl.ToString());
     }
 
     [HttpGet("callback")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status302Found)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> OAuthCallBack([FromQuery] string state, [FromQuery] string code)
     {
