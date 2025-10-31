@@ -48,10 +48,6 @@ public class PostManager
         }
 
         // Then delete
-        await _postRepository.DeletePost(post);
+        await _postRepository.DeletePostAsync(post);
     }
-
-
-
-
 }
