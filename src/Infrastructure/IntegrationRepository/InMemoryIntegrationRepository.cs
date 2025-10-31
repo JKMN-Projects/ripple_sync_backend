@@ -3,6 +3,7 @@ using RippleSync.Application.Integrations;
 using System;
 
 namespace RippleSync.Infrastructure.IntegrationRepository;
+
 public class InMemoryIntegrationRepository : IIntegrationRepository
 {
     public record Integration(int platformId, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope);

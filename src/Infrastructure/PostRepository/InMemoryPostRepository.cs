@@ -9,10 +9,10 @@ internal class InMemoryPostRepository : IPostRepository
 {
 
 
-    private static Guid _userId = Guid.Parse("a9856986-14e4-464b-acc7-dcb84ddf9f36");
+    private static readonly Guid _userId = Guid.Parse("a9856986-14e4-464b-acc7-dcb84ddf9f36");
     private static readonly List<Post> _postEntities =
     [
-        new (_userId,"My first post",DateTime.UtcNow, DateTime.UtcNow.AddDays(2),
+        Post.Reconstitute(Guid.NewGuid(), _userId,"My first post",DateTime.UtcNow, DateTime.UtcNow.AddDays(2),
         [
             new() {
                 PostId = Guid.NewGuid(),
@@ -22,7 +22,7 @@ internal class InMemoryPostRepository : IPostRepository
                 PlatformResponse = null
             }
         ]),
-        new (_userId,"My Scheduled post",DateTime.UtcNow, DateTime.UtcNow.AddDays(5),[
+        Post.Reconstitute(Guid.NewGuid(), _userId,"My Scheduled post",DateTime.UtcNow, DateTime.UtcNow.AddDays(5),[
             new() {
                 PostId = Guid.NewGuid(),
                 UserPlatformIntegrationId = Guid.NewGuid(),
@@ -31,7 +31,7 @@ internal class InMemoryPostRepository : IPostRepository
                 PlatformResponse = null
             }
         ]),
-        new (_userId,"Stuck while processing",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
+        Post.Reconstitute(Guid.NewGuid(), _userId,"Stuck while processing",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
             new() {
                 PostId = Guid.NewGuid(),
                 UserPlatformIntegrationId = Guid.NewGuid(),
@@ -40,7 +40,7 @@ internal class InMemoryPostRepository : IPostRepository
                 PlatformResponse = null
             }
         ]),
-        new (_userId,"My post will not upload",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
+        Post.Reconstitute(Guid.NewGuid(), _userId,"My post will not upload",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
             new() {
                 PostId = Guid.NewGuid(),
                 UserPlatformIntegrationId = Guid.NewGuid(),
@@ -49,7 +49,7 @@ internal class InMemoryPostRepository : IPostRepository
                 PlatformResponse = "Error"
             }
         ]),
-        new (_userId,"Just created this post - NOT DONE",DateTime.UtcNow, null,[
+        Post.Reconstitute(Guid.NewGuid(), _userId,"Just created this post - NOT DONE",DateTime.UtcNow, null,[
             new() {
                 PostId = Guid.NewGuid(),
                 UserPlatformIntegrationId = Guid.NewGuid(),

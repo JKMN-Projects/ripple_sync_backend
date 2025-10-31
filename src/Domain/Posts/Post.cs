@@ -3,21 +3,45 @@ namespace RippleSync.Domain.Posts;
 
 public class Post
 {
-    public Guid Id { get; set; }
-    public Guid UserId { get; set; }
-    public string MessageContent { get; set; } = string.Empty;
-    public DateTime UpdatedAt { get; set; }
-    public DateTime? ScheduledFor { get; set; }
-    public IEnumerable<PostEvent> PostEvents { get; set; }
+    public Guid Id { get; private set; }
+    public Guid UserId { get; private set; }
+    public string MessageContent { get; private set; } = string.Empty;
+    public DateTime UpdatedAt { get; private set; }
+    public DateTime? ScheduledFor { get; private set; }
+    public IEnumerable<PostEvent> PostEvents { get; private set; }
 
-    public Post(Guid UserId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents)
+    private Post(Guid id, Guid userId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents)
     {
-        Id = Guid.NewGuid();
-        this.UserId = UserId;
+        Id = id;
+        UserId = userId;
         MessageContent = messageContent;
         UpdatedAt = updatedAt;
         ScheduledFor = scheduledFor;
         PostEvents = postsEvents;
+    }
+
+    public static Post Create(Guid userId, string messageContent, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents)
+    {
+        return new Post(
+            id: Guid.NewGuid(),
+            userId: userId,
+            messageContent: messageContent,
+            updatedAt: DateTime.UtcNow,
+            scheduledFor: scheduledFor,
+            postsEvents: postsEvents
+        );
+    }
+
+    public static Post Reconstitute(Guid id, Guid userId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents)
+    {
+        return new Post(
+            id: id,
+            userId: userId,
+            messageContent: messageContent,
+            updatedAt: updatedAt,
+            scheduledFor: scheduledFor,
+            postsEvents: postsEvents
+        );
     }
 
     public bool IsDeletable()
@@ -26,23 +50,4 @@ public class Post
         return latestStatus is PostStatus.Draft or PostStatus.Scheduled;
     }
 
-}
-
-public class PostEvent
-{
-    public Guid PostId { get; set; }
-    public Guid UserPlatformIntegrationId { get; set; }
-    public PostStatus Status { get; set; }
-    public string PlatformPostIdentifier { get; set; }
-    public object PlatformResponse { get; set; }
-
-}
-
-public enum PostStatus
-{
-    Draft = 0,
-    Scheduled,
-    Posted,
-    Processing,
-    Failed
 }
