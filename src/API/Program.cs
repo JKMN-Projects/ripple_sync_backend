@@ -50,7 +50,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandling>();
 //});
 
 builder.Services.AddApplicationServices();
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(connString);
 
 builder.Services.AddOptions<PasswordHasherOptions>()
     .Bind(builder.Configuration.GetSection("PasswordHasher"))

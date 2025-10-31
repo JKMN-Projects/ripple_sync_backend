@@ -26,11 +26,10 @@ public sealed class IntegrationManager
 
         /// ENCRYPT ACCESSTOKEN HERE
         DateTime expiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
-
-
-        await _integrationRepo.CreateUserIntegration(userId, platformId, accessToken, refreshToken, expiresAt, tokenType, scope);
+        
+        await _integrationRepo.CreateIntegration(userId, platformId, accessToken, refreshToken, expiresAt, tokenType, scope);
     }
 
     public async Task DeleteIntegration(Guid userId, int platformId)
-        => await _integrationRepo.DeleteUserIntegration(userId, platformId);
+        => await _integrationRepo.DeleteIntegration(userId, platformId);
 }
