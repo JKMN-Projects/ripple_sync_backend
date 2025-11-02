@@ -48,5 +48,7 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         return Task.FromResult<Post>(postEntity);
     }
 
+    public Task<IEnumerable<Post>> GetPostsReadyToPublish(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<PostEvent> UpdatePostEventStatus(PostEvent postEvent, CancellationToken cancellationToken) => throw new NotImplementedException();
 }
 

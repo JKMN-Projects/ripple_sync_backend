@@ -1,14 +1,18 @@
 using DbMigrator;
 using Microsoft.Extensions.Caching.Hybrid;
+using RippleSync.API;
 using RippleSync.API.Authentication;
 using RippleSync.API.Common.Middleware;
 using RippleSync.API.Platforms;
 using RippleSync.Application;
 using RippleSync.Application.Platforms;
+using RippleSync.Application.Posts;
+using RippleSync.Domain.Posts;
 using RippleSync.Infrastructure;
 using RippleSync.Infrastructure.Security;
 using Serilog;
 using System.Globalization;
+using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseDefaultServiceProvider(options =>
@@ -70,7 +74,17 @@ JwtOptions jwtOptions = builder.Configuration.GetRequiredSection("JWT").Get<JwtO
 builder.Services.AddJwtAuthentication(jwtOptions);
 
 
+builder.Services.AddSingleton<PostChannel>();
 
+builder.Services.AddHostedService<PostSchedulingBackgroundService>(sp =>
+{
+    var channel = sp.GetRequiredService<PostChannel>();
+    var logger = sp.GetService<ILogger<PostSchedulingBackgroundService>>();
+    var postManager = sp.GetRequiredService<PostManager>();
+
+    var service = new PostSchedulingBackgroundService(logger, 10, channel, postManager);
+    return service;
+});
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>

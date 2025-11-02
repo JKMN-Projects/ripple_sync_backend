@@ -57,4 +57,12 @@ public class PostManager(
         // Then delete
         await postRepository.DeleteAsync(post, cancellationToken);
     }
+    public async Task<IEnumerable<Post>> GetPostReadyToPublish(CancellationToken cancellationToken = default)
+    {
+        IEnumerable<Post> posts = await postRepository.GetPostsReadyToPublish(cancellationToken);
+
+        IEnumerable<Post> postsReadyToPost = posts.Where(p => p.IsReadyToPublish());
+        return posts;
+    }
+    public async Task<PostEvent> UpdatePostEventAsync(PostEvent postEvent) => await postRepository.UpdatePostEventStatus(postEvent);
 }
