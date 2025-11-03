@@ -83,9 +83,13 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         var posts = InMemoryData.Posts.Where(p => p.UserId == userId);
         return Task.FromResult(posts);
     }
-}
 
-    public Task<IEnumerable<Post>> GetPostsReadyToPublish(CancellationToken cancellationToken = default) => throw new NotImplementedException();
-    public Task<PostEvent> UpdatePostEventStatus(PostEvent postEvent, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public async Task<IEnumerable<Post>> GetPostsReadyToPublish(CancellationToken cancellationToken = default)
+    {
+        var posts = InMemoryData.Posts.Where(p => p.IsReadyToPublish());
+        return posts;
+    }
+
+    public async Task<PostEvent> UpdatePostEventStatus(PostEvent postEvent, CancellationToken cancellationToken) => postEvent;
 }
 
