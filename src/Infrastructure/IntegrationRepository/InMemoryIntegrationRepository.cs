@@ -33,7 +33,7 @@ public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegratio
         InMemoryData.IntegrationResponses[toEditIndex] = toEdit with { Connected = connected };
     }
 
-    public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellation = default)
+    public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(InMemoryData.Integrations.Where(i => i.UserId == userId));
     }
