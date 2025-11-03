@@ -20,7 +20,7 @@ public class PostManager
     public async Task<bool> CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, int[] integrationIds)
         => await _postRepository.CreatePostAsync(userId, messageContent, timestamp, mediaAttachments, integrationIds);
 
-    public async Task<bool> UpdatePostAsync(int postId, string messageContent, long? timestamp, string[]? mediaAttachments, int[] integrationIds)
+    public async Task<bool> UpdatePostAsync(Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, int[] integrationIds)
     => await _postRepository.UpdatePostAsync(postId, messageContent, timestamp, mediaAttachments, integrationIds);
 
     public async Task DeletePostByIdOnUser(Guid userId, Guid postId)

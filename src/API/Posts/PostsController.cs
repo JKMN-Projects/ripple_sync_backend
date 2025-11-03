@@ -29,10 +29,10 @@ public class PostsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public IActionResult GetImage(int id)
+    public async Task<IActionResult> GetImage(Guid id)
     {
         // Retrieve the base64 string from your database/service
-        string base64Image = _postManager.GetImageByIdAsync(id);
+        string base64Image = await _postManager.GetImageByIdAsync(id);
 
         if (string.IsNullOrEmpty(base64Image))
         {
@@ -57,8 +57,8 @@ public class PostsController : ControllerBase
         await _postManager.CreatePostAsync(userId,
                 request.MessageContent,
                 request.Timestamp,
-                mediaAttachments.Count > 0 ? [.. mediaAttachments] : null,
-                [.. request.IntegrationIds]
+                mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
+                request.IntegrationIds.ToArray()
             );
 
         return Created();
@@ -70,11 +70,11 @@ public class PostsController : ControllerBase
     {
         var mediaAttachments = await ExtractFilesToBase64(request.Files);
 
-        await _postManager.UpdatePostAsync(request.PostId ?? 0,
+        await _postManager.UpdatePostAsync(request.PostId ?? new Guid(),
                 request.MessageContent,
                 request.Timestamp,
-                mediaAttachments.Count > 0 ? [.. mediaAttachments] : null,
-                [.. request.IntegrationIds]
+                mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
+                request.IntegrationIds.ToArray()
             );
 
         return Ok();
@@ -82,7 +82,7 @@ public class PostsController : ControllerBase
 
     public class FormData
     {
-        public int? PostId { get; set; }
+        public Guid? PostId { get; set; }
 
         public required string MessageContent { get; set; }
 

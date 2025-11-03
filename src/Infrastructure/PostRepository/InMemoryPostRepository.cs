@@ -219,37 +219,5 @@ internal class InMemoryPostRepository : IPostRepository
 
         return true;
     }
-
-    private static PostStatus GetPostStatus(long? timestamp)
-        => timestamp == null
-        ? PostStatus.Draft
-        : timestamp > new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds()
-        ? PostStatus.Scheduled
-        : PostStatus.Posted;
-
-    private static List<string> GetPlatformStringArray(int[] integrationsIds)
-    {
-        List<string> platforms = [];
-
-        foreach (int id in integrationsIds)
-        {
-            platforms.Add(GetPlatformName(id));
-        }
-
-        return platforms;
-    }
-
-    private static string GetPlatformName(int id)
-    {
-        return id switch
-        {
-            1 => "X",
-            2 => "Facebook",
-            3 => "LinkedIn",
-            4 => "Instagram",
-            5 => "YouTube",
-            _ => "",
-        };
-    }
 }
 
