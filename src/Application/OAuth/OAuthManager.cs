@@ -81,7 +81,7 @@ public class OAuthManager(
         }
         catch (Exception e)
         {
-                throw new InvalidCastException("Failed to acquire token", e);
+            throw new InvalidCastException("Failed to acquire token", e);
         }
 
         if (tokenRes == null || string.IsNullOrWhiteSpace(tokenRes?.AccessToken))

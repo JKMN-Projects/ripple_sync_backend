@@ -43,6 +43,14 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, InMemoryUserRepository>();
         services.AddScoped<IIntegrationRepository, InMemoryIntegrationRepository>();
         services.AddScoped<IPostRepository, InMemoryPostRepository>();
+
+        services.AddSingleton<IEncryptionService>(sp =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            string key = config["Encryption:Key"];
+            return new AesGcmEncryptionService(key);
+        });
+
         //services.AddScoped<IPlatformRepository, InMemoryPlatformRepository>();
 
         return services;
