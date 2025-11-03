@@ -1,4 +1,5 @@
 ﻿using RippleSync.Application.Platforms;
+using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
 
 namespace RippleSync.API.Platforms;
@@ -15,4 +16,5 @@ public class DependencyInjectionPlatformFactory(
         }
         return searchedPlatform;
     }
+
 }

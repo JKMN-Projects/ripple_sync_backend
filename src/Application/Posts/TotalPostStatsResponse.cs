@@ -4,12 +4,12 @@ public sealed record TotalPostStatsResponse(
     int PublishedPosts,
     int ScheduledPosts,
     int TotalReach,
-    int TotalLikes);
+    int TotalLikes,
+    IEnumerable<TotalStatsForPlatform> TotalStatsForPlatforms);
 
 public sealed record TotalStatsForPlatform(
     string Platform,
     int PublishedPosts,
     int Reach,
     int Likes,
-    double AverageEngagement,
-    int Followers);
+    double AverageEngagement);

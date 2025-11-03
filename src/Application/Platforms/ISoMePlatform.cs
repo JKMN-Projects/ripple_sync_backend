@@ -5,10 +5,14 @@ using System.Threading;
 namespace RippleSync.Application.Platforms;
 
 public interface ISoMePlatform
-{
     string GetAuthorizationUrl(AuthorizationConfiguration authConfigs);
     HttpRequestMessage GetTokenRequest(TokenAccessConfiguration tokenConfigs);
-    Task PublishPostAsync(Post post);
+    Task<PostEvent> PublishPostAsync(Post post, Integration integration);
     Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration);
     //Task GetPostInsightsAsync(Post post);
-}
+
+public sealed record PlatformStats(
+    int PostCount,
+    int Reach,
+    int Engagement,
+    int Likes);

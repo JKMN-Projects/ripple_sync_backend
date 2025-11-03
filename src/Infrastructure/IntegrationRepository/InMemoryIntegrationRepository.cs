@@ -9,7 +9,7 @@ namespace RippleSync.Infrastructure.IntegrationRepository;
 public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegrationQueries
 {
     public Task<IEnumerable<ConnectedIntegrationsResponse>> GetConnectedIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
-        => Task.FromResult(InMemoryData.IntegrationResponses.Select(i => new ConnectedIntegrationsResponse(i.PlatformId, i.Name)));
+        => Task.FromResult(InMemoryData.Integrations.Select(i => new ConnectedIntegrationsResponse(i.Id, i.Platform.ToString())));
 
     public Task CreateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
@@ -31,5 +31,14 @@ public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegratio
 
         var toEditIndex = InMemoryData.IntegrationResponses.IndexOf(toEdit);
         InMemoryData.IntegrationResponses[toEditIndex] = toEdit with { Connected = connected };
+    }
+
+    public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(InMemoryData.Integrations.Where(i => i.UserId == userId));
+    }
+    public Task UpdateAsync(Integration integration, CancellationToken cancellation = default)
+    {
+        return Task.CompletedTask;
     }
 }

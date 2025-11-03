@@ -42,4 +42,5 @@ public sealed class IntegrationManager(
 
     public async Task DeleteIntegrationAsync(Guid userId, Platform platform, CancellationToken cancellationToken = default)
         => await integrationRepo.DeleteAsync(userId, platform, cancellationToken);
+
 }

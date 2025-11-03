@@ -16,7 +16,7 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
     {
         var getIntegrationsQuery =
             @"SELECT 
-                p.id,
+                upi.id,
                 p.platform_name AS name
             FROM platform p
             INNER JOIN user_platform_integration upi 
@@ -74,4 +74,6 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
         }
     }
 
+    public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task UpdateAsync(Integration integration, CancellationToken cancellation = default) => throw new NotImplementedException();
 }

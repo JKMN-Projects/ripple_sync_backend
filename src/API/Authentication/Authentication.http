@@ -4,7 +4,7 @@
 POST {{API_HostAddress}}/api/authentication/Login
 Content-Type: application/json
 {
-  "email": "jukman2@gmail.com",
+  "email": "jukman@gmail.com",
   "password": "Kode1234!"
 }
 
@@ -17,3 +17,7 @@ Content-Type: application/json
   "email": "jukman2@gmail.com",
   "password": "Kode1234!"
 }
+
+###
+# @name Deleteuser
+DELETE {{API_HostAddress}}/api/authentication/user

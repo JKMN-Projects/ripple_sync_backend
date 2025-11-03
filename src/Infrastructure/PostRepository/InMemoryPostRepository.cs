@@ -36,7 +36,6 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
     }
     public Task DeleteAsync(Post post, CancellationToken cancellationToken = default)
     {
-
         var postToDelete = InMemoryData.Posts.Single(p => p.Id == post.Id);
 
         InMemoryData.Posts.Remove(postToDelete);
@@ -48,5 +47,49 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         return Task.FromResult<Post>(postEntity);
     }
 
+    public Task<string> GetImageByIdAsync(Guid imageId, CancellationToken cancellationToken = default)
+    {
+        var imageUrl = InMemoryData.Posts
+            .SelectMany(p => p.PostMedias)
+            .Where(pm => pm.Id == imageId)
+            .Select(pm => pm.ImageUrl)
+            .FirstOrDefault();
+
+        return Task.FromResult(imageUrl ?? "");
+    }
+
+
+    public async Task<bool> CreatePostAsync(
+        Post post,
+        CancellationToken cancellationToken = default)
+    {
+        await Task.Yield();
+
+        InMemoryData.Posts.Add(post);
+
+        return true;
+    }
+
+    public async Task<bool> UpdatePostAsync(
+        Post post,
+        CancellationToken cancellationToken = default)
+    {
+        await Task.Yield();
+
+        return true;
+    }
+    public Task<IEnumerable<Post>> GetAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var posts = InMemoryData.Posts.Where(p => p.UserId == userId);
+        return Task.FromResult(posts);
+    }
+
+    public async Task<IEnumerable<Post>> GetPostsReadyToPublish(CancellationToken cancellationToken = default)
+    {
+        var posts = InMemoryData.Posts.Where(p => p.IsReadyToPublish());
+        return posts;
+    }
+
+    public async Task<PostEvent> UpdatePostEventStatus(PostEvent postEvent, CancellationToken cancellationToken) => postEvent;
 }
 

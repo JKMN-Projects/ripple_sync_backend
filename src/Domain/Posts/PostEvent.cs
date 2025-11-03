@@ -9,4 +9,10 @@ public class PostEvent
     public string PlatformPostIdentifier { get; set; }
     public object? PlatformResponse { get; set; }
 
+    public PostEvent Anonymize()
+    {
+        PlatformPostIdentifier = string.Empty;
+        PlatformResponse = null;
+        return this;
+    }
 }
