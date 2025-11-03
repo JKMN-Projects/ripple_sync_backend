@@ -11,6 +11,8 @@ namespace RippleSync.Application.Users;
 public sealed class UserManager(
     ILogger<UserManager> logger,
     IUserRepository userRepository,
+    IIntegrationRepository integrationRepository,
+    IPostRepository postRepository,
     IPasswordHasher passwordHasher,
     IAuthenticationTokenProvider authenticationTokenProvider)
 {
@@ -97,4 +99,41 @@ public sealed class UserManager(
         await userRepository.InsertAsync(newUser, cancellationToken);
         logger.LogInformation("User with email {Email} registered successfully", email);
     }
+
+
+    /// <summary>
+    /// Soft deletes a user by anonymizing their data.
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task DeleteUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation("Deleting user with ID {UserId}", userId);
+        User? user = await userRepository.GetUserByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            throw EntityNotFoundException.ForEntity<User>(userId);
+        }
+        // Anonymize user data
+        user.Anonymize();
+        await userRepository.UpdateUserAsync(user, cancellationToken);
+
+        var integrations = await integrationRepository.GetIntegrationsByUserId(userId, cancellationToken);
+        foreach (var integration in integrations)
+        {
+            integration.Anonymize();
+            await integrationRepository.UpdateIntegrationAsync(integration, cancellationToken);
+        }
+        var posts = await postRepository.GetAllByUserIdAsync(userId, cancellationToken);
+        foreach (var post in posts)
+        {
+            post.Anonymize();
+            await postRepository.UpdatePostAsync(post, cancellationToken);
+        }
+        logger.LogInformation("User with ID {UserId} deleted successfully", userId);
+    }
 }
+

@@ -48,5 +48,14 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         return Task.FromResult<Post>(postEntity);
     }
 
+    public Task<IEnumerable<Post>> GetAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var posts = InMemoryData.Posts.Where(p => p.UserId == userId);
+        return Task.FromResult(posts);
+    }
+    public Task UpdatePostAsync(Post post, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
 }
 

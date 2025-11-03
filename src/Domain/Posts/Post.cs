@@ -50,4 +50,16 @@ public class Post
         return latestStatus is PostStatus.Draft or PostStatus.Scheduled;
     }
 
+    public Post Anonymize()
+    {
+        MessageContent = string.Empty;
+
+        foreach (var postEvent in PostEvents)
+        {
+            postEvent.Anonymize();
+        }
+        return this;
+
+
+    }
 }

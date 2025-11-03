@@ -74,4 +74,6 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
         }
     }
 
+    public Task<IEnumerable<Integration>> GetIntegrationsByUserId(Guid userId, CancellationToken cancellation = default) => throw new NotImplementedException();
+    public Task UpdateIntegrationAsync(Integration integration, CancellationToken cancellation = default) => throw new NotImplementedException();
 }
