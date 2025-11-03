@@ -175,4 +175,60 @@ public class PostManager(
         // Then delete
         await postRepository.DeleteAsync(post, cancellationToken);
     }
+    public async Task<IEnumerable<Post>> GetPostReadyToPublish(CancellationToken cancellationToken = default)
+    {
+        IEnumerable<Post> posts = await postRepository.GetPostsReadyToPublish(cancellationToken);
+
+        IEnumerable<Post> postsReadyToPost = posts.Where(p => p.IsReadyToPublish());
+        return posts;
+    }
+    public async Task<PostEvent> UpdatePostEventAsync(PostEvent postEvent) => await postRepository.UpdatePostEventStatus(postEvent);
+
+    public async Task ProcessPostEventAsync(Post post, CancellationToken cancellationToken)
+    {
+        logger.LogInformation(
+            "Processing post: PostId={PostId}",
+            post.Id);
+
+        foreach (var postEvent in post.PostEvents)
+        {
+            postEvent.Status = PostStatus.Processing;
+            await UpdatePostEventAsync(postEvent);
+        }
+
+        List<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId).ToList();
+
+        //TODO: Get List of UserPlatformintegration from list of guids
+        List<Integration> integrations = []; // _integrationManager.GetIntegrationsByIds(userPlatformIntegrations);
+
+        //Request platform
+        foreach (var integration in integrations)
+        {
+            logger.LogInformation(
+                    "Started publish for post event: PostId={PostId}, Platform={Platform}",
+                    post.Id,
+                    integration.Platform);
+            IPlatform platform = platformFactory.Create(integration.Platform);
+            try
+            {
+                var responsePostEvent = await platform.PublishPostAsync(post, integration);
+                await UpdatePostEventAsync(responsePostEvent);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError("Failed to publish post for : PostId={PostId}, Platform={Platform}, Exception {Exception}",
+                    post.Id,
+                    integration.Platform,
+                    ex.Message
+                );
+                var postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id);
+                postEvent!.Status = PostStatus.Failed;
+                await UpdatePostEventAsync(postEvent);
+            }
+        }
+        logger.LogInformation(
+            "Post has been published: PostId={PostId}",
+            post.Id);
+
+    }
 }
