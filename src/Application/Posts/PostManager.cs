@@ -2,10 +2,11 @@
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
-using RippleSync.Domain.Users;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
+using RippleSync.Domain.Users;
+using System.Threading;
 
 namespace RippleSync.Application.Posts;
 
@@ -45,11 +46,94 @@ public class PostManager(
     public async Task<string> GetImageByIdAsync(Guid userId)
     => new(await postRepository.GetImageByIdAsync(userId));
 
-    public async Task<bool> CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds)
-        => await postRepository.CreatePostAsync(userId, messageContent, timestamp, mediaAttachments, integrationIds);
+    public async Task<bool> CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
+    {
+        DateTime? scheduledFor = timestamp.HasValue
+            ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
+            : null;
 
-    public async Task<bool> UpdatePostAsync(Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds)
-    => await postRepository.UpdatePostAsync(postId, messageContent, timestamp, mediaAttachments, integrationIds);
+        var postMedias = mediaAttachments?.Select(url => new PostMedia
+        {
+            Id = Guid.NewGuid(),
+            PostId = Guid.Empty, // temporary, updated once Post.Id is known
+            ImageUrl = url
+        }).ToList();
+
+        var postEvents = integrationIds.Select(id => new PostEvent
+        {
+            PostId = Guid.Empty, // temporary, updated once Post.Id is known
+            UserPlatformIntegrationId = id,
+            Status = scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft,
+            PlatformPostIdentifier = "",
+            PlatformResponse = new { CreatedAt = DateTime.UtcNow }
+        }).ToList();
+
+        var post = Post.Create(
+            userId,
+            messageContent,
+            scheduledFor,
+            postEvents,
+            postMedias
+        );
+
+        foreach (var e in post.PostEvents)
+        {
+            e.PostId = post.Id;
+        }
+
+        if (post.PostMedias != null)
+        {
+            foreach (var m in post.PostMedias)
+            {
+                m.PostId = post.Id;
+            }
+        }
+
+        return await postRepository.CreatePostAsync(post, cancellationToken);
+    }
+
+    public async Task<bool> UpdatePostAsync(Guid userId, Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
+    {
+        Post? post = await postRepository.GetByIdAsync(postId, cancellationToken);
+
+        if (post == null || post.UserId != userId)
+        {
+            throw new UnauthorizedAccessException("Post does not belong to the user.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(messageContent))
+            post.MessageContent = messageContent;
+
+        post.ScheduledFor = timestamp.HasValue
+            ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
+            : null;
+
+        if (mediaAttachments != null)
+        {
+            post.PostMedias = [.. mediaAttachments.Select(url => new PostMedia
+            {
+                Id = Guid.NewGuid(),
+                PostId = post.Id,
+                ImageUrl = url
+            })];
+        }
+
+        if (integrationIds != null && integrationIds.Length > 0)
+        {
+            post.PostEvents = [.. integrationIds.Select(id => new PostEvent
+            {
+                PostId = post.Id,
+                UserPlatformIntegrationId = id,
+                Status = PostStatus.Scheduled,
+                PlatformPostIdentifier = "",
+                PlatformResponse = new { UpdatedAt = DateTime.UtcNow }
+            })];
+        }
+
+        post.UpdatedAt = DateTime.UtcNow;
+
+        return await postRepository.UpdatePostAsync(post, cancellationToken);
+    }
 
     public async Task DeletePostByIdAsync(Guid userId, Guid postId, CancellationToken cancellationToken = default)
     {

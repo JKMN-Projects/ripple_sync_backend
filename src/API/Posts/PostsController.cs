@@ -53,6 +53,13 @@ public partial class PostsController : ControllerBase
 
         var mediaAttachments = await ExtractFilesToBase64(request.Files);
 
+        CreatePostDto post = new CreatePostDto(userId,
+                request.MessageContent,
+                request.Timestamp,
+                mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
+                request.IntegrationIds.ToArray()
+            );
+
         await _postManager.CreatePostAsync(userId,
                 request.MessageContent,
                 request.Timestamp,

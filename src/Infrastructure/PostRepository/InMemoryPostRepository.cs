@@ -60,51 +60,10 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
 
 
     public async Task<bool> CreatePostAsync(
-        Guid userId,
-        string messageContent,
-        long? timestamp,
-        string[]? mediaAttachments,
-        Guid[] integrationsIds,
+        Post post,
         CancellationToken cancellationToken = default)
     {
         await Task.Yield();
-
-        DateTime? scheduledFor = timestamp.HasValue
-            ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
-            : null;
-
-        var postMedias = mediaAttachments?.Select(url => new PostMedia
-        {
-            Id = Guid.NewGuid(),
-            PostId = Guid.Empty, // temporary, updated below once Post.Id is known
-            ImageUrl = url
-        }).ToList();
-
-        var postEvents = integrationsIds.Select(id => new PostEvent
-        {
-            PostId = Guid.Empty, // temporary, updated below once Post.Id is known
-            UserPlatformIntegrationId = id,
-            Status = scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft,
-            PlatformPostIdentifier = "",
-            PlatformResponse = new { CreatedAt = DateTime.UtcNow }
-        }).ToList();
-
-        var post = Post.Create(
-            userId,
-            messageContent,
-            scheduledFor,
-            postEvents,
-            postMedias
-        );
-
-        foreach (var e in post.PostEvents)
-            e.PostId = post.Id;
-
-        if (post.PostMedias != null)
-        {
-            foreach (var m in post.PostMedias)
-                m.PostId = post.Id;
-        }
 
         InMemoryData.Posts.Add(post);
 
@@ -112,50 +71,10 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
     }
 
     public async Task<bool> UpdatePostAsync(
-        Guid postId,
-        string messageContent,
-        long? timestamp,
-        string[]? mediaAttachments,
-        Guid[] integrationsIds,
+        Post post,
         CancellationToken cancellationToken = default)
     {
         await Task.Yield();
-
-        Post? post = InMemoryData.Posts.FirstOrDefault(p => p.Id == postId);
-
-        if (post == null)
-            return false;
-
-        if (!string.IsNullOrWhiteSpace(messageContent))
-            post.MessageContent = messageContent;
-
-        post.ScheduledFor = timestamp.HasValue
-            ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
-            : null;
-
-        if (mediaAttachments != null)
-        {
-            post.PostMedias = [.. mediaAttachments.Select(url => new PostMedia
-            {
-                Id = Guid.NewGuid(),
-                PostId = post.Id,
-                ImageUrl = url
-            })];
-        }
-
-        if (integrationsIds != null && integrationsIds.Length > 0)
-        {
-            post.PostEvents = [.. integrationsIds.Select(id => new PostEvent
-            {
-                PostId = post.Id,
-                UserPlatformIntegrationId = id,
-                Status = PostStatus.Scheduled,
-                PlatformPostIdentifier = "",
-                PlatformResponse = new { UpdatedAt = DateTime.UtcNow }
-            })];
-        }
-
-        post.UpdatedAt = DateTime.UtcNow;
 
         return true;
     }
