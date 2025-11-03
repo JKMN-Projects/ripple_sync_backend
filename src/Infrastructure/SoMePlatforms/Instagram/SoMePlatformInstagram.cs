@@ -42,5 +42,5 @@ internal class SoMePlatformInstagram(IOptions<InstagramOptions> options) : ISoMe
     }
 
     public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration) => throw new NotImplementedException();
-    public Task PublishPostAsync(Post post) => throw new NotImplementedException();
+    public Task<PostEvent> PublishPostAsync(Post post, Integration integration) => throw new NotImplementedException();
 }
