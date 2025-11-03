@@ -16,7 +16,7 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
     {
         var getIntegrationsQuery =
             @"SELECT 
-                p.id,
+                upi.id,
                 p.platform_name AS name
             FROM platform p
             INNER JOIN user_platform_integration upi 
