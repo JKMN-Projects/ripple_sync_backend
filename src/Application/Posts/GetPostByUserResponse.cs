@@ -4,6 +4,6 @@ public record GetPostsByUserResponse(
     Guid PostId,
     string MessageContent,
     string StatusName,
-    string[] MediaAttachment,
+    Guid[] MediaIds,
     long? Timestamp,
     string[] Platforms);

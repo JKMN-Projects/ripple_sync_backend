@@ -6,8 +6,6 @@ using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
-using RippleSync.Domain.Users;
-using System.Threading;
 
 namespace RippleSync.Application.Posts;
 
