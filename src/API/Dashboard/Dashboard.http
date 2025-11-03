@@ -1,0 +1,14 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+@API_HostAddress = https://localhost:7275
+
+# @name Login
+POST {{API_HostAddress}}/api/authentication/Login
+Content-Type: application/json
+{
+  "email": "jukman@gmail.com",
+  "password": "Kode1234!"
+}
+
+###
+
+GET {{API_HostAddress}}/api/dashboard/total

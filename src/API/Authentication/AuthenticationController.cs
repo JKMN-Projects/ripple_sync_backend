@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RippleSync.API.Common.Extensions;
 using RippleSync.Application.Common.Exceptions;
 using RippleSync.Application.Users;
 using RippleSync.Application.Users.Exceptions;
@@ -120,5 +121,17 @@ public sealed class AuthenticationController : ControllerBase
             }
             return result;
         }
+    }
+
+    [HttpDelete("user")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeleteUser()
+    {
+        Guid userId = User.GetUserId();
+
+        await _userManager.DeleteUserAsync(userId);
+
+        return NoContent();
     }
 }

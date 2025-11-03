@@ -1,4 +1,6 @@
 ﻿
+using System.Reflection.Metadata.Ecma335;
+
 namespace RippleSync.Domain.Users;
 
 public class User
@@ -39,5 +41,14 @@ public class User
     public static User Reconstitute(Guid id, string email, string passwordHash, string salt)
     {
         return new User(id, email, passwordHash, salt);
+    }
+
+    public User Anonymize()
+    {
+        Email = Guid.NewGuid().ToString();
+        PasswordHash = "";
+        Salt = "";
+        return this;
+
     }
 }

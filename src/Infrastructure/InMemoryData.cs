@@ -10,12 +10,11 @@ internal class InMemoryData
 {
     private static readonly Guid _userId = Guid.Parse("a9856986-14e4-464b-acc7-dcb84ddf9f36");
 
-
     internal static readonly List<User> Users = [
             User.Reconstitute(_userId, "jukman@gmail.com", "hyT8uOvqa5HsVzoYa7f8x5Fc79whJ85hnUVlthmk2Ak=", "VGVzdGluZ0FTYWx0VmFsdWVXcml0dGVuSW5QbGFpblRleHQ=")
         ];
 
-    internal static readonly List<Integration> integrations =
+    internal static readonly List<Integration> Integrations =
     [
         Integration.Reconstitute(
             Guid.NewGuid(),
@@ -59,7 +58,8 @@ internal class InMemoryData
                 PlatformPostIdentifier = "123456",
                 PlatformResponse = null
             }
-        ]),
+        ],
+        null),
         Post.Reconstitute(Guid.NewGuid(), _userId,"My Scheduled post",DateTime.UtcNow, DateTime.UtcNow.AddDays(5),[
             new() {
                 PostId = Guid.NewGuid(),
@@ -68,7 +68,8 @@ internal class InMemoryData
                 PlatformPostIdentifier = "654321",
                 PlatformResponse = null
             }
-        ]),
+        ],
+        null),
         Post.Reconstitute(Guid.NewGuid(), _userId,"Stuck while processing",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
             new() {
                 PostId = Guid.NewGuid(),
@@ -77,7 +78,8 @@ internal class InMemoryData
                 PlatformPostIdentifier = "",
                 PlatformResponse = null
             }
-        ]),
+        ],
+        null),
         Post.Reconstitute(Guid.NewGuid(), _userId,"My post will not upload",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
             new() {
                 PostId = Guid.NewGuid(),
@@ -86,7 +88,8 @@ internal class InMemoryData
                 PlatformPostIdentifier = "",
                 PlatformResponse = "Error"
             }
-        ]),
+        ],
+        null),
         Post.Reconstitute(Guid.NewGuid(), _userId,"Just created this post - NOT DONE",DateTime.UtcNow, null,[
             new() {
                 PostId = Guid.NewGuid(),
@@ -95,6 +98,7 @@ internal class InMemoryData
                 PlatformPostIdentifier = "",
                 PlatformResponse = null
             }
-        ])
+        ],
+        null)
     ];
 }

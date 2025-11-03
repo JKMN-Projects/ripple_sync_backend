@@ -63,6 +63,9 @@ dotnet_diagnostic.CA1848.severity = suggestion
 # CA2017: Parameter count mismatch
 dotnet_diagnostic.CA2017.severity = error
 
+# CS8602: Dereference of a possibly null reference.
+dotnet_diagnostic.CS8602.severity = error
+
 [*.{cs,vb}]
 #### Naming styles ####
 
