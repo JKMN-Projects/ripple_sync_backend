@@ -88,7 +88,7 @@ public class PostsController : ControllerBase
 
         public long? Timestamp { get; set; }
 
-        public required List<int> IntegrationIds { get; set; }
+        public required List<Guid> IntegrationIds { get; set; }
 
         public List<IFormFile>? Files { get; set; }
     }

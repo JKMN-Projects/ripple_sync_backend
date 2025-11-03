@@ -40,16 +40,16 @@ public class PostManager(
             TotalLikes: -1);
     }
     public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status)
-        => new(await _postRepository.GetPostsByUserAsync(userId, status));
+        => new(await postRepository.GetPostsByUserAsync(userId, status));
 
     public async Task<string> GetImageByIdAsync(Guid userId)
-    => new(await _postRepository.GetImageByIdAsync(userId));
+    => new(await postRepository.GetImageByIdAsync(userId));
 
-    public async Task<bool> CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, int[] integrationIds)
-        => await _postRepository.CreatePostAsync(userId, messageContent, timestamp, mediaAttachments, integrationIds);
+    public async Task<bool> CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds)
+        => await postRepository.CreatePostAsync(userId, messageContent, timestamp, mediaAttachments, integrationIds);
 
-    public async Task<bool> UpdatePostAsync(Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, int[] integrationIds)
-    => await _postRepository.UpdatePostAsync(postId, messageContent, timestamp, mediaAttachments, integrationIds);
+    public async Task<bool> UpdatePostAsync(Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds)
+    => await postRepository.UpdatePostAsync(postId, messageContent, timestamp, mediaAttachments, integrationIds);
 
     public async Task DeletePostByIdAsync(Guid userId, Guid postId, CancellationToken cancellationToken = default)
     {

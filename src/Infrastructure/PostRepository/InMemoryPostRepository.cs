@@ -36,7 +36,6 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
     }
     public Task DeleteAsync(Post post, CancellationToken cancellationToken = default)
     {
-
         var postToDelete = InMemoryData.Posts.Single(p => p.Id == post.Id);
 
         InMemoryData.Posts.Remove(postToDelete);
@@ -50,7 +49,7 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
 
     public Task<string> GetImageByIdAsync(Guid imageId, CancellationToken cancellationToken = default)
     {
-        var imageUrl = _postEntities
+        var imageUrl = InMemoryData.Posts
             .SelectMany(p => p.PostMedias)
             .Where(pm => pm.Id == imageId)
             .Select(pm => pm.ImageUrl)
@@ -65,7 +64,7 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         string messageContent,
         long? timestamp,
         string[]? mediaAttachments,
-        int[] integrationsIds,
+        Guid[] integrationsIds,
         CancellationToken cancellationToken = default)
     {
         await Task.Yield();
@@ -84,16 +83,15 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         var postEvents = integrationsIds.Select(id => new PostEvent
         {
             PostId = Guid.Empty, // temporary, updated below once Post.Id is known
-            UserId = userId,
+            UserPlatformIntegrationId = id,
             Status = scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft,
             PlatformPostIdentifier = "",
             PlatformResponse = new { CreatedAt = DateTime.UtcNow }
         }).ToList();
 
-        var post = new Post(
+        var post = Post.Create(
             userId,
             messageContent,
-            DateTime.UtcNow,
             scheduledFor,
             postEvents,
             postMedias
@@ -108,7 +106,7 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
                 m.PostId = post.Id;
         }
 
-        _postEntities.Add(post);
+        InMemoryData.Posts.Add(post);
 
         return true;
     }
@@ -118,12 +116,12 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         string messageContent,
         long? timestamp,
         string[]? mediaAttachments,
-        int[] integrationsIds,
+        Guid[] integrationsIds,
         CancellationToken cancellationToken = default)
     {
         await Task.Yield();
 
-        Post? post = _postEntities.FirstOrDefault(p => p.Id == postId);
+        Post? post = InMemoryData.Posts.FirstOrDefault(p => p.Id == postId);
 
         if (post == null)
             return false;
@@ -150,7 +148,7 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
             post.PostEvents = [.. integrationsIds.Select(id => new PostEvent
             {
                 PostId = post.Id,
-                UserId = post.UserId,
+                UserPlatformIntegrationId = id,
                 Status = PostStatus.Scheduled,
                 PlatformPostIdentifier = "",
                 PlatformResponse = new { UpdatedAt = DateTime.UtcNow }
