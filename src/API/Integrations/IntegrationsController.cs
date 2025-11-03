@@ -25,7 +25,7 @@ public partial class IntegrationsController : ControllerBase
 
     [HttpGet("")]
     [ProducesResponseType<ListResponse<PlatformWithUserIntegrationResponse>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetIntegrations()
+    public async Task<IActionResult> GetPlatformsWithUserIntegrationsAsync()
     {
         Guid userId = User.GetUserId();
 

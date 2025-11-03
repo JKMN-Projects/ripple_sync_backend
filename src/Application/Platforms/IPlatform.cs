@@ -14,4 +14,4 @@ public sealed record PlatformStats(
     int PostCount,
     int Reach,
     int Engagement,
-    int Followers);
+    int Likes);

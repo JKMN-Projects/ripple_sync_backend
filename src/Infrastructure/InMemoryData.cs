@@ -15,7 +15,7 @@ internal class InMemoryData
             User.Reconstitute(_userId, "jukman@gmail.com", "hyT8uOvqa5HsVzoYa7f8x5Fc79whJ85hnUVlthmk2Ak=", "VGVzdGluZ0FTYWx0VmFsdWVXcml0dGVuSW5QbGFpblRleHQ=")
         ];
 
-    internal static readonly List<Integration> integrations =
+    internal static readonly List<Integration> Integrations =
     [
         Integration.Reconstitute(
             Guid.NewGuid(),
