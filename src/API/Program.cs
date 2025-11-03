@@ -7,6 +7,7 @@ using RippleSync.Application;
 using RippleSync.Application.Platforms;
 using RippleSync.Infrastructure;
 using RippleSync.Infrastructure.Security;
+using RippleSync.Infrastructure.SoMePlatforms.X;
 using Serilog;
 using System.Globalization;
 
@@ -51,6 +52,38 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandling>();
 //    options.ReadFrom.Configuration(builder.Configuration);
 //});
 
+var integrationSection = builder.Configuration.GetSection("Integrations");
+
+builder.Services
+    .AddOptions<XOptions>()
+        .Bind(integrationSection.GetSection("X"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services
+    .AddOptions<LinkedInOptions>()
+        .Bind(integrationSection.GetSection("LinkedIn"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services
+    .AddOptions<FacebookOptions>()
+        .Bind(integrationSection.GetSection("Facebook"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services
+    .AddOptions<InstagramOptions>()
+        .Bind(integrationSection.GetSection("Instagram"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services
+    .AddOptions<ThreadsOptions>()
+        .Bind(integrationSection.GetSection("Threads"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructure(connString);
 
@@ -69,8 +102,6 @@ builder.Services.AddOptions<JwtOptions>()
 JwtOptions jwtOptions = builder.Configuration.GetRequiredSection("JWT").Get<JwtOptions>()!;
 builder.Services.AddJwtAuthentication(jwtOptions);
 
-
-
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -79,6 +110,7 @@ builder.Services.AddCors(options =>
             .WithOrigins(
             [
                 "http://localhost:4200",
+                "https://localhost:4200",
                 "https://localhost:7275",
                 "https://www.ripplesync-frontend.graybeach-8775421e.northeurope.azurecontainerapps.io",
                 "https://www.ripplesync.dk",

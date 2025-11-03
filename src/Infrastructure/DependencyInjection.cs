@@ -1,14 +1,20 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
+using RippleSync.Domain.Platforms;
 using RippleSync.Infrastructure.IntegrationRepository;
 using RippleSync.Infrastructure.PlatformRepository;
 using RippleSync.Infrastructure.PostRepository;
 using RippleSync.Infrastructure.Security;
-using RippleSync.Infrastructure.SoMePlatforms;
+using RippleSync.Infrastructure.SoMePlatforms.Facebook;
+using RippleSync.Infrastructure.SoMePlatforms.Instagram;
+using RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
+using RippleSync.Infrastructure.SoMePlatforms.Threads;
+using RippleSync.Infrastructure.SoMePlatforms.X;
 using RippleSync.Infrastructure.UserRepository;
 
 namespace RippleSync.Infrastructure;
@@ -22,11 +28,11 @@ public static class DependencyInjection
 
         services.AddSingleton<IOAuthSecurer, OAuthSecurer>();
 
-        services.AddScoped<ISoMePlatform, SoMePlatformLinkedIn>();
-        services.AddScoped<ISoMePlatform, SoMePlatformX>();
-        services.AddScoped<ISoMePlatform, SoMePlatformFacebook>();
-        services.AddScoped<ISoMePlatform, SoMePlatformInstagram>();
-        services.AddScoped<ISoMePlatform, SoMePlatformThreads>();
+        services.AddKeyedSingleton<ISoMePlatform, SoMePlatformLinkedIn>(Platform.LinkedIn);
+        services.AddKeyedSingleton<ISoMePlatform, SoMePlatformX>(Platform.X);
+        services.AddKeyedSingleton<ISoMePlatform, SoMePlatformFacebook>(Platform.Facebook);
+        services.AddKeyedSingleton<ISoMePlatform, SoMePlatformInstagram>(Platform.Instagram);
+        services.AddKeyedSingleton<ISoMePlatform, SoMePlatformThreads>(Platform.Threads);
 
         services.AddScoped<NpgsqlConnection>(sp => new NpgsqlConnection(connectionString));
 

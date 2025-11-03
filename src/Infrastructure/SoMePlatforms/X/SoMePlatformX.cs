@@ -1,18 +1,21 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 
-namespace RippleSync.Infrastructure.SoMePlatforms;
-internal class SoMePlatformX : ISoMePlatform
+namespace RippleSync.Infrastructure.SoMePlatforms.X;
+
+internal class SoMePlatformX(IOptions<XOptions> options) : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
     {
         var queries = new QueryString()
             .Add("response_type", "code")
-            .Add("client_id", authConfig.ClientId)
+            .Add("client_id", options.Value.ClientId)
             .Add("redirect_uri", authConfig.RedirectUri)
             .Add("scope", "tweet.read+tweet.write+users.read+offline.access")
             .Add("state", authConfig.State)
@@ -22,32 +25,26 @@ internal class SoMePlatformX : ISoMePlatform
         return new Uri("https://x.com/i/oauth2/authorize" + queries.ToUriComponent()).ToString();
     }
 
-    public async Task<TokenResponse> GetTokenUrlAsync(TokenAccessConfiguration tokenConfigs, CancellationToken cancellationToken = default)
+    public HttpRequestMessage GetTokenRequest(TokenAccessConfiguration tokenConfigs)
     {
-        using var httpClient = new HttpClient();
-
         var formData = new Dictionary<string, string>
         {
             ["grant_type"] = "authorization_code",
             ["redirect_uri"] = tokenConfigs.RedirectUri,
-            ["code"] = tokenConfigs.CodeVerifier,
+            ["code"] = tokenConfigs.Code,
             ["code_verifier"] = tokenConfigs.CodeVerifier
         };
 
-        var accessTokenUrl = new Uri("https://api.x.com/2/oauth2/token");
-        var requestContent = new FormUrlEncodedContent(formData);
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.x.com/2/oauth2/token")
+        {
+            Content = new FormUrlEncodedContent(formData)
+        };
 
         // Basic Auth header
-        var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{tokenConfigs.ClientId}:{tokenConfigs.ClientSecret}"));
+        var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{options.Value.ClientId}:{options.Value.ClientSecret}"));
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
 
-        httpClient.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
-
-        var response = await httpClient.PostAsync(accessTokenUrl, requestContent, cancellationToken);
-
-        return await JsonSerializer.DeserializeAsync<TokenResponse>(
-            await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken)
-            ?? throw new InvalidOperationException("Recieved token was null");
+        return request;
     }
 
     public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration) => throw new NotImplementedException();

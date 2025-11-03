@@ -1,15 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Hybrid;
 using RippleSync.API.Common.Extensions;
-using RippleSync.Application.Integrations;
-using RippleSync.Application.Platforms;
-using RippleSync.Domain.Integrations;
+using RippleSync.Application.OAuth;
 using RippleSync.Domain.Platforms;
 using System.ComponentModel.DataAnnotations;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 
 namespace RippleSync.API.OAuth;
 
@@ -19,7 +13,6 @@ namespace RippleSync.API.OAuth;
 public partial class OAuthController(
     ILogger<OAuthController> logger,
     IConfiguration configuration,
-    HybridCache cache,
     OAuthManager oauthManager) : ControllerBase
 {
 
@@ -28,20 +21,18 @@ public partial class OAuthController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> InitiateOauthForPlatform([FromRoute][Range(1, int.MaxValue)] int platformId, CancellationToken cancellationToken = default)
     {
-        IActionResult safeResult = Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                    title: "Invalid platform.",
-                    detail: $"Platform ID {platformId} is not supported."); ;
-
         try
         {
             //Checks if platformId is supported
             if (!Enum.IsDefined(typeof(Platform), platformId))
             {
-                return safeResult;
+                return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                    title: "Invalid platform.",
+                    detail: $"Platform ID {platformId} is not supported."); ; ;
             }
 
-            var authorizationUrl = oauthManager.GetAuthorizationUrl(User.GetUserId(), (Platform)platformId, cancellationToken);
+            var authorizationUrl = await oauthManager.GetAuthorizationUrl(User.GetUserId(), (Platform)platformId, cancellationToken);
 
             //Frontend handles redirect, frontend can create a better redirect experience, with loading and such
             return Ok(new { redirectUrl = authorizationUrl });

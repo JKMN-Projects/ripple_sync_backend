@@ -1,0 +1,46 @@
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
+using RippleSync.Application.Platforms;
+using RippleSync.Domain.Integrations;
+using RippleSync.Domain.Posts;
+using RippleSync.Infrastructure.SoMePlatforms.X;
+using System.Text.Json;
+
+namespace RippleSync.Infrastructure.SoMePlatforms.Facebook;
+internal class SoMePlatformFacebook(IOptions<FacebookOptions> options) : ISoMePlatform
+{
+    public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
+    {
+        var queries = new QueryString()
+            .Add("response_type", "code")
+            .Add("client_id", options.Value.AppId)
+            .Add("redirect_uri", authConfig.RedirectUri)
+            .Add("scope", "read_insights,business_management,public_profile,pages_show_list,pages_manage_posts,pages_read_engagement")
+            .Add("state", authConfig.State)
+            .Add("code_challenge", authConfig.CodeChallenge)
+            .Add("code_challenge_method", "S256");
+
+        return new Uri("https://www.facebook.com/dialog/oauth" + queries.ToUriComponent()).ToString();
+    }
+
+    public HttpRequestMessage GetTokenRequest(TokenAccessConfiguration tokenConfigs)
+    {
+        var formData = new Dictionary<string, string>
+        {
+            ["grant_type"] = "authorization_code",
+            ["client_id"] = options.Value.AppId,
+            ["client_secret"] = options.Value.AppSecret,
+            ["redirect_uri"] = tokenConfigs.RedirectUri,
+            ["code"] = tokenConfigs.Code,
+            ["code_verifier"] = tokenConfigs.CodeVerifier
+        };
+
+        return new HttpRequestMessage(HttpMethod.Post, "https://graph.facebook.com/oauth/access_token")
+        {
+            Content = new FormUrlEncodedContent(formData)
+        };
+    }
+
+    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration) => throw new NotImplementedException();
+    public Task PublishPostAsync(Post post) => throw new NotImplementedException();
+}

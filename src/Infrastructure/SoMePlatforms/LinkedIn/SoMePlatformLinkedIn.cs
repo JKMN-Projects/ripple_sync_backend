@@ -1,17 +1,20 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
+using RippleSync.Infrastructure.SoMePlatforms.X;
+using System.Text;
 using System.Text.Json;
 
-namespace RippleSync.Infrastructure.SoMePlatforms;
-internal class SoMePlatformLinkedIn : ISoMePlatform
+namespace RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
+internal class SoMePlatformLinkedIn(IOptions<LinkedInOptions> options) : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
     {
         var queries = new QueryString()
             .Add("response_type", "code")
-            .Add("client_id", authConfig.ClientId)
+            .Add("client_id", options.Value.ClientId)
             .Add("redirect_uri", authConfig.RedirectUri)
             .Add("scope", "w_member_social")
             .Add("state", authConfig.State)
@@ -21,27 +24,21 @@ internal class SoMePlatformLinkedIn : ISoMePlatform
         return new Uri("https://www.linkedin.com/oauth/v2/authorization" + queries.ToUriComponent()).ToString();
     }
 
-    public async Task<TokenResponse> GetTokenUrlAsync(TokenAccessConfiguration tokenConfigs, CancellationToken cancellationToken = default)
+    public HttpRequestMessage GetTokenRequest(TokenAccessConfiguration tokenConfigs)
     {
-        using var httpClient = new HttpClient();
-
         var formData = new Dictionary<string, string>
         {
             ["grant_type"] = "authorization_code",
-            ["client_id"] = tokenConfigs.ClientId,
-            ["client_secret"] = tokenConfigs.ClientSecret,
+            ["client_id"] = options.Value.ClientId,
+            ["client_secret"] = options.Value.ClientSecret,
             ["redirect_uri"] = tokenConfigs.RedirectUri,
             ["code"] = tokenConfigs.Code
         };
 
-        var accessTokenUrl = new Uri("https://www.linkedin.com/oauth/v2/accessToken");
-        var requestContent = new FormUrlEncodedContent(formData);
-
-        var response = await httpClient.PostAsync(accessTokenUrl, requestContent, cancellationToken);
-
-        return await JsonSerializer.DeserializeAsync<TokenResponse>(
-            await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken)
-            ?? throw new InvalidOperationException("Recieved token was null");
+        return new HttpRequestMessage(HttpMethod.Post, "https://www.linkedin.com/oauth/v2/accessToken")
+        {
+            Content = new FormUrlEncodedContent(formData)
+        };
     }
 
     public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration) => throw new NotImplementedException();

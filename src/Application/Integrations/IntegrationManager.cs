@@ -25,7 +25,9 @@ public sealed class IntegrationManager(
         TokenResponse tokenResponse,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(tokenResponse.AccessToken)) throw new ArgumentNullException(nameof(tokenResponse));
+        if (string.IsNullOrWhiteSpace(tokenResponse.AccessToken)) 
+            throw new ArgumentNullException(nameof(tokenResponse));
+
         if (!Enum.IsDefined(typeof(Platform), platformId))
         {
             throw new ArgumentOutOfRangeException(nameof(platformId), "Invalid platform ID");
