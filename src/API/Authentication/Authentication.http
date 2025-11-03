@@ -4,7 +4,7 @@
 POST {{API_HostAddress}}/api/authentication/Login
 Content-Type: application/json
 {
-  "email": "jukman2@gmail.com",
+  "email": "jukman@gmail.com",
   "password": "Kode1234!"
 }
 
