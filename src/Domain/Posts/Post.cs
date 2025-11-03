@@ -62,6 +62,10 @@ public class Post
         {
             postEvent.Anonymize();
         }
+        foreach (var media in PostMedias)
+        {
+            media.Anonymize();
+        }
         return this;
 
 
