@@ -3,14 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using RippleSync.API.Common.Extensions;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Posts;
-using System.Net.NetworkInformation;
 
 namespace RippleSync.API.Posts;
 
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class PostsController : ControllerBase
+public partial class PostsController : ControllerBase
 {
     private readonly PostManager _postManager;
     public PostsController(PostManager postManager)
@@ -78,19 +77,6 @@ public class PostsController : ControllerBase
             );
 
         return Ok();
-    }
-
-    public class FormData
-    {
-        public Guid? PostId { get; set; }
-
-        public required string MessageContent { get; set; }
-
-        public long? Timestamp { get; set; }
-
-        public required List<Guid> IntegrationIds { get; set; }
-
-        public List<IFormFile>? Files { get; set; }
     }
 
     private static async Task<List<string>> ExtractFilesToBase64(List<IFormFile>? formFiles)
