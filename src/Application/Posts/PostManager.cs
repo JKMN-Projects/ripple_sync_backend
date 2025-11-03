@@ -30,7 +30,7 @@ public class PostManager(
 
         foreach (var integration in userIntegrations)
         {
-            IPlatform? platform = null;
+            ISoMePlatform? platform = null;
             try
             {
                 platform = platformFactory.Create(integration.Platform);
@@ -208,7 +208,7 @@ public class PostManager(
                     "Started publish for post event: PostId={PostId}, Platform={Platform}",
                     post.Id,
                     integration.Platform);
-            IPlatform platform = platformFactory.Create(integration.Platform);
+            ISoMePlatform platform = platformFactory.Create(integration.Platform);
             try
             {
                 var responsePostEvent = await platform.PublishPostAsync(post, integration);

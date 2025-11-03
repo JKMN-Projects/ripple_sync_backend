@@ -3,15 +3,11 @@ using RippleSync.Domain.Posts;
 
 namespace RippleSync.Application.Platforms;
 
-public interface IPlatform
+public interface ISoMePlatform
 {
+    string GetAuthorizationUrl(AuthorizationConfiguration authConfigs);
+    HttpRequestMessage GetTokenRequest(TokenAccessConfiguration tokenConfigs);
     Task<PostEvent> PublishPostAsync(Post post, Integration integration);
     Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration);
     //Task GetPostInsightsAsync(Post post);
 }
-
-public sealed record PlatformStats(
-    int PostCount,
-    int Reach,
-    int Engagement,
-    int Likes);

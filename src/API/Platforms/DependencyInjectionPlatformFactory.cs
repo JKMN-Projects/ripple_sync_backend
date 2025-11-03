@@ -7,9 +7,9 @@ namespace RippleSync.API.Platforms;
 public class DependencyInjectionPlatformFactory(
     IServiceProvider serviceProvider) : IPlatformFactory
 {
-    public IPlatform Create(Platform platform)
+    public ISoMePlatform Create(Platform platform)
     {
-        IPlatform? searchedPlatform = serviceProvider.GetKeyedService<IPlatform>(platform);
+        ISoMePlatform? searchedPlatform = serviceProvider.GetKeyedService<ISoMePlatform>(platform);
         if (searchedPlatform == null)
         {
             throw new ArgumentException($"No platform found for {platform}", nameof(platform));

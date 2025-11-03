@@ -6,10 +6,3 @@ public sealed record TotalPostStatsResponse(
     int TotalReach,
     int TotalLikes,
     IEnumerable<TotalStatsForPlatform> TotalStatsForPlatforms);
-
-public sealed record TotalStatsForPlatform(
-    string Platform,
-    int PublishedPosts,
-    int Reach,
-    int Likes,
-    double AverageEngagement);
