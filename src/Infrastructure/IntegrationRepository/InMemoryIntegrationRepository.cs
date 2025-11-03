@@ -37,5 +37,8 @@ public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegratio
     {
         return Task.FromResult(InMemoryData.Integrations.Where(i => i.UserId == userId));
     }
-    public Task UpdateIntegrationAsync(Integration integration, CancellationToken cancellation = default) => throw new NotImplementedException();
+    public Task UpdateAsync(Integration integration, CancellationToken cancellation = default)
+    {
+        return Task.CompletedTask;
+    }
 }

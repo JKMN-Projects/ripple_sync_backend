@@ -121,11 +121,11 @@ public sealed class UserManager(
         user.Anonymize();
         await userRepository.UpdateUserAsync(user, cancellationToken);
 
-        var integrations = await integrationRepository.GetIntegrationsByUserId(userId, cancellationToken);
+        var integrations = await integrationRepository.GetByUserIdAsync(userId, cancellationToken);
         foreach (var integration in integrations)
         {
             integration.Anonymize();
-            await integrationRepository.UpdateIntegrationAsync(integration, cancellationToken);
+            await integrationRepository.UpdateAsync(integration, cancellationToken);
         }
         var posts = await postRepository.GetAllByUserIdAsync(userId, cancellationToken);
         foreach (var post in posts)
