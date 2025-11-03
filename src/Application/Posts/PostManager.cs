@@ -22,19 +22,11 @@ public class PostManager(
 
     public async Task<TotalPostStatsResponse> GetPostStatForPeriodAsync(Guid userId, DateTime? from, CancellationToken cancellationToken = default)
     {
-        // TODO: Why is Status required here?
-        var stopwatch = Stopwatch.StartNew();
         IEnumerable<GetPostsByUserResponse> posts = await postQueries.GetPostsByUserAsync(userId, null, cancellationToken);
-        stopwatch.Stop();
-        logger.LogInformation("Retrieved {PostCount} posts for user {UserId} in {ElapsedMilliseconds} ms.", posts.Count(), userId, stopwatch.ElapsedMilliseconds);
-        stopwatch.Restart();
         IEnumerable<Integration> userIntegrations = await integrationRepository.GetByUserIdAsync(userId, cancellationToken);
-        stopwatch.Stop();
-        logger.LogInformation("Retrieved {IntegrationCount} integrations for user {UserId} in {ElapsedMilliseconds} ms.", userIntegrations.Count(), userId, stopwatch.ElapsedMilliseconds);
 
         List<(string platformName, PlatformStats stats)> platformStats = [];
 
-        stopwatch.Restart();
         foreach (var integration in userIntegrations)
         {
             IPlatform? platform = null;
@@ -51,14 +43,8 @@ public class PostManager(
             PlatformStats stats = await platform.GetInsightsFromIntegrationAsync(integration);
             platformStats.Add((platformName: integration.Platform.ToString(), stats));
         }
-        stopwatch.Stop();
-        logger.LogInformation("Retrieved platform stats for user {UserId} in {ElapsedMilliseconds} ms.", userId, stopwatch.ElapsedMilliseconds);
-
-        stopwatch.Restart();
         int publishedPosts = posts.Count(p => p.StatusName.Equals("Posted", StringComparison.OrdinalIgnoreCase));
         int scheduledPosts = posts.Count(p => p.StatusName.Equals("Scheduled", StringComparison.OrdinalIgnoreCase));
-        stopwatch.Stop();
-        logger.LogInformation("Calculated published and scheduled posts for user {UserId} in {ElapsedMilliseconds} ms.", userId, stopwatch.ElapsedMilliseconds);
 
         return new TotalPostStatsResponse(
             PublishedPosts: publishedPosts,
