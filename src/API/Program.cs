@@ -1,6 +1,5 @@
 using DbMigrator;
 using Microsoft.Extensions.Caching.Hybrid;
-using RippleSync.API;
 using RippleSync.API.Authentication;
 using RippleSync.API.Common.Middleware;
 using RippleSync.API.Platforms;
@@ -77,15 +76,7 @@ builder.Services.AddJwtAuthentication(jwtOptions);
 
 builder.Services.AddSingleton<PostChannel>();
 
-builder.Services.AddHostedService<PostSchedulingBackgroundService>(sp =>
-{
-    var channel = sp.GetRequiredService<PostChannel>();
-    var logger = sp.GetService<ILogger<PostSchedulingBackgroundService>>();
-    var postManager = sp.GetRequiredService<PostManager>();
-
-    var service = new PostSchedulingBackgroundService(logger, 10, channel, postManager);
-    return service;
-});
+builder.Services.AddHostedService<PostSchedulingBackgroundService>();
 builder.Services.AddHostedService<PostConsumer>();
 
 builder.Services.AddCors(options =>

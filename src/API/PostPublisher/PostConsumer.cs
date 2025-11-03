@@ -2,21 +2,21 @@
 
 namespace RippleSync.API.PostPublisher;
 
-public class PostConsumer(PostChannel channel, ILogger<PostConsumer> logger, PostManager postManager) : BackgroundService
+public class PostConsumer(ILogger<PostConsumer> logger, IServiceProvider serviceProvider) : BackgroundService
 {
-    private readonly PostChannel _channel = channel;
     private readonly ILogger<PostConsumer> _logger = logger;
-    private readonly PostManager _postManager = postManager;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var channel = serviceProvider.GetRequiredService<PostChannel>();
         _logger.LogInformation("PostEventConsumer started");
-
-        await foreach (var message in _channel.ReadAllAsync().WithCancellation(stoppingToken))
+        await foreach (var message in channel.ReadAllAsync().WithCancellation(stoppingToken))
         {
             try
             {
-                await _postManager.ProcessPostEventAsync(message, stoppingToken);
+                using var serviceScope = serviceProvider.CreateScope();
+                var postManager = serviceScope.ServiceProvider.GetRequiredService<PostManager>();
+                await postManager.ProcessPostEventAsync(message, stoppingToken);
             }
             catch (Exception ex)
             {

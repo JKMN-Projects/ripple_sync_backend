@@ -11,25 +11,26 @@ namespace RippleSync.API.PostPublisher;
 /// <param name="intervalSeconds"></param>
 /// <param name="postEventChannel"></param>
 /// <param name="postManager"></param>
-public class PostSchedulingBackgroundService(ILogger<PostSchedulingBackgroundService> logger, int intervalSeconds, PostChannel postEventChannel, PostManager postManager) : BackgroundService
+public class PostSchedulingBackgroundService(ILogger<PostSchedulingBackgroundService> logger, IServiceProvider serviceProvider) : BackgroundService
 {
-    private readonly PostManager _postManager = postManager;
     private readonly ILogger<PostSchedulingBackgroundService> _logger = logger;
-    private readonly int _intervalSeconds = intervalSeconds;
-    private readonly PostChannel _postChannel;
+    private readonly int _intervalSeconds = 10;
 
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Started with interval: {Interval}s", _intervalSeconds);
+        var postChannel = serviceProvider.GetRequiredService<PostChannel>();
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                var postReadyToPublish = await _postManager.GetPostReadyToPublish(stoppingToken);
+                using var scope = serviceProvider.CreateScope();
+                var postManager = scope.ServiceProvider.GetRequiredService<PostManager>();
+                var postReadyToPublish = await postManager.GetPostReadyToPublish(stoppingToken);
                 foreach (var post in postReadyToPublish)
                 {
-                    await _postChannel.PublishAsync(post);
+                    await postChannel.PublishAsync(post);
                 }
             }
             catch (Exception ex)

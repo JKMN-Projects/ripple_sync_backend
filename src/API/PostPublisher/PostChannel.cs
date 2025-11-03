@@ -1,7 +1,7 @@
 ﻿using RippleSync.Domain.Posts;
 using System.Threading.Channels;
 
-namespace RippleSync.API;
+namespace RippleSync.API.PostPublisher;
 
 public class PostChannel
 {
