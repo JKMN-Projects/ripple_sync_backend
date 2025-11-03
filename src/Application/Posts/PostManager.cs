@@ -1,15 +1,43 @@
 ﻿
+using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Domain.Users;
+using RippleSync.Application.Platforms;
+using RippleSync.Domain.Integrations;
+using RippleSync.Domain.Posts;
+
 namespace RippleSync.Application.Posts;
 
-public class PostManager
+public class PostManager(
+    IPostRepository postRepository,
+    IPostQueries postQueries,
+    IPlatformFactory platformFactory)
 {
-    private readonly IPostRepository _postRepository;
-    public PostManager(IPostRepository postRepository)
+    public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status, CancellationToken cancellationToken = default)
+        => new(await postQueries.GetPostsByUserAsync(userId, status, cancellationToken));
+
+    public async Task<TotalPostStatsResponse> GetPostStatForPeriodAsync(Guid userId, DateTime from, CancellationToken cancellationToken = default)
     {
-        _postRepository = postRepository;
+        // TODO: Why is Status required here?
+        IEnumerable<GetPostsByUserResponse> posts = await postQueries.GetPostsByUserAsync(userId, null, cancellationToken);
+        IEnumerable<Integration> userIntegrations = []; // TODO: Get user integrations 
+
+        foreach (var integration in userIntegrations)
+        {
+            IPlatform platform = platformFactory.Create(integration.Platform);
+            PlatformStats stats = await platform.GetInsightsFromIntegrationAsync(integration);
+        }
+
+        int publishedPosts = posts.Count(p => p.StatusName.Equals("Published", StringComparison.OrdinalIgnoreCase));
+        int scheduledPosts = posts.Count(p => p.StatusName.Equals("Scheduled", StringComparison.OrdinalIgnoreCase));
+
+        // TODO: Calculate TotalReach and TotalLikes
+        return new TotalPostStatsResponse(
+            PublishedPosts: publishedPosts,
+            ScheduledPosts: scheduledPosts,
+            TotalReach: -1,
+            TotalLikes: -1);
     }
     public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status)
         => new(await _postRepository.GetPostsByUserAsync(userId, status));
@@ -23,10 +51,10 @@ public class PostManager
     public async Task<bool> UpdatePostAsync(Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, int[] integrationIds)
     => await _postRepository.UpdatePostAsync(postId, messageContent, timestamp, mediaAttachments, integrationIds);
 
-    public async Task DeletePostByIdOnUser(Guid userId, Guid postId)
+    public async Task DeletePostByIdAsync(Guid userId, Guid postId, CancellationToken cancellationToken = default)
     {
         //Request post first
-        var post = await _postRepository.GetPostById(postId);
+        Post? post = await postRepository.GetByIdAsync(postId, cancellationToken);
 
         // Check if post belongs to user and if its deletable
         if (post == null || post.UserId != userId)
@@ -39,10 +67,6 @@ public class PostManager
         }
 
         // Then delete
-        await _postRepository.DeletePost(post);
+        await postRepository.DeleteAsync(post, cancellationToken);
     }
-
-
-
-
 }

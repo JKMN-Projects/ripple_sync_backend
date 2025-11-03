@@ -19,11 +19,11 @@ public class PostsController : ControllerBase
     }
     [HttpGet("byUser")]
     [ProducesResponseType<ListResponse<GetPostsByUserResponse>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetPostsByUser([FromQuery] string? status = default)
+    public async Task<IActionResult> GetPostsByUser([FromQuery] string? status = default, CancellationToken cancellationToken = default)
     {
         Guid userId = User.GetUserId();
 
-        var response = await _postManager.GetPostsByUserAsync(userId, status);
+        var response = await _postManager.GetPostsByUserAsync(userId, status, cancellationToken);
 
         return Ok(response);
     }
@@ -111,12 +111,13 @@ public class PostsController : ControllerBase
         return mediaAttachments;
     }
 
-    [HttpDelete("{postId:int}")]
-    public async Task<IActionResult> DeletePost([FromRoute] Guid postId)
+    [HttpDelete("{postId:Guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeletePost([FromRoute] Guid postId, CancellationToken cancellationToken = default)
     {
         Guid userId = User.GetUserId();
 
-        await _postManager.DeletePostByIdOnUser(userId, postId);
+        await _postManager.DeletePostByIdAsync(userId, postId, cancellationToken);
 
         return NoContent();
 

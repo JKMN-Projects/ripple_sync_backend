@@ -25,7 +25,7 @@ public class User
     /// <returns>A new <see cref="User"/> instance.</returns>
     public static User Create(string email, string passwordHash, string salt)
     {
-        return new User(Guid.NewGuid(), email, passwordHash, salt);
+        return new User(default, email, passwordHash, salt);
     }
 
     /// <summary>

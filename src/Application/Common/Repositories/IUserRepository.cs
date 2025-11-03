@@ -3,5 +3,6 @@
 namespace RippleSync.Application.Common.Repositories;
 public interface IUserRepository
 {
-    public Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default);
+    Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default);
+    Task<Guid> InsertAsync(User user, CancellationToken cancellationToken = default);
 }

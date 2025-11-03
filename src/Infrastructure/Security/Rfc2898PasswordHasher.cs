@@ -13,7 +13,7 @@ public sealed class Rfc2898PasswordHasher : IPasswordHasher
 
     public Rfc2898PasswordHasher(IOptionsMonitor<PasswordHasherOptions> optionsMonitor)
     {
-        this._optionsMonitor = optionsMonitor;
+        _optionsMonitor = optionsMonitor;
     }
 
     public byte[] GenerateSalt()

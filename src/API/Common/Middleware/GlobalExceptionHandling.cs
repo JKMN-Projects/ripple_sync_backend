@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using RippleSync.Application.Common.Exceptions;
 using System.ComponentModel.DataAnnotations;
 
 namespace RippleSync.API.Common.Middleware;
@@ -36,6 +37,17 @@ internal sealed class GlobalExceptionHandling : IExceptionHandler
                 {
                     validationErrors.Add(argEx.ParamName, [argEx.Message]);
                 }
+                break;
+            case UnauthorizedException unEx:
+                if (isUserAuthenticated)
+                {
+                    statusCode = StatusCodes.Status403Forbidden;
+                }
+                else
+                {
+                    statusCode = StatusCodes.Status401Unauthorized;
+                }
+                errorMessage = unEx.Message;
                 break;
         }
 

@@ -3,18 +3,18 @@ namespace RippleSync.Domain.Posts;
 
 public class Post
 {
-    public Guid Id { get; set; }
-    public Guid UserId { get; set; }
-    public string MessageContent { get; set; } = string.Empty;
-    public DateTime UpdatedAt { get; set; }
-    public DateTime? ScheduledFor { get; set; }
-    public IEnumerable<PostEvent> PostEvents { get; set; }
+    public Guid Id { get; private set; }
+    public Guid UserId { get; private set; }
+    public string MessageContent { get; private set; } = string.Empty;
+    public DateTime UpdatedAt { get; private set; }
+    public DateTime? ScheduledFor { get; private set; }
+    public IEnumerable<PostEvent> PostEvents { get; private set; }
     public IEnumerable<PostMedia>? PostMedias { get; set; }
 
-    public Post(Guid UserId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents, IEnumerable<PostMedia>? postMedias)
+    public Post(Guid userId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents, IEnumerable<PostMedia>? postMedias)
     {
-        Id = Guid.NewGuid();
-        this.UserId = UserId;
+        Id = id;
+        UserId = userId;
         MessageContent = messageContent;
         UpdatedAt = updatedAt;
         ScheduledFor = scheduledFor;
@@ -22,12 +22,29 @@ public class Post
         PostMedias = postMedias;
     }
 
-    public bool IsDeletable()
+    public static Post Create(Guid userId, string messageContent, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents)
     {
-        var latestStatus = PostEvents.MaxBy(pe => pe.Status)?.Status;
-        return latestStatus is PostStatus.Draft or PostStatus.Scheduled;
+        return new Post(
+            id: Guid.NewGuid(),
+            userId: userId,
+            messageContent: messageContent,
+            updatedAt: DateTime.UtcNow,
+            scheduledFor: scheduledFor,
+            postsEvents: postsEvents
+        );
     }
-}
+
+    public static Post Reconstitute(Guid id, Guid userId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents)
+    {
+        return new Post(
+            id: id,
+            userId: userId,
+            messageContent: messageContent,
+            updatedAt: updatedAt,
+            scheduledFor: scheduledFor,
+            postsEvents: postsEvents
+        );
+    }
 
 public class PostEvent
 {
@@ -45,12 +62,10 @@ public class PostMedia
     public Guid PostId { get; set; }
     public required string ImageUrl { get; set; }
 }
+    public bool IsDeletable()
+    {
+        var latestStatus = PostEvents.MaxBy(pe => pe.Status)?.Status;
+        return latestStatus is PostStatus.Draft or PostStatus.Scheduled;
+    }
 
-public enum PostStatus
-{
-    Draft = 0,
-    Scheduled,
-    Posted,
-    Processing,
-    Failed
 }

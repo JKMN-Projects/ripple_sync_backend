@@ -1,5 +1,4 @@
-﻿using RippleSync.Application.Posts;
-using RippleSync.Domain.Posts;
+﻿using RippleSync.Domain.Posts;
 
 namespace RippleSync.Application.Common.Repositories;
 
@@ -13,7 +12,7 @@ public interface IPostRepository
 
     Task<bool> UpdatePostAsync(Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, int[] integrationsIds, CancellationToken cancellationToken = default);
 
-    Task DeletePost(Post post);
-
     Task<Post> GetPostById(Guid postId);
+    Task DeleteAsync(Post post, CancellationToken cancellationToken = default);
+    Task<Post?> GetByIdAsync(Guid postId, CancellationToken cancellationToken = default);
 }

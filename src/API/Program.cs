@@ -1,10 +1,13 @@
+using DbMigrator;
+using Microsoft.Extensions.Caching.Hybrid;
 using RippleSync.API.Authentication;
 using RippleSync.API.Common.Middleware;
+using RippleSync.API.Platforms;
 using RippleSync.Application;
+using RippleSync.Application.Platforms;
 using RippleSync.Infrastructure;
 using RippleSync.Infrastructure.Security;
 using Serilog;
-using DbMigrator;
 using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -49,7 +52,9 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandling>();
 //});
 
 builder.Services.AddApplicationServices();
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(connString);
+
+builder.Services.AddSingleton<IPlatformFactory, DependencyInjectionPlatformFactory>();
 
 builder.Services.AddOptions<PasswordHasherOptions>()
     .Bind(builder.Configuration.GetSection("PasswordHasher"))
@@ -83,6 +88,15 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowCredentials();
     });
+});
+
+builder.Services.AddHybridCache(options =>
+{
+    options.DefaultEntryOptions = new HybridCacheEntryOptions
+    {
+        Expiration = TimeSpan.FromMinutes(10),
+        LocalCacheExpiration = TimeSpan.FromMinutes(10)
+    };
 });
 
 var app = builder.Build();
