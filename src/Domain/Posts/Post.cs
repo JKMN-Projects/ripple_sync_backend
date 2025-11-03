@@ -53,4 +53,21 @@ public class Post
         var latestStatus = PostEvents.MaxBy(pe => pe.Status)?.Status;
         return latestStatus is PostStatus.Draft or PostStatus.Scheduled;
     }
+
+    public Post Anonymize()
+    {
+        MessageContent = string.Empty;
+
+        foreach (var postEvent in PostEvents)
+        {
+            postEvent.Anonymize();
+        }
+        foreach (var media in PostMedias)
+        {
+            media.Anonymize();
+        }
+        return this;
+
+
+    }
 }

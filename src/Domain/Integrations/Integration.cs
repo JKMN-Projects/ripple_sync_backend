@@ -52,4 +52,12 @@ public class Integration
             scope: scope
         );
     }
+    public Integration Anonymize()
+    {
+        AccessToken = string.Empty;
+        RefreshToken = string.Empty;
+        TokenType = string.Empty;
+        Scope = string.Empty;
+        return this;
+    }
 }
