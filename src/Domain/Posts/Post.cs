@@ -55,7 +55,7 @@ public class Post
         var readyToPublish = ScheduledFor < DateTime.Now && postStatus == PostStatus.Scheduled;
         return readyToPublish;
     }
-    private PostStatus? GetPostMaxStatus()
+    public PostStatus? GetPostMaxStatus()
     {
         var postStatus = PostEvents.MaxBy(pe => pe.Status)?.Status;
         return postStatus;

@@ -1,7 +1,6 @@
-﻿
-using RippleSync.Application.Posts;
+﻿using RippleSync.Application.Posts;
 
-namespace RippleSync.API;
+namespace RippleSync.API.PostPublisher;
 
 
 /// <summary>
@@ -17,7 +16,7 @@ public class PostSchedulingBackgroundService(ILogger<PostSchedulingBackgroundSer
     private readonly PostManager _postManager = postManager;
     private readonly ILogger<PostSchedulingBackgroundService> _logger = logger;
     private readonly int _intervalSeconds = intervalSeconds;
-    private readonly PostChannel _postEventChannel;
+    private readonly PostChannel _postChannel;
 
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -27,14 +26,10 @@ public class PostSchedulingBackgroundService(ILogger<PostSchedulingBackgroundSer
         {
             try
             {
-                //TODO: Request application for posts where schedule time is older than now
                 var postReadyToPublish = await _postManager.GetPostReadyToPublish(stoppingToken);
                 foreach (var post in postReadyToPublish)
                 {
-                    foreach (var postEvent in post.PostEvents)
-                    {
-                        await _postEventChannel.PublishAsync(postEvent);
-                    }
+                    await _postChannel.PublishAsync(post);
                 }
             }
             catch (Exception ex)

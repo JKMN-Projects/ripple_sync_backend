@@ -4,6 +4,7 @@ using RippleSync.API;
 using RippleSync.API.Authentication;
 using RippleSync.API.Common.Middleware;
 using RippleSync.API.Platforms;
+using RippleSync.API.PostPublisher;
 using RippleSync.Application;
 using RippleSync.Application.Platforms;
 using RippleSync.Application.Posts;
@@ -85,6 +86,8 @@ builder.Services.AddHostedService<PostSchedulingBackgroundService>(sp =>
     var service = new PostSchedulingBackgroundService(logger, 10, channel, postManager);
     return service;
 });
+builder.Services.AddHostedService<PostConsumer>();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>

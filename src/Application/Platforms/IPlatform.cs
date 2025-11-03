@@ -5,7 +5,7 @@ namespace RippleSync.Application.Platforms;
 
 public interface IPlatform
 {
-    Task PublishPostAsync(Post post);
+    Task<PostEvent> PublishPostAsync(Post post, Integration integration);
     Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration);
     //Task GetPostInsightsAsync(Post post);
 }
@@ -15,3 +15,4 @@ public sealed record PlatformStats(
     int Reach,
     int Engagement,
     int Followers);
+
