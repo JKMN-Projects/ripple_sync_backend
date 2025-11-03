@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.Extensions.Logging;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
@@ -11,34 +12,55 @@ using System.Threading;
 namespace RippleSync.Application.Posts;
 
 public class PostManager(
+    ILogger<PostManager> logger,
     IPostRepository postRepository,
     IPostQueries postQueries,
+    IIntegrationRepository integrationRepository,
     IPlatformFactory platformFactory)
 {
     public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status, CancellationToken cancellationToken = default)
         => new(await postQueries.GetPostsByUserAsync(userId, status, cancellationToken));
 
-    public async Task<TotalPostStatsResponse> GetPostStatForPeriodAsync(Guid userId, DateTime from, CancellationToken cancellationToken = default)
+    public async Task<TotalPostStatsResponse> GetPostStatForPeriodAsync(Guid userId, DateTime? from, CancellationToken cancellationToken = default)
     {
-        // TODO: Why is Status required here?
         IEnumerable<GetPostsByUserResponse> posts = await postQueries.GetPostsByUserAsync(userId, null, cancellationToken);
-        IEnumerable<Integration> userIntegrations = []; // TODO: Get user integrations 
+        IEnumerable<Integration> userIntegrations = await integrationRepository.GetByUserIdAsync(userId, cancellationToken);
+
+        List<(string platformName, PlatformStats stats)> platformStats = [];
 
         foreach (var integration in userIntegrations)
         {
-            IPlatform platform = platformFactory.Create(integration.Platform);
+            IPlatform? platform = null;
+            try
+            {
+                platform = platformFactory.Create(integration.Platform);
+            }
+            catch (ArgumentException argEx)
+                when (argEx.ParamName == null || argEx.ParamName.Equals("platform", StringComparison.OrdinalIgnoreCase))
+            {
+                logger.LogWarning("Platform factory could not create platform for {Platform}. Skipping stats retrieval for this platform.", integration.Platform);
+                continue;
+            }
             PlatformStats stats = await platform.GetInsightsFromIntegrationAsync(integration);
+            platformStats.Add((platformName: integration.Platform.ToString(), stats));
         }
-
-        int publishedPosts = posts.Count(p => p.StatusName.Equals("Published", StringComparison.OrdinalIgnoreCase));
+        int publishedPosts = posts.Count(p => p.StatusName.Equals("Posted", StringComparison.OrdinalIgnoreCase));
         int scheduledPosts = posts.Count(p => p.StatusName.Equals("Scheduled", StringComparison.OrdinalIgnoreCase));
 
-        // TODO: Calculate TotalReach and TotalLikes
         return new TotalPostStatsResponse(
             PublishedPosts: publishedPosts,
             ScheduledPosts: scheduledPosts,
-            TotalReach: -1,
-            TotalLikes: -1);
+            TotalReach: platformStats.Sum(x => x.stats.Reach),
+            TotalLikes: platformStats.Sum(x => x.stats.Likes),
+            TotalStatsForPlatforms: platformStats.Select(ps => new TotalStatsForPlatform(
+                Platform: ps.platformName,
+                PublishedPosts: ps.stats.PostCount,
+                Reach: ps.stats.Reach,
+                Likes: ps.stats.Likes,
+                AverageEngagement: ps.stats.Engagement > 0 && ps.stats.PostCount > 0
+                    ? (double)ps.stats.Engagement / ps.stats.PostCount
+                    : 0)).ToList()
+        );
     }
     public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status)
         => new(await postRepository.GetPostsByUserAsync(userId, status));

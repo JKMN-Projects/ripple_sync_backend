@@ -32,4 +32,7 @@ public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegratio
         var toEditIndex = InMemoryData.IntegrationResponses.IndexOf(toEdit);
         InMemoryData.IntegrationResponses[toEditIndex] = toEdit with { Connected = connected };
     }
+
+    public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        => Task.FromResult((IEnumerable<Integration>)InMemoryData.Integrations);
 }
