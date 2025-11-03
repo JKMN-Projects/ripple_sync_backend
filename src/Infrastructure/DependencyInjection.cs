@@ -6,9 +6,9 @@ using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
 using RippleSync.Infrastructure.IntegrationRepository;
 using RippleSync.Infrastructure.PlatformRepository;
-using RippleSync.Infrastructure.Platforms;
 using RippleSync.Infrastructure.PostRepository;
 using RippleSync.Infrastructure.Security;
+using RippleSync.Infrastructure.SoMePlatforms;
 using RippleSync.Infrastructure.UserRepository;
 
 namespace RippleSync.Infrastructure;
@@ -24,6 +24,9 @@ public static class DependencyInjection
 
         services.AddScoped<ISoMePlatform, SoMePlatformLinkedIn>();
         services.AddScoped<ISoMePlatform, SoMePlatformX>();
+        services.AddScoped<ISoMePlatform, SoMePlatformFacebook>();
+        services.AddScoped<ISoMePlatform, SoMePlatformInstagram>();
+        services.AddScoped<ISoMePlatform, SoMePlatformThreads>();
 
         services.AddScoped<NpgsqlConnection>(sp => new NpgsqlConnection(connectionString));
 

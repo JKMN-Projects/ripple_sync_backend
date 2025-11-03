@@ -5,7 +5,7 @@ using RippleSync.Domain.Posts;
 using System.Text.Json;
 
 namespace RippleSync.Infrastructure.SoMePlatforms;
-internal class SoMePlatformLinkedIn : ISoMePlatform
+internal class SoMePlatformInstagram : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
     {
@@ -13,12 +13,12 @@ internal class SoMePlatformLinkedIn : ISoMePlatform
             .Add("response_type", "code")
             .Add("client_id", authConfig.ClientId)
             .Add("redirect_uri", authConfig.RedirectUri)
-            .Add("scope", "w_member_social")
+            .Add("scope", "read_insights,business_management,pages_show_list,pages_manage_posts,pages_read_engagement,instagram_manage_insights,instagram_content_publish,pages_read_engagement")
             .Add("state", authConfig.State)
             .Add("code_challenge", authConfig.CodeChallenge)
             .Add("code_challenge_method", "S256");
 
-        return new Uri("https://www.linkedin.com/oauth/v2/authorization" + queries.ToUriComponent()).ToString();
+        return new Uri("https://www.instagram.com/oauth/authorize" + queries.ToUriComponent()).ToString();
     }
 
     public async Task<TokenResponse> GetTokenUrlAsync(TokenAccessConfiguration tokenConfigs, CancellationToken cancellationToken = default)

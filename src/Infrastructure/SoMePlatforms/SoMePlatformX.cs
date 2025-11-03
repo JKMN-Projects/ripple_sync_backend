@@ -5,12 +5,12 @@ using RippleSync.Domain.Posts;
 using System.Text;
 using System.Text.Json;
 
-namespace RippleSync.Infrastructure.Platforms;
+namespace RippleSync.Infrastructure.SoMePlatforms;
 internal class SoMePlatformX : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
     {
-        QueryString queries = new QueryString()
+        var queries = new QueryString()
             .Add("response_type", "code")
             .Add("client_id", authConfig.ClientId)
             .Add("redirect_uri", authConfig.RedirectUri)
@@ -34,7 +34,7 @@ internal class SoMePlatformX : ISoMePlatform
             ["code_verifier"] = tokenConfigs.CodeVerifier
         };
 
-        Uri accessTokenUrl = new Uri("https://api.x.com/2/oauth2/token");
+        var accessTokenUrl = new Uri("https://api.x.com/2/oauth2/token");
         var requestContent = new FormUrlEncodedContent(formData);
 
         // Basic Auth header
