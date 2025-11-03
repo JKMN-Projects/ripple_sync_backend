@@ -165,7 +165,7 @@ public class PostManager(
         // Check if post belongs to user and if its deletable
         if (post == null || post.UserId != userId)
         {
-            throw new UnauthorizedAccessException("Post does not belong to the user.");
+            throw new UnauthorizedException("Post does not belong to the user.");
         }
         if (post.IsDeletable() is false)
         {
