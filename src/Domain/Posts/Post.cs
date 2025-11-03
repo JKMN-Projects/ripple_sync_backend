@@ -5,12 +5,13 @@ public class Post
 {
     public Guid Id { get; private set; }
     public Guid UserId { get; private set; }
-    public string MessageContent { get; private set; } = string.Empty;
-    public DateTime UpdatedAt { get; private set; }
-    public DateTime? ScheduledFor { get; private set; }
-    public IEnumerable<PostEvent> PostEvents { get; private set; }
+    public string MessageContent { get; set; } = string.Empty;
+    public DateTime UpdatedAt { get; set; }
+    public DateTime? ScheduledFor { get; set; }
+    public IEnumerable<PostEvent> PostEvents { get; set; }
+    public IEnumerable<PostMedia>? PostMedias { get; set; }
 
-    private Post(Guid id, Guid userId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents)
+    private Post(Guid id, Guid userId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents, IEnumerable<PostMedia>? postMedias)
     {
         Id = id;
         UserId = userId;
@@ -18,9 +19,10 @@ public class Post
         UpdatedAt = updatedAt;
         ScheduledFor = scheduledFor;
         PostEvents = postsEvents;
+        PostMedias = postMedias;
     }
 
-    public static Post Create(Guid userId, string messageContent, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents)
+    public static Post Create(Guid userId, string messageContent, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents, IEnumerable<PostMedia>? postMedias)
     {
         return new Post(
             id: Guid.NewGuid(),
@@ -28,11 +30,12 @@ public class Post
             messageContent: messageContent,
             updatedAt: DateTime.UtcNow,
             scheduledFor: scheduledFor,
-            postsEvents: postsEvents
+            postsEvents: postsEvents,
+            postMedias: postMedias
         );
     }
 
-    public static Post Reconstitute(Guid id, Guid userId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents)
+    public static Post Reconstitute(Guid id, Guid userId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents, IEnumerable<PostMedia>? postMedias)
     {
         return new Post(
             id: id,
@@ -40,7 +43,8 @@ public class Post
             messageContent: messageContent,
             updatedAt: updatedAt,
             scheduledFor: scheduledFor,
-            postsEvents: postsEvents
+            postsEvents: postsEvents,
+            postMedias: postMedias
         );
     }
 
@@ -49,5 +53,4 @@ public class Post
         var latestStatus = PostEvents.MaxBy(pe => pe.Status)?.Status;
         return latestStatus is PostStatus.Draft or PostStatus.Scheduled;
     }
-
 }
