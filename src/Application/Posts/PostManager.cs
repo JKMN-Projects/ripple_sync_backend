@@ -209,7 +209,6 @@ public class PostManager(
                     post.Id,
                     integration.Platform);
             IPlatform platform = platformFactory.Create(integration.Platform);
-            var postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id);
             try
             {
                 var responsePostEvent = await platform.PublishPostAsync(post, integration);
@@ -222,7 +221,8 @@ public class PostManager(
                     integration.Platform,
                     ex.Message
                 );
-                postEvent.Status = PostStatus.Failed;
+                var postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id);
+                postEvent!.Status = PostStatus.Failed;
                 await UpdatePostEventAsync(postEvent);
             }
         }
