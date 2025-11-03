@@ -9,7 +9,7 @@ namespace RippleSync.Infrastructure.IntegrationRepository;
 public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegrationQueries
 {
     public Task<IEnumerable<ConnectedIntegrationsResponse>> GetConnectedIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
-        => Task.FromResult(InMemoryData.integrations.Select(i => new ConnectedIntegrationsResponse(i.Id, i.Platform.ToString())));
+        => Task.FromResult(InMemoryData.Integrations.Select(i => new ConnectedIntegrationsResponse(i.Id, i.Platform.ToString())));
 
     public Task CreateAsync(Integration integration, CancellationToken cancellationToken = default)
     {

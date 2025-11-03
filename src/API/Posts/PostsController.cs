@@ -53,7 +53,7 @@ public partial class PostsController : ControllerBase
 
         var mediaAttachments = await ExtractFilesToBase64(request.Files);
 
-        CreatePostDto post = new CreatePostDto(userId,
+        CreatePostDto post = new CreatePostDto(
                 request.MessageContent,
                 request.Timestamp,
                 mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
@@ -72,15 +72,18 @@ public partial class PostsController : ControllerBase
 
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdatePost([FromForm] FormData request)
+    public async Task<IActionResult> UpdatePost([FromForm] FormData request, CancellationToken cancellationToken = default)
     {
         var mediaAttachments = await ExtractFilesToBase64(request.Files);
 
-        await _postManager.UpdatePostAsync(request.PostId ?? new Guid(),
+        await _postManager.UpdatePostAsync(
+                User.GetUserId(),
+                request.PostId ?? new Guid(),
                 request.MessageContent,
                 request.Timestamp,
                 mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
-                request.IntegrationIds.ToArray()
+                request.IntegrationIds.ToArray(),
+                cancellationToken: cancellationToken
             );
 
         return Ok();
