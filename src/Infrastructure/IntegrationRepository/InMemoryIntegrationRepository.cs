@@ -31,4 +31,12 @@ public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegratio
     {
         return Task.CompletedTask;
     }
+
+    public Task<IEnumerable<Integration>> GetIntegrationsByIds(List<Guid> integrationIds)
+    {
+        var integrations = InMemoryData.Integrations.Where(i => integrationIds.Contains(i.Id));
+        return integrations.Any()
+            ? Task.FromResult(integrations) 
+            : Task.FromResult(Enumerable.Empty<Integration>());
+    }
 }
