@@ -24,7 +24,8 @@ public abstract class UserManagerTests
     {
         ILogger<UserManager> logger = new LoggerDoubles.Fakes.FakeLogger<UserManager>();
         userRepository ??= new UserRepositoryDoubles.Dummy();
-      
+        integrationRepository ??= new IntegrationRepositoryDoubles.Dummy();
+        postRepository ??= new PostRepositoryDoubles.Dummy();
         passwordHasher ??= new PasswordHasherDoubles.Dummy();
         authenticationTokenProvider ??= new AuthenticationTokenProviderDoubles.Dummy();
 
@@ -93,7 +94,10 @@ public abstract class UserManagerTests
             UserRepositoryDoubles.Spies.GetUserByEmail userRepositorySpy = new(
                 spiedRepository: new UserRepositoryDoubles.Stubs.GetUserByEmail.ReturnsSpecificUser(user));
             UserManager sut = GetSystemUnderTest(
-                userRepository: userRepositorySpy,
+                userRepository: new UserRepositoryDoubles.Composite(
+                    userRepositorySpy,
+                    new UserRepositoryDoubles.Stubs.UpdateUser.ReturnsReceivedUser()
+                ),
                 passwordHasher: new PasswordHasherDoubles.Stubs.Verify.AlwaysValid(),
                 authenticationTokenProvider: new AuthenticationTokenProviderDoubles.Fakes.SimpleTokenProvider());
 
@@ -138,7 +142,10 @@ public abstract class UserManagerTests
             PasswordHasherDoubles.Spies.VerifySpy passwordHasherSpy = new(
                 spiedHasher: new PasswordHasherDoubles.Stubs.Verify.AlwaysValid());
             UserManager sut = GetSystemUnderTest(
-                userRepository: new UserRepositoryDoubles.Stubs.GetUserByEmail.ReturnsSpecificUser(user),
+                userRepository: new UserRepositoryDoubles.Composite(
+                    new UserRepositoryDoubles.Stubs.GetUserByEmail.ReturnsSpecificUser(user),
+                    new UserRepositoryDoubles.Stubs.UpdateUser.ReturnsReceivedUser()
+                ),
                 passwordHasher: passwordHasherSpy,
                 authenticationTokenProvider: new AuthenticationTokenProviderDoubles.Fakes.SimpleTokenProvider());
 
@@ -166,9 +173,14 @@ public abstract class UserManagerTests
             AuthenticationTokenProviderDoubles.Spies.GenerateTokenSpy authTokenProviderSpy = new(
                 new AuthenticationTokenProviderDoubles.Fakes.SimpleTokenProvider());
             UserManager sut = GetSystemUnderTest(
-                userRepository: new UserRepositoryDoubles.Stubs.GetUserByEmail.ReturnsSpecificUser(user),
+                userRepository: new UserRepositoryDoubles.Composite(
+                    new UserRepositoryDoubles.Stubs.GetUserByEmail.ReturnsSpecificUser(user),
+                    new UserRepositoryDoubles.Stubs.UpdateUser.ReturnsReceivedUser()),
                 passwordHasher: new PasswordHasherDoubles.Stubs.Verify.AlwaysValid(),
-                authenticationTokenProvider: authTokenProviderSpy);
+                authenticationTokenProvider: new AuthenticationTokenProviderDoubles.Composite(
+                    authTokenProviderSpy,
+                    new AuthenticationTokenProviderDoubles.Fakes.SimpleTokenProvider())
+                );
 
             // Act
             await sut.GetAuthenticationTokenAsync(email, password);
@@ -190,7 +202,10 @@ public abstract class UserManagerTests
                 .Build();
             AuthenticationTokenProviderDoubles.Fakes.JsonSerializedTokenProvider jsonTokenProvider = new();
             UserManager sut = GetSystemUnderTest(
-                userRepository: new UserRepositoryDoubles.Stubs.GetUserByEmail.ReturnsSpecificUser(user),
+                userRepository: new UserRepositoryDoubles.Composite(
+                    new UserRepositoryDoubles.Stubs.GetUserByEmail.ReturnsSpecificUser(user),
+                    new UserRepositoryDoubles.Stubs.UpdateUser.ReturnsReceivedUser()
+                ),
                 passwordHasher: new PasswordHasherDoubles.Stubs.Verify.AlwaysValid(),
                 authenticationTokenProvider: jsonTokenProvider);
 
@@ -204,6 +219,36 @@ public abstract class UserManagerTests
             (IEnumerable<(string Key, string Value)> Claims, DateTimeOffset Expiration) = AuthenticationTokenProviderDoubles.Fakes.JsonSerializedTokenProvider.DecodeToken(tokenResponse.Token);
             string? emailClaim = Claims.FirstOrDefault(c => c.Key == "email").Value;
             Assert.Equal(email, emailClaim);
+        }
+
+        [Fact]
+        public async Task Should_AddRefreshTokenTo_WhenCredentialsAreValid()
+        {
+            // Arrange
+            string email = "jukman@gmail.com";
+            string password = "Password123!";
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .WithEmail(email)
+                .WithPassword(password)
+                .Build();
+            var updateUserSpy = new UserRepositoryDoubles.Spies.UpdateUser(
+                spiedRepository: new UserRepositoryDoubles.Stubs.UpdateUser.ReturnsReceivedUser());
+            UserManager sut = GetSystemUnderTest(
+                userRepository: new UserRepositoryDoubles.Composite(
+                    new UserRepositoryDoubles.Stubs.GetUserByEmail.ReturnsSpecificUser(user),
+                    updateUserSpy
+                ),
+                passwordHasher: new PasswordHasherDoubles.Stubs.Verify.AlwaysValid(),
+                authenticationTokenProvider: new AuthenticationTokenProviderDoubles.Fakes.SimpleTokenProvider());
+
+            // Act
+            await sut.GetAuthenticationTokenAsync(email, password);
+
+            // Assert
+            Assert.NotNull(user.RefreshToken);
+            Assert.Equal(1, updateUserSpy.InvokationCount);
+            Assert.Equal(user.Email, updateUserSpy.LastReceivedUser?.Email);
+            Assert.NotNull(updateUserSpy.LastReceivedUser?.RefreshToken);
         }
     }
 

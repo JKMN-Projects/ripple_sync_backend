@@ -29,7 +29,7 @@ internal sealed class InMemoryUserRepository : IUserRepository
             Guid.NewGuid(),
             user.Email,
             user.PasswordHash,
-            user.Salt);
+            user.Salt, null);
         InMemoryData.Users.Add(userToAdd);
         return userToAdd.Id;
     }

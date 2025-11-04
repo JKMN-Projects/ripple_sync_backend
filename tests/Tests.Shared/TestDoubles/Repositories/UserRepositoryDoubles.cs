@@ -21,9 +21,9 @@ public static partial class UserRepositoryDoubles
     public class Dummy : IUserRepository
     {
         public virtual Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-        public Task<User?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public virtual Task<User?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public virtual Task<Guid> InsertAsync(User user, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-        public Task<User> UpdateUserAsync(User user, CancellationToken cancellation = default) => throw new NotImplementedException();
+        public virtual Task<User> UpdateUserAsync(User user, CancellationToken cancellation = default) => throw new NotImplementedException();
     }
 
     public class Composite : IUserRepository
@@ -54,7 +54,7 @@ public static partial class UserRepositoryDoubles
             {
                 return _first.GetUserByIdAsync(userId, cancellationToken);
             }
-            catch (Exception)
+            catch (NotImplementedException)
             {
 
                 return _second.GetUserByIdAsync(userId, cancellationToken);
@@ -73,7 +73,17 @@ public static partial class UserRepositoryDoubles
             }
         }
 
-        public Task<User> UpdateUserAsync(User user, CancellationToken cancellation = default) => throw new NotImplementedException();
+        public Task<User> UpdateUserAsync(User user, CancellationToken cancellation = default)
+        {
+            try
+            {
+                return _first.UpdateUserAsync(user, cancellation);
+            }
+            catch (NotImplementedException)
+            {
+                return _second.UpdateUserAsync(user, cancellation);
+            }
+        }
     }
 
     public static partial class Stubs
@@ -104,6 +114,15 @@ public static partial class UserRepositoryDoubles
             {
                 public override Task<Guid> InsertAsync(User user, CancellationToken cancellationToken = default) 
                     => Task.FromResult(Guid.NewGuid());
+            }
+        }
+
+        public static class UpdateUser
+        {
+            public class ReturnsReceivedUser : Dummy
+            {
+                public override Task<User> UpdateUserAsync(User user, CancellationToken cancellation = default) 
+                    => Task.FromResult(user);
             }
         }
     }
@@ -144,6 +163,23 @@ public static partial class UserRepositoryDoubles
                 LastReceivedUser = user;
                 InvokationCount++;
                 return spiedRepository.InsertAsync(user, cancellationToken);
+            }
+        }
+
+        public class UpdateUser : Dummy
+        {
+            public User? LastReceivedUser { get; private set; }
+            public int InvokationCount { get; private set; }
+            private readonly IUserRepository spiedRepository;
+            public UpdateUser(IUserRepository spiedRepository)
+            {
+                this.spiedRepository = spiedRepository;
+            }
+            public override Task<User> UpdateUserAsync(User user, CancellationToken cancellation = default)
+            {
+                LastReceivedUser = user;
+                InvokationCount++;
+                return spiedRepository.UpdateUserAsync(user, cancellation);
             }
         }
     }

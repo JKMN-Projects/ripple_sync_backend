@@ -8,22 +8,17 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace RippleSync.Infrastructure.Security;
 
-public sealed class JwtTokenProvider : IAuthenticationTokenProvider
+public sealed class JwtTokenProvider(
+    IOptionsMonitor<JwtOptions> optionsMonitor,
+    TimeProvider timeProvider) : IAuthenticationTokenProvider
 {
-    private readonly IOptionsMonitor<JwtOptions> _optionsMonitor;
-
-    private JwtOptions Options => _optionsMonitor.CurrentValue;
-
-    public JwtTokenProvider(IOptionsMonitor<JwtOptions> optionsMonitor)
-    {
-        _optionsMonitor = optionsMonitor;
-    }
+    private JwtOptions Options => optionsMonitor.CurrentValue;
 
     public Task<AuthenticationToken> GenerateTokenAsync(User user, CancellationToken cancellationToken = default)
     {
         byte[] tokenKey = Encoding.UTF8.GetBytes(Options.Key);
         IEnumerable<Claim> claims = BuildUserClaims(user);
-        DateTimeOffset expireDate = DateTimeOffset.UtcNow.AddMinutes(Options.ValidityInMinutes);
+        DateTimeOffset expireDate = timeProvider.GetUtcNow().AddMinutes(Options.ValidityInMinutes);
         SecurityTokenDescriptor securityTokenDescriptor = new()
         {
             Subject = new ClaimsIdentity(claims),
@@ -47,5 +42,14 @@ public sealed class JwtTokenProvider : IAuthenticationTokenProvider
     {
         yield return new Claim(ClaimTypes.NameIdentifier, user.Id.ToString());
         yield return new Claim(ClaimTypes.Email, user.Email);
+    }
+
+    public Task<RefreshToken> GenerateRefreshTokenAsync(User user, CancellationToken cancellationToken = default)
+    {
+        string token = Guid.NewGuid().ToString();
+        DateTimeOffset createdAt = timeProvider.GetUtcNow();
+        DateTimeOffset expiresAt = createdAt.AddDays(Options.RefreshTokenValidityInDays);
+        RefreshToken refreshToken = RefreshToken.Create(token, createdAt.UtcDateTime, expiresAt.UtcDateTime);
+        return Task.FromResult(refreshToken);
     }
 }

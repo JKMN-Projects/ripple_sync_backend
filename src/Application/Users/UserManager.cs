@@ -48,11 +48,15 @@ public sealed class UserManager(
 
         if (!passwordHasher.Verify(passwordBytes, salt, passwordHash))
         {
-            throw new ArgumentException("Invalid password", nameof(password));
+            throw new ArgumentException("Invalid password.", nameof(password));
         }
 
         logger.LogInformation("Generating authentication token for user with email {Email}", email);
         AuthenticationToken token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
+
+        RefreshToken refreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
+        user.SetRefreshToken(refreshToken);
+        await userRepository.UpdateUserAsync(user, cancellationToken);
         return new AuthenticationTokenResponse(token.AccessToken, token.TokenType, token.ExpiresInMilliSeconds);
     }
 
