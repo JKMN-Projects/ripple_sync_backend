@@ -41,7 +41,6 @@ public sealed class IntegrationManager(
             ? encryptor.Encrypt(tokenResponse.RefreshToken)
             : null;
 
-        /// ENCRYPT ACCESSTOKEN HERE
         DateTime expiresAt = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
 
         Integration integration = Integration.Create(userId, (Platform)platformId, encryptedAccessToken, encryptedRefreshToken, expiresAt, tokenResponse.TokenType, tokenResponse.Scope);

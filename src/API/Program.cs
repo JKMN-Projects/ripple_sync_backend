@@ -88,6 +88,10 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+bool targetProd = false;
+_ = bool.TryParse(Environment.GetEnvironmentVariable("TARGET_PROD"), out targetProd);
+connString = targetProd ? builder.Configuration.GetConnectionString("ProdPostgres") : connString;
+
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructure(connString);
 

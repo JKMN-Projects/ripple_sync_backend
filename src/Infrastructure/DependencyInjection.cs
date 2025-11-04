@@ -47,7 +47,8 @@ public static class DependencyInjection
         services.AddSingleton<IEncryptionService>(sp =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
-            string key = config["Encryption:Key"];
+            string key = config["Encryption:Key"]
+                ?? throw new ArgumentNullException("EncryptionKey");
             return new AesGcmEncryptionService(key);
         });
 
