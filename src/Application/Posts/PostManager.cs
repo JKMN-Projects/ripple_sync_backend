@@ -56,6 +56,7 @@ public class PostManager(
                 Platform: ps.platformName,
                 PublishedPosts: ps.stats.PostCount,
                 Reach: ps.stats.Reach,
+                Engagement: ps.stats.Engagement,
                 Likes: ps.stats.Likes,
                 AverageEngagement: ps.stats.Engagement > 0 && ps.stats.PostCount > 0
                     ? (double)ps.stats.Engagement / ps.stats.PostCount
