@@ -26,7 +26,7 @@ public class User
     /// <param name="salt">The cryptographic salt used for hashing the password. Must not be null or empty.</param>
     /// <returns>A new <see cref="User"/> instance.</returns>
     public static User Create(string email, string passwordHash, string salt) 
-        => new User(id: Guid.Empty, email: email, passwordHash: passwordHash, salt: salt, refreshToken: null);
+        => new User(id: Guid.NewGuid(), email: email, passwordHash: passwordHash, salt: salt, refreshToken: null);
 
     /// <summary>
     /// Recreates an existing <see cref="User"/> instance with the specified properties.
@@ -39,7 +39,31 @@ public class User
     public static User Reconstitute(Guid id, string email, string passwordHash, string salt, RefreshToken? refreshToken) 
         => new User(id: id, email: email, passwordHash: passwordHash, salt: salt, refreshToken: refreshToken);
 
-    public void SetRefreshToken(RefreshToken refreshToken) => RefreshToken = refreshToken;
+    /// <summary>
+    /// Adds a refresh token to the user.
+    /// </summary>
+    /// <param name="refreshToken"></param>
+    public void AddRefreshToken(RefreshToken refreshToken) => RefreshToken = refreshToken;
+
+    /// <summary>
+    /// Verifies if the provided refresh token is valid and not expired. Revokes the token if invalid.
+    /// </summary>
+    /// <param name="token"></param>
+    /// <param name="timeProvider"></param>
+    /// <returns>The validity of the refresh token.</returns>
+    public bool VerifyRefreshToken(string token, TimeProvider timeProvider)
+    {
+        bool isValid = RefreshToken is not null &&
+               RefreshToken.Value == token &&
+               !RefreshToken.IsExpired(timeProvider);
+
+        if (!isValid)
+        {
+            RefreshToken = null;
+        }
+
+        return isValid;
+    }
 
     public User Anonymize()
     {

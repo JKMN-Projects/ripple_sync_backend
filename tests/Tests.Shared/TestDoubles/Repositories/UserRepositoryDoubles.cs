@@ -5,25 +5,13 @@ using RippleSync.Domain.Users;
 namespace RippleSync.Tests.Shared.TestDoubles.Repositories;
 public static partial class UserRepositoryDoubles
 {
-    public static IUserRepository ComposeMany(params IUserRepository[] repositories)
-    {
-        if (repositories.Length > 2)
-        {
-            return repositories.Aggregate((first, second) => new Composite(first, second));
-        }
-        else if (repositories.Length == 2)
-        {
-            return new Composite(repositories[0], repositories[1]);
-        }
-        throw new ArgumentException("At least two repositories must be provided for composition.", nameof(repositories));
-    }
-
     public class Dummy : IUserRepository
     {
-        public virtual Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-        public virtual Task<User?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public virtual Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public virtual Task<User?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public virtual Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public virtual Task<Guid> InsertAsync(User user, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-        public virtual Task<User> UpdateUserAsync(User user, CancellationToken cancellation = default) => throw new NotImplementedException();
+        public virtual Task<User> UpdateAsync(User user, CancellationToken cancellation = default) => throw new NotImplementedException();
     }
 
     public class Composite : IUserRepository
@@ -36,28 +24,40 @@ public static partial class UserRepositoryDoubles
             _second = second;
         }
 
-        public Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
+        public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
         {
             try
             {
-                return _first.GetUserByEmailAsync(email, cancellationToken);
+                return _first.GetByEmailAsync(email, cancellationToken);
             }
             catch (NotImplementedException)
             {
-                return _second.GetUserByEmailAsync(email, cancellationToken);
+                return _second.GetByEmailAsync(email, cancellationToken);
             }
         }
 
-        public Task<User?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        public Task<User?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
         {
             try
             {
-                return _first.GetUserByIdAsync(userId, cancellationToken);
+                return _first.GetByIdAsync(userId, cancellationToken);
             }
             catch (NotImplementedException)
             {
 
-                return _second.GetUserByIdAsync(userId, cancellationToken);
+                return _second.GetByIdAsync(userId, cancellationToken);
+            }
+        }
+
+        public Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return _first.GetByRefreshTokenAsync(refreshToken, cancellationToken);
+            }
+            catch (NotImplementedException)
+            {
+                return _second.GetByRefreshTokenAsync(refreshToken, cancellationToken);
             }
         }
 
@@ -73,26 +73,26 @@ public static partial class UserRepositoryDoubles
             }
         }
 
-        public Task<User> UpdateUserAsync(User user, CancellationToken cancellation = default)
+        public Task<User> UpdateAsync(User user, CancellationToken cancellation = default)
         {
             try
             {
-                return _first.UpdateUserAsync(user, cancellation);
+                return _first.UpdateAsync(user, cancellation);
             }
             catch (NotImplementedException)
             {
-                return _second.UpdateUserAsync(user, cancellation);
+                return _second.UpdateAsync(user, cancellation);
             }
         }
     }
 
     public static partial class Stubs
     {
-        public static class GetUserByEmail
+        public static class GetByEmail
         {
             public class AlwaysReturnsNull : Dummy
             {
-                public override Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default) 
+                public override Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) 
                     => Task.FromResult<User?>(null);
             }
 
@@ -103,12 +103,32 @@ public static partial class UserRepositoryDoubles
                 {
                     _userToReturn = userToReturn;
                 }
-                public override Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default) 
+                public override Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) 
                     => Task.FromResult<User?>(_userToReturn);
             }
         }
 
-        public static class InsertUser
+        public static class GetByRefreshToken
+        {
+            public class AlwaysReturnsNull : Dummy
+            {
+                public override Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default) 
+                    => Task.FromResult<User?>(null);
+            }
+
+            public class ReturnsSpecificUser : Dummy
+            {
+                private readonly User _userToReturn;
+                public ReturnsSpecificUser(User userToReturn)
+                {
+                    _userToReturn = userToReturn;
+                }
+                public override Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default) 
+                    => Task.FromResult<User?>(_userToReturn);
+            }
+        }
+
+        public static class Insert
         {
             public class AlwaysReturnsNewGuid : Dummy
             {
@@ -117,11 +137,11 @@ public static partial class UserRepositoryDoubles
             }
         }
 
-        public static class UpdateUser
+        public static class Update
         {
             public class ReturnsReceivedUser : Dummy
             {
-                public override Task<User> UpdateUserAsync(User user, CancellationToken cancellation = default) 
+                public override Task<User> UpdateAsync(User user, CancellationToken cancellation = default) 
                     => Task.FromResult(user);
             }
         }
@@ -129,32 +149,32 @@ public static partial class UserRepositoryDoubles
 
     public static partial class Spies
     {
-        public class GetUserByEmail : Dummy
+        public class GetByEmail : Dummy
         {
             public string? LastReceivedEmail { get; private set; }
             public int InvokationCount { get; private set; }
 
             private readonly IUserRepository spiedRepository;
 
-            public GetUserByEmail(IUserRepository spiedRepository)
+            public GetByEmail(IUserRepository spiedRepository)
             {
                 this.spiedRepository = spiedRepository;
             }
 
-            public override Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
+            public override Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
             {
                 LastReceivedEmail = email;
                 InvokationCount++;
-                return spiedRepository.GetUserByEmailAsync(email, cancellationToken);
+                return spiedRepository.GetByEmailAsync(email, cancellationToken);
             }
         }
 
-        public class InsertUser : Dummy
+        public class Insert : Dummy
         {
             public User? LastReceivedUser { get; private set; }
             public int InvokationCount { get; private set; }
             private readonly IUserRepository spiedRepository;
-            public InsertUser(IUserRepository spiedRepository)
+            public Insert(IUserRepository spiedRepository)
             {
                 this.spiedRepository = spiedRepository;
             }
@@ -166,20 +186,20 @@ public static partial class UserRepositoryDoubles
             }
         }
 
-        public class UpdateUser : Dummy
+        public class Update : Dummy
         {
             public User? LastReceivedUser { get; private set; }
             public int InvokationCount { get; private set; }
             private readonly IUserRepository spiedRepository;
-            public UpdateUser(IUserRepository spiedRepository)
+            public Update(IUserRepository spiedRepository)
             {
                 this.spiedRepository = spiedRepository;
             }
-            public override Task<User> UpdateUserAsync(User user, CancellationToken cancellation = default)
+            public override Task<User> UpdateAsync(User user, CancellationToken cancellation = default)
             {
                 LastReceivedUser = user;
                 InvokationCount++;
-                return spiedRepository.UpdateUserAsync(user, cancellation);
+                return spiedRepository.UpdateAsync(user, cancellation);
             }
         }
     }

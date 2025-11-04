@@ -123,6 +123,25 @@ public sealed class AuthenticationController : ControllerBase
         }
     }
 
+    [HttpPost("[action]")]
+    [AllowAnonymous]
+    [ProducesResponseType<AuthenticationResponse>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+    {
+        AuthenticationTokenResponse tokenResponse = await _userManager.RefreshAuthenticationTokenAsync(request.RefreshToken);
+        HttpContext.Response.Cookies.Append("AccessToken", tokenResponse.Token, new CookieOptions
+        {
+            //Expires = DateTimeOffset.FromUnixTimeMilliseconds(tokenResponse.ExpiresAt).UtcDateTime,
+            IsEssential = true,
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
+        // TODO: Get user email from somewhere
+        AuthenticationResponse response = new AuthenticationResponse(null, tokenResponse.ExpiresAt);
+        return Ok(response);
+    }
+
     [HttpDelete("user")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]

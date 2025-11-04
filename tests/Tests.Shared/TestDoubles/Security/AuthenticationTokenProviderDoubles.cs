@@ -85,8 +85,8 @@ public static class AuthenticationTokenProviderDoubles
             {
                 return Task.FromResult(RefreshToken.Create(
                     token: Guid.NewGuid().ToString(),
-                    createdAt: DateTime.UtcNow,
-                    expiresAt: DateTime.UtcNow.AddDays(30)));
+                    timeProvider: TimeProvider.System,
+                    expiresAt: DateTimeOffset.UtcNow.AddDays(30).ToUnixTimeMilliseconds()));
             }
         }
 
@@ -177,8 +177,8 @@ public static class AuthenticationTokenProviderDoubles
             {
                 return Task.FromResult(RefreshToken.Create(
                     token: Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
-                    createdAt: DateTime.UtcNow,
-                    expiresAt: DateTime.UtcNow.AddDays(30)));
+                    timeProvider: TimeProvider.System,
+                    expiresAt: DateTimeOffset.UtcNow.AddDays(30).ToUnixTimeMilliseconds()));
             }
         }
     }
