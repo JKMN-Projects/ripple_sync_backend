@@ -60,8 +60,6 @@ public class PostManager(
                     : 0)).ToList()
         );
     }
-    public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status)
-        => new(await postRepository.GetPostsByUserAsync(userId, status));
 
     public async Task<string> GetImageByIdAsync(Guid userId)
     => new(await postRepository.GetImageByIdAsync(userId));
@@ -85,7 +83,7 @@ public class PostManager(
             UserPlatformIntegrationId = id,
             Status = scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft,
             PlatformPostIdentifier = "",
-            PlatformResponse = new { CreatedAt = DateTime.UtcNow }
+            PlatformResponse = new { }
         }).ToList();
 
         var post = Post.Create(
@@ -128,15 +126,14 @@ public class PostManager(
             ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
             : null;
 
-        if (mediaAttachments != null)
-        {
-            post.PostMedias = [.. mediaAttachments.Select(url => new PostMedia
+        post.PostMedias = mediaAttachments != null
+            ? [.. mediaAttachments.Select(url => new PostMedia
             {
                 Id = Guid.NewGuid(),
                 PostId = post.Id,
                 ImageUrl = url
-            })];
-        }
+            })]
+            : null;
 
         if (integrationIds != null && integrationIds.Length > 0)
         {
@@ -146,7 +143,7 @@ public class PostManager(
                 UserPlatformIntegrationId = id,
                 Status = PostStatus.Scheduled,
                 PlatformPostIdentifier = "",
-                PlatformResponse = new { UpdatedAt = DateTime.UtcNow }
+                PlatformResponse = new { }
             })];
         }
 

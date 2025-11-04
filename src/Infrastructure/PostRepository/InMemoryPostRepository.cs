@@ -29,7 +29,7 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
             p.PostEvents.MaxBy(pe => pe.Status)!.Status.ToString(),
             p.PostMedias?.Select(pm => pm.Id).ToArray() ?? Array.Empty<Guid>(),
             p.ScheduledFor.HasValue ? new DateTimeOffset(p.ScheduledFor.Value).ToUnixTimeMilliseconds() : null,
-            ["Facebook", "LinkedIn"]
+            ["X", "LinkedIn"]
         ));
 
         return Task.FromResult(response);
