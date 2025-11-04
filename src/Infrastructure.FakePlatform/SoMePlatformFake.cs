@@ -3,14 +3,14 @@ using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
 
-namespace RippleSync.Infrastructure.SoMePlatforms.FakePlatform;
+namespace Infrastructure.FakePlatform;
 
-internal class SoMePlatformFake : ISoMePlatform
+public class SoMePlatformFake : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfigs)
     {
-        string urlBase = "https://localhost:7275/api/oauth/callback";
-        QueryString queryString = new QueryString()
+        var urlBase = "https://localhost:7275/api/oauth/callback";
+        var queryString = new QueryString()
             .Add("state", authConfigs.State)
             .Add("code", "fake_code");
         return urlBase + queryString.ToUriComponent();
