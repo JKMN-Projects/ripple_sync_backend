@@ -1,4 +1,5 @@
 using DbMigrator;
+using Infrastructure.FakePlatform;
 using Microsoft.Extensions.Caching.Hybrid;
 using RippleSync.API.Authentication;
 using RippleSync.API.Common.Middleware;
@@ -45,7 +46,9 @@ if (builder.Environment.IsDevelopment())
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews()
+    .AddApplicationPart(FakeOAuthAssemblyReference.Assembly);
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();

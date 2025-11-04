@@ -7,4 +7,5 @@ public enum Platform
     Facebook = 3,
     Instagram = 4,
     Threads = 5,
+    FakePlatform = 9999,
 }

@@ -13,24 +13,14 @@ public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegratio
 
     public Task CreateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        UpdateIntegration(integration.Platform, true);
+        InMemoryData.Integrations.Add(integration);
         return Task.CompletedTask;
     }
 
     public Task DeleteAsync(Guid userId, Platform platform, CancellationToken cancellationToken = default)
     {
-        UpdateIntegration(platform, false);
+        InMemoryData.Integrations.RemoveAll(i => i.UserId == userId && i.Platform == platform);
         return Task.CompletedTask;
-    }
-
-    private static void UpdateIntegration(Platform platform, bool connected)
-    {
-        var toEdit = InMemoryData.IntegrationResponses.FirstOrDefault(i => i.PlatformId == (int)platform);
-
-        if (toEdit == null) return;
-
-        var toEditIndex = InMemoryData.IntegrationResponses.IndexOf(toEdit);
-        InMemoryData.IntegrationResponses[toEditIndex] = toEdit with { Connected = connected };
     }
 
     public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)

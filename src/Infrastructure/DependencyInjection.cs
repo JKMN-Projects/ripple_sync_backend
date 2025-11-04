@@ -11,6 +11,7 @@ using RippleSync.Infrastructure.PlatformRepository;
 using RippleSync.Infrastructure.PostRepository;
 using RippleSync.Infrastructure.Security;
 using RippleSync.Infrastructure.SoMePlatforms.Facebook;
+using RippleSync.Infrastructure.SoMePlatforms.FakePlatform;
 using RippleSync.Infrastructure.SoMePlatforms.Instagram;
 using RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
 using RippleSync.Infrastructure.SoMePlatforms.Threads;
@@ -33,6 +34,7 @@ public static class DependencyInjection
         services.AddKeyedSingleton<ISoMePlatform, SoMePlatformFacebook>(Platform.Facebook);
         services.AddKeyedSingleton<ISoMePlatform, SoMePlatformInstagram>(Platform.Instagram);
         services.AddKeyedSingleton<ISoMePlatform, SoMePlatformThreads>(Platform.Threads);
+        services.AddKeyedSingleton<ISoMePlatform, SoMePlatformFake>(Platform.FakePlatform);
 
         services.AddScoped<NpgsqlConnection>(sp => new NpgsqlConnection(connectionString));
 
@@ -51,8 +53,6 @@ public static class DependencyInjection
                 ?? throw new ArgumentNullException("EncryptionKey");
             return new AesGcmEncryptionService(key);
         });
-
-        //services.AddScoped<IPlatformRepository, InMemoryPlatformRepository>();
 
         return services;
     }
