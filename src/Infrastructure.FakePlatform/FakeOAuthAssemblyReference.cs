@@ -4,5 +4,5 @@ namespace Infrastructure.FakePlatform;
 
 public static class FakeOAuthAssemblyReference
 {
-    public static Assembly Assembly => typeof(FakeOAuthController).Assembly;
+    public static Assembly Assembly => typeof(FakeOAuthAssemblyReference).Assembly;
 }
