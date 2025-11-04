@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using RippleSync.API.Common.Extensions;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Posts;
+using RippleSync.Domain.Posts.Exceptions;
 
 namespace RippleSync.API.Posts;
 
@@ -53,21 +54,48 @@ public partial class PostsController : ControllerBase
 
         var mediaAttachments = await ExtractFilesToBase64(request.Files);
 
-        CreatePostDto post = new CreatePostDto(
-                request.MessageContent,
-                request.Timestamp,
-                mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
-                request.IntegrationIds.ToArray()
+        try
+        {
+            await _postManager.CreatePostAsync(userId,
+                    request.MessageContent,
+                    request.Timestamp,
+                    mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
+                    request.IntegrationIds.ToArray()
+                );
+            return Created();
+        }
+        catch (ScheduledWithNoPostEventsException ex)
+        {
+            return Problem(
+                title: "Invalid request",
+                detail: ex.Message,
+                statusCode: StatusCodes.Status400BadRequest,
+                extensions: new Dictionary<string, object?>
+                {
+                    { "validationErrors", new Dictionary<string, string[]>
+                        {
+                            { nameof(FormData.IntegrationIds), [ex.Message] }
+                        }
+                    }
+                }
             );
-
-        await _postManager.CreatePostAsync(userId,
-                request.MessageContent,
-                request.Timestamp,
-                mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
-                request.IntegrationIds.ToArray()
+        }
+        catch (DraftWithPostEventsException ex)
+        {
+            return Problem(
+                title: "Invalid request",
+                detail: ex.Message,
+                statusCode: StatusCodes.Status400BadRequest,
+                extensions: new Dictionary<string, object?>
+                {
+                    { "validationErrors", new Dictionary<string, string[]>
+                        {
+                            { nameof(FormData.IntegrationIds), [ex.Message] }
+                        }
+                    }
+                }
             );
-
-        return Created();
+        }
     }
 
     [HttpPut]

@@ -1,4 +1,6 @@
 ﻿
+using RippleSync.Domain.Posts.Exceptions;
+
 namespace RippleSync.Domain.Posts;
 
 public class Post
@@ -24,6 +26,11 @@ public class Post
 
     public static Post Create(Guid userId, string messageContent, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents, IEnumerable<PostMedia>? postMedias)
     {
+        if (scheduledFor != null && postsEvents.Any() is false)
+            throw new ScheduledWithNoPostEventsException();
+        else if (scheduledFor is null && postsEvents.Any())
+            throw new DraftWithPostEventsException();
+
         return new Post(
             id: Guid.NewGuid(),
             userId: userId,
