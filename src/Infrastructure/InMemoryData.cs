@@ -38,15 +38,6 @@ internal class InMemoryData
         )
     ];
 
-    //internal static readonly List<PlatformWithUserIntegrationResponse> IntegrationResponses =
-    //[
-    //    new ((int)Platform.X, "X.com", "Share updates on X", false, ""),
-    //    new ((int)Platform.LinkedIn, "LinkedIn", "Share professional updates on LinkedIn", true, ""),
-    //    new ((int)Platform.Facebook, "Facebook", "Create posts on Facebook", false, ""),
-    //    new ((int)Platform.Instagram, "Instagram", "Post photos and stories on Instagram", false, ""),
-    //    new ((int)Platform.Threads, "Threads", "Post photos and stories on Instagram", false, ""),
-    //];
-
     internal static readonly List<Post> Posts =
     [
         Post.Reconstitute(Guid.NewGuid(), _userId,"My first post",DateTime.UtcNow, DateTime.UtcNow.AddDays(2),
