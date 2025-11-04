@@ -56,7 +56,7 @@ public class Post
     public bool IsReadyToPublish()
     {
         var postStatus = GetPostMaxStatus();
-        var readyToPublish = ScheduledFor < DateTime.Now && postStatus == PostStatus.Scheduled;
+        var readyToPublish = ScheduledFor < DateTime.UtcNow && postStatus == PostStatus.Scheduled;
         return readyToPublish;
     }
     public PostStatus? GetPostMaxStatus()

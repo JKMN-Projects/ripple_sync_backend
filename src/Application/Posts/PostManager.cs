@@ -198,8 +198,7 @@ public class PostManager(
 
         List<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId).ToList();
 
-        //TODO: Get List of UserPlatformintegration from list of guids
-        List<Integration> integrations = []; // _integrationManager.GetIntegrationsByIds(userPlatformIntegrations);
+        List<Integration> integrations = integrationRepository.GetIntegrationsByIds(userPlatformIntegrations).Result.ToList();
 
         //Request platform
         foreach (var integration in integrations)
@@ -212,6 +211,12 @@ public class PostManager(
             try
             {
                 var responsePostEvent = await platform.PublishPostAsync(post, integration);
+
+                //If still processing, mark as posted
+                if (responsePostEvent.Status == PostStatus.Processing)
+                {
+                    responsePostEvent.Status = PostStatus.Posted;
+                }
                 await UpdatePostEventAsync(responsePostEvent);
             }
             catch (Exception ex)
