@@ -27,7 +27,10 @@ public sealed class AuthenticationController(
         {
             AuthenticationTokenResponse tokenResponse = await userManager.GetAuthenticationTokenAsync(request.Email, request.Password, cancellationToken);
             SetAccessTokenCookie(tokenResponse.Token, tokenResponse.ExpiresAt);
-            AuthenticationResponse response = new AuthenticationResponse(request.Email, tokenResponse.ExpiresAt);
+            AuthenticationResponse response = new AuthenticationResponse(
+                tokenResponse.RefreshToken,
+                request.Email, 
+                tokenResponse.ExpiresAt);
 
             return Ok(response);
         }
@@ -125,6 +128,7 @@ public sealed class AuthenticationController(
             string userEmail = tokenResponse.Claims.FindEmail()
                 ?? throw new InvalidOperationException("Email claim not found.");
             AuthenticationResponse response = new AuthenticationResponse(
+                tokenResponse.RefreshToken,
                 userEmail,
                 tokenResponse.ExpiresAt);
             return Ok(response);
