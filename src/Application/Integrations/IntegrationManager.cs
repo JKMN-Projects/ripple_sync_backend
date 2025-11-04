@@ -2,6 +2,7 @@
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
+using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
@@ -11,7 +12,8 @@ public sealed class IntegrationManager(
         ILogger<IntegrationManager> logger,
         IIntegrationRepository integrationRepo,
         IIntegrationQueries integrationQueries,
-        IPlatformQueries platformQueries)
+        IPlatformQueries platformQueries,
+        IEncryptionService encryptor)
 {
     public async Task<ListResponse<PlatformWithUserIntegrationResponse>> GetPlatformsWithUserIntegrationsAsync(Guid userId)
         => new ListResponse<PlatformWithUserIntegrationResponse>(await platformQueries.GetPlatformsWithUserIntegrationsAsync(userId));
@@ -22,23 +24,26 @@ public sealed class IntegrationManager(
     public async Task CreateIntegrationWithEncryptionAsync(
         Guid userId,
         int platformId,
-        string accessToken,
-        string? refreshToken,
-        int expiresIn,
-        string tokenType,
-        string scope,
+        TokenResponse tokenResponse,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(accessToken)) throw new ArgumentNullException(nameof(accessToken));
+        if (string.IsNullOrWhiteSpace(tokenResponse.AccessToken)) 
+            throw new ArgumentNullException(nameof(tokenResponse));
+
         if (!Enum.IsDefined(typeof(Platform), platformId))
         {
             throw new ArgumentOutOfRangeException(nameof(platformId), "Invalid platform ID");
         }
 
-        /// ENCRYPT ACCESSTOKEN HERE
-        DateTime expiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
+        string encryptedAccessToken = encryptor.Encrypt(tokenResponse.AccessToken);
 
-        Integration integration = Integration.Create(userId, (Platform)platformId, accessToken, refreshToken, expiresAt, tokenType, scope);
+        string? encryptedRefreshToken = !string.IsNullOrWhiteSpace(tokenResponse.RefreshToken)
+            ? encryptor.Encrypt(tokenResponse.RefreshToken)
+            : null;
+
+        DateTime expiresAt = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
+
+        Integration integration = Integration.Create(userId, (Platform)platformId, encryptedAccessToken, encryptedRefreshToken, expiresAt, tokenResponse.TokenType, tokenResponse.Scope);
         await integrationRepo.CreateAsync(integration, cancellationToken);
     }
 

@@ -1,4 +1,4 @@
-﻿namespace RippleSync.API.OAuth;
+﻿namespace RippleSync.Application.OAuth;
 
 public record OAuthStateData(
     Guid UserId,

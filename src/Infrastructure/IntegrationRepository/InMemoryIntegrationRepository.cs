@@ -13,26 +13,30 @@ public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegratio
 
     public Task CreateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        UpdateIntegration(integration.Platform, true);
+        InMemoryData.Integrations.Add(integration);
         return Task.CompletedTask;
     }
 
     public Task DeleteAsync(Guid userId, Platform platform, CancellationToken cancellationToken = default)
     {
-        UpdateIntegration(platform, false);
+        InMemoryData.Integrations.RemoveAll(i => i.UserId == userId && i.Platform == platform);
         return Task.CompletedTask;
     }
 
-    private static void UpdateIntegration(Platform platform, bool connected)
+    public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var toEdit = InMemoryData.IntegrationResponses.FirstOrDefault(i => i.PlatformId == (int)platform);
-
-        if (toEdit == null) return;
-
-        var toEditIndex = InMemoryData.IntegrationResponses.IndexOf(toEdit);
-        InMemoryData.IntegrationResponses[toEditIndex] = toEdit with { Connected = connected };
+        return Task.FromResult(InMemoryData.Integrations.Where(i => i.UserId == userId));
+    }
+    public Task UpdateAsync(Integration integration, CancellationToken cancellation = default)
+    {
+        return Task.CompletedTask;
     }
 
-    public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
-        => Task.FromResult((IEnumerable<Integration>)InMemoryData.Integrations);
+    public Task<IEnumerable<Integration>> GetIntegrationsByIds(List<Guid> integrationIds)
+    {
+        var integrations = InMemoryData.Integrations.Where(i => integrationIds.Contains(i.Id));
+        return integrations.Any()
+            ? Task.FromResult(integrations) 
+            : Task.FromResult(Enumerable.Empty<Integration>());
+    }
 }

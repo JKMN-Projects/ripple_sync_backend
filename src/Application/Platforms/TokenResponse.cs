@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace RippleSync.API.OAuth;
+namespace RippleSync.Application.Platforms;
 
 public record TokenResponse(
     [property: JsonPropertyName("token_type")] string TokenType,

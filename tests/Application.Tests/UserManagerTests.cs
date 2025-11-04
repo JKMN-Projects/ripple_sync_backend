@@ -17,15 +17,18 @@ public abstract class UserManagerTests
 {
     protected static UserManager GetSystemUnderTest(
         IUserRepository? userRepository = null,
+        IPostRepository? postRepository = null,
+        IIntegrationRepository? integrationRepository = null,
         IPasswordHasher? passwordHasher = null,
         IAuthenticationTokenProvider? authenticationTokenProvider = null)
     {
         ILogger<UserManager> logger = new LoggerDoubles.Fakes.FakeLogger<UserManager>();
         userRepository ??= new UserRepositoryDoubles.Dummy();
+      
         passwordHasher ??= new PasswordHasherDoubles.Dummy();
         authenticationTokenProvider ??= new AuthenticationTokenProviderDoubles.Dummy();
 
-        return new UserManager(logger, userRepository, passwordHasher, authenticationTokenProvider);
+        return new UserManager(logger, userRepository, integrationRepository, postRepository, passwordHasher, authenticationTokenProvider);
     }
 
     public sealed class GetAuthenticationTokenAsync : UserManagerTests

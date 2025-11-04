@@ -50,7 +50,35 @@ public class Post
 
     public bool IsDeletable()
     {
-        var latestStatus = PostEvents.MaxBy(pe => pe.Status)?.Status;
-        return latestStatus is PostStatus.Draft or PostStatus.Scheduled;
+        var postStatus = GetPostMaxStatus();
+        return postStatus is PostStatus.Draft or PostStatus.Scheduled;
+    }
+    public bool IsReadyToPublish()
+    {
+        var postStatus = GetPostMaxStatus();
+        var readyToPublish = ScheduledFor < DateTime.UtcNow && postStatus == PostStatus.Scheduled;
+        return readyToPublish;
+    }
+    public PostStatus? GetPostMaxStatus()
+    {
+        var postStatus = PostEvents.MaxBy(pe => pe.Status)?.Status;
+        return postStatus;
+    }
+
+    public Post Anonymize()
+    {
+        MessageContent = string.Empty;
+
+        foreach (var postEvent in PostEvents)
+        {
+            postEvent.Anonymize();
+        }
+        foreach (var media in PostMedias ?? [])
+        {
+            media.Anonymize();
+        }
+        return this;
+
+
     }
 }
