@@ -34,7 +34,8 @@ public sealed class JwtTokenProvider(
         AuthenticationToken authenticationToken = new(
             AccessToken: token,
             TokenType: "Bearer",
-            ExpiresInMilliSeconds: expiresInMilliSeconds);
+            ExpiresInMilliSeconds: expiresInMilliSeconds,
+            Claims: claims);
         return Task.FromResult(authenticationToken);
     }
 

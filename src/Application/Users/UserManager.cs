@@ -63,7 +63,8 @@ public sealed class UserManager(
             token.TokenType,
             token.ExpiresInMilliSeconds,
             refreshToken.Value,
-            refreshToken.ExpiresAt);
+            refreshToken.ExpiresAt,
+            token.Claims);
     }
 
     /// <summary>
@@ -146,6 +147,14 @@ public sealed class UserManager(
         logger.LogInformation("User with ID {UserId} deleted successfully", userId);
     }
 
+    /// <summary>
+    /// Refreshes the authentication token using the provided refresh token.
+    /// </summary>
+    /// <param name="refreshToken"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>A new <see cref="AuthenticationTokenResponse"/>.</returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="EntityNotFoundException"></exception>
     public async Task<AuthenticationTokenResponse> RefreshAuthenticationTokenAsync(
         string refreshToken,
         CancellationToken cancellationToken = default)
@@ -175,7 +184,8 @@ public sealed class UserManager(
             token.TokenType,
             token.ExpiresInMilliSeconds,
             newRefreshToken.Value,
-            newRefreshToken.ExpiresAt);
+            newRefreshToken.ExpiresAt,
+            token.Claims);
     }
 }
 
