@@ -81,7 +81,12 @@ internal class SoMePlatformX(IOptions<XOptions> options, IEncryptionService encr
 
             if (response.IsSuccessStatusCode)
             {
+                //TODO: Save url for the post
                 postEvent.Status = PostStatus.Posted;
+            }
+            else
+            {
+                throw new InvalidOperationException($"Failed to publish post to X. Response: {responseContent}");
             }
         }
         catch (Exception e)
