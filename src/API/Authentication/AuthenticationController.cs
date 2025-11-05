@@ -9,7 +9,7 @@ namespace RippleSync.API.Authentication;
 [Route("api/[controller]")]
 [ApiController]
 public sealed class AuthenticationController(
-    ILogger<AuthenticationController> logger, 
+    ILogger<AuthenticationController> logger,
     UserManager userManager) : ControllerBase
 {
     [HttpPost("[action]")]

@@ -10,7 +10,7 @@ public static class IntegrationRepositoryDoubles
         public virtual Task CreateAsync(Integration integration, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public virtual Task DeleteAsync(Guid userId, Platform platform, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public virtual Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-        public virtual Task<IEnumerable<Integration>> GetIntegrationsByIdsAsync(List<Guid> integrationIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public virtual Task<IEnumerable<Integration>> GetIntegrationsByIdsAsync(IEnumerable<Guid> integrationIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public virtual Task UpdateAsync(Integration integration, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }
 }

@@ -4,8 +4,6 @@ using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
 using RippleSync.Infrastructure.SoMePlatforms.X;
-using System.Text;
-using System.Text.Json;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
 internal class SoMePlatformLinkedIn(IOptions<LinkedInOptions> options) : ISoMePlatform

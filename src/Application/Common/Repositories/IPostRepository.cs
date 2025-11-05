@@ -1,5 +1,4 @@
-﻿using RippleSync.Application.Posts;
-using RippleSync.Domain.Posts;
+﻿using RippleSync.Domain.Posts;
 
 namespace RippleSync.Application.Common.Repositories;
 

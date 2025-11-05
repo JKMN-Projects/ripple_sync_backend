@@ -3,7 +3,6 @@ using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Posts;
 using RippleSync.Domain.Posts;
-using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.PostRepository.Entities;
@@ -178,6 +177,12 @@ internal class NpgsqlPostRepository(
 
             var postMediasEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
             var postEventsEntities = post.PostEvents.Select(pe => new PostEventEntity(post.Id, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
+
+            rowsAffected = await dbConnection.InsertAsync(postMediasEntities, ct: cancellationToken);
+            rowsAffected = await dbConnection.InsertAsync(postEventsEntities, ct: cancellationToken);
+
+            if (rowsAffected <= 0)
+                throw new RepositoryException("No rows were affected");
         }
         catch (Exception e)
         {
