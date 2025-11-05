@@ -72,7 +72,7 @@ public class PostManager(
             : null;
 
         var postMedias = mediaAttachments?
-            .Select(PostMedia.New)
+            .Select(PostMedia.Create)
             .ToList();
 
         var postEvents = integrationIds
@@ -108,7 +108,7 @@ public class PostManager(
 
         if (mediaAttachments != null)
         {
-            post.PostMedias = [.. mediaAttachments.Select(PostMedia.New)];
+            post.PostMedias = [.. mediaAttachments.Select(PostMedia.Create)];
         }
 
         if (integrationIds != null && integrationIds.Length > 0)

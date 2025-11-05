@@ -6,6 +6,7 @@ using RippleSync.Infrastructure.IntegrationRepository;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.Tests.Configuration;
 using RippleSync.Infrastructure.UserRepository;
+using RippleSync.Tests.Shared.Factories.Integrations;
 using RippleSync.Tests.Shared.Factories.Users;
 using RippleSync.Tests.Shared.TestDoubles.Security;
 
@@ -40,24 +41,10 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
-            var integration1 = Integration.Create(
-                user.Id,
-                Platform.X,
-                "accessToken1",
-                "refreshToken1",
-                DateTime.UtcNow.AddHours(1),
-                "Bearer",
-                "scope1"
-            );
-            var integration2 = Integration.Create(
-                user.Id,
-                Platform.Facebook,
-                "accessToken2",
-                "refreshToken2",
-                DateTime.UtcNow.AddHours(1),
-                "Bearer",
-                "scope2"
-            );
+            Integration integration1 = new IntegrationBuilder(user.Id, Platform.X)
+                .Build();
+            Integration integration2 = new IntegrationBuilder(user.Id, Platform.Facebook)
+                .Build();
             await _sut.CreateAsync(integration1);
             await _sut.CreateAsync(integration2);
             Guid userId = Guid.NewGuid();
@@ -77,24 +64,10 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
-            var integration1 = Integration.Create(
-                user.Id,
-                Platform.X,
-                "accessToken1",
-                "refreshToken1",
-                DateTime.UtcNow.AddHours(1),
-                "Bearer",
-                "scope1"
-            );
-            var integration2 = Integration.Create(
-                user.Id,
-                Platform.Facebook,
-                "accessToken2",
-                "refreshToken2",
-                DateTime.UtcNow.AddHours(1),
-                "Bearer",
-                "scope2"
-            );
+            Integration integration1 = new IntegrationBuilder(user.Id, Platform.X)
+                .Build();
+            Integration integration2 = new IntegrationBuilder(user.Id, Platform.Facebook)
+                .Build();
             await _sut.CreateAsync(integration1);
             await _sut.CreateAsync(integration2);
 
@@ -122,15 +95,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
-            var integration = Integration.Create(
-                user.Id,
-                Platform.X,
-                "accessToken",
-                "refreshToken",
-                DateTime.UtcNow.AddHours(1),
-                "Bearer",
-                "scope"
-            );
+            Integration integration = new IntegrationBuilder(user.Id, Platform.X)
+                .Build();
 
             // Act
             await _sut.CreateAsync(integration);
@@ -161,15 +127,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
-            var integration = Integration.Create(
-                user.Id,
-                Platform.X,
-                "accessToken",
-                "refreshToken",
-                DateTime.UtcNow.AddHours(1),
-                "Bearer",
-                "scope"
-            );
+            Integration integration = new IntegrationBuilder(user.Id, Platform.X)
+                .Build();
             await _sut.CreateAsync(integration);
             integration.Anonymize();
 
@@ -193,15 +152,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
-            var integration = Integration.Create(
-                user.Id,
-                Platform.X,
-                "accessToken",
-                "refreshToken",
-                DateTime.UtcNow.AddHours(1),
-                "Bearer",
-                "scope"
-            );
+            Integration integration = new IntegrationBuilder(user.Id, Platform.X)
+                .Build();
 
             // Act & Assert
             await Assert.ThrowsAsync<RepositoryException>(() =>  _sut.UpdateAsync(integration));
@@ -222,15 +174,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
-            var integration = Integration.Create(
-                user.Id,
-                Platform.X,
-                "accessToken",
-                "refreshToken",
-                DateTime.UtcNow.AddHours(1),
-                "Bearer",
-                "scope"
-            );
+            Integration integration = new IntegrationBuilder(user.Id, Platform.X)
+                .Build();
             await _sut.CreateAsync(integration);
 
             // Act
@@ -269,24 +214,10 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
-            var integration1 = Integration.Create(
-                user.Id,
-                Platform.X,
-                "accessToken1",
-                "refreshToken1",
-                DateTime.UtcNow.AddHours(1),
-                "Bearer",
-                "scope1"
-            );
-            var integration2 = Integration.Create(
-                user.Id,
-                Platform.Facebook,
-                "accessToken2",
-                "refreshToken2",
-                DateTime.UtcNow.AddHours(1),
-                "Bearer",
-                "scope2"
-            );
+            Integration integration1 = new IntegrationBuilder(user.Id, Platform.X)
+                .Build();
+            Integration integration2 = new IntegrationBuilder(user.Id, Platform.Facebook)
+                .Build();
             await _sut.CreateAsync(integration1);
             await _sut.CreateAsync(integration2);
             var integrationIds = new List<Guid> { integration1.Id, integration2.Id };
