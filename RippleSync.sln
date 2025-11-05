@@ -32,7 +32,53 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbMigrator", "tools\DbMigra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.JukmanORM", "src\Infrastructure.JukmanORM\Infrastructure.JukmanORM.csproj", "{4F3F942A-77AF-42C9-8546-58E463AD82A3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.FakePlatform", "src\Infrastructure.FakePlatform\Infrastructure.FakePlatform.csproj", "{A79C0908-79A2-4ECE-964B-1123D2D21413}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "documentation", "documentation", "{58004100-246D-4858-8D20-5FF90095D442}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "diagrams", "diagrams", "{B5FD7FE0-A044-4E67-AE5B-D43105F03A25}"
+	ProjectSection(SolutionItems) = preProject
+		documentation\diagrams\architecture_diagram.md = documentation\diagrams\architecture_diagram.md
+		documentation\diagrams\domain_diagram.md = documentation\diagrams\domain_diagram.md
+		documentation\diagrams\er_diagram.md = documentation\diagrams\er_diagram.md
+		documentation\diagrams\repository_class_diagram.md = documentation\diagrams\repository_class_diagram.md
+		documentation\diagrams\sequence_diagram.md = documentation\diagrams\sequence_diagram.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "json_contracts", "json_contracts", "{95763B27-C06E-4254-8ACA-08762842B8D7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "user_contracts", "user_contracts", "{C06B81B2-97DA-41B7-924D-ED2DE85C71CF}"
+	ProjectSection(SolutionItems) = preProject
+		documentation\json_contracts\user_contracts\create_user.md = documentation\json_contracts\user_contracts\create_user.md
+		documentation\json_contracts\user_contracts\delete_user.md = documentation\json_contracts\user_contracts\delete_user.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "post_contracts", "post_contracts", "{654D093F-940D-4A3C-BCA8-96FF4DDAD9B5}"
+	ProjectSection(SolutionItems) = preProject
+		documentation\json_contracts\post_contracts\create_post.md = documentation\json_contracts\post_contracts\create_post.md
+		documentation\json_contracts\post_contracts\delete_post.md = documentation\json_contracts\post_contracts\delete_post.md
+		documentation\json_contracts\post_contracts\get_posts.md = documentation\json_contracts\post_contracts\get_posts.md
+		documentation\json_contracts\post_contracts\update_post.md = documentation\json_contracts\post_contracts\update_post.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "integration_contracts", "integration_contracts", "{ACA5C4BD-8D34-434E-AD74-5B995A96D5D7}"
+	ProjectSection(SolutionItems) = preProject
+		documentation\json_contracts\integration_contracts\create_integration.md = documentation\json_contracts\integration_contracts\create_integration.md
+		documentation\json_contracts\integration_contracts\delete_integration.md = documentation\json_contracts\integration_contracts\delete_integration.md
+		documentation\json_contracts\integration_contracts\get_integrations.md = documentation\json_contracts\integration_contracts\get_integrations.md
+		documentation\json_contracts\integration_contracts\get_user_integrations.md = documentation\json_contracts\integration_contracts\get_user_integrations.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dashboard_contracts", "dashboard_contracts", "{001F3EBA-0D34-406B-8952-4A3517193FA7}"
+	ProjectSection(SolutionItems) = preProject
+		documentation\json_contracts\dashboard_contracts\get_total_engagement.md = documentation\json_contracts\dashboard_contracts\get_total_engagement.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "authentication_contracts", "authentication_contracts", "{7E35C706-56F6-4D07-AD1A-4F80B9CEFB90}"
+	ProjectSection(SolutionItems) = preProject
+		documentation\json_contracts\authentication_contracts\login.md = documentation\json_contracts\authentication_contracts\login.md
+		documentation\json_contracts\authentication_contracts\refresh.md = documentation\json_contracts\authentication_contracts\refresh.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.FakePlatform", "src\Infrastructure.FakePlatform\Infrastructure.FakePlatform.csproj", "{EE079340-7227-785F-6F61-896D8E0D53B7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -76,10 +122,10 @@ Global
 		{4F3F942A-77AF-42C9-8546-58E463AD82A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4F3F942A-77AF-42C9-8546-58E463AD82A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4F3F942A-77AF-42C9-8546-58E463AD82A3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A79C0908-79A2-4ECE-964B-1123D2D21413}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A79C0908-79A2-4ECE-964B-1123D2D21413}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A79C0908-79A2-4ECE-964B-1123D2D21413}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A79C0908-79A2-4ECE-964B-1123D2D21413}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE079340-7227-785F-6F61-896D8E0D53B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE079340-7227-785F-6F61-896D8E0D53B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE079340-7227-785F-6F61-896D8E0D53B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE079340-7227-785F-6F61-896D8E0D53B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -94,7 +140,14 @@ Global
 		{1054F9F1-5664-4447-8E2F-DD25AFC7D867} = {EC82193A-4A8C-41BE-82CD-C1438601508C}
 		{3EA5C662-5EB3-DF70-1993-A63ABE2EF9BC} = {FAC7640D-FD0E-4801-A204-BA022E86625E}
 		{4F3F942A-77AF-42C9-8546-58E463AD82A3} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{A79C0908-79A2-4ECE-964B-1123D2D21413} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{B5FD7FE0-A044-4E67-AE5B-D43105F03A25} = {58004100-246D-4858-8D20-5FF90095D442}
+		{95763B27-C06E-4254-8ACA-08762842B8D7} = {58004100-246D-4858-8D20-5FF90095D442}
+		{C06B81B2-97DA-41B7-924D-ED2DE85C71CF} = {95763B27-C06E-4254-8ACA-08762842B8D7}
+		{654D093F-940D-4A3C-BCA8-96FF4DDAD9B5} = {95763B27-C06E-4254-8ACA-08762842B8D7}
+		{ACA5C4BD-8D34-434E-AD74-5B995A96D5D7} = {95763B27-C06E-4254-8ACA-08762842B8D7}
+		{001F3EBA-0D34-406B-8952-4A3517193FA7} = {95763B27-C06E-4254-8ACA-08762842B8D7}
+		{7E35C706-56F6-4D07-AD1A-4F80B9CEFB90} = {95763B27-C06E-4254-8ACA-08762842B8D7}
+		{EE079340-7227-785F-6F61-896D8E0D53B7} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {209B346A-5C69-4F91-BD4C-C96224D4C275}

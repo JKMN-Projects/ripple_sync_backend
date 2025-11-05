@@ -7,13 +7,13 @@ public class Integration
     public Guid Id { get; private set; }
     public Guid UserId { get; private set; }
     public Platform Platform { get; private set; }
-    public string AccessToken { get; private set; } = string.Empty;
-    public string? RefreshToken { get; private set; } = string.Empty;
-    public DateTime ExpiresAt { get; private set; }
-    public string TokenType { get; private set; } = string.Empty;
-    public string Scope { get; private set; } = string.Empty;
+    public string AccessToken { get; private set; }
+    public string? RefreshToken { get; private set; }
+    public DateTime? ExpiresAt { get; private set; }
+    public string? TokenType { get; private set; }
+    public string? Scope { get; private set; }
 
-    private Integration(Guid id, Guid userId, Platform platform, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope)
+    private Integration(Guid id, Guid userId, Platform platform, string accessToken, string? refreshToken, DateTime? expiresAt, string? tokenType, string? scope)
     {
         Id = id;
         UserId = userId;
@@ -25,10 +25,10 @@ public class Integration
         Scope = scope;
     }
 
-    public static Integration Create(Guid userId, Platform platform, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope)
+    public static Integration Create(Guid userId, Platform platform, string accessToken, string? refreshToken, DateTime? expiresAt, string? tokenType, string? scope)
     {
         return new Integration(
-            id: Guid.Empty,
+            id: Guid.NewGuid(),
             userId: userId,
             platform: platform,
             accessToken: accessToken,
@@ -39,7 +39,7 @@ public class Integration
         );
     }
 
-    public static Integration Reconstitute(Guid id, Guid userId, Platform platform, string accessToken, string? refreshToken, DateTime expiresAt, string tokenType, string scope)
+    public static Integration Reconstitute(Guid id, Guid userId, Platform platform, string accessToken, string? refreshToken, DateTime? expiresAt, string? tokenType, string? scope)
     {
         return new Integration(
             id: id,
@@ -56,8 +56,6 @@ public class Integration
     {
         AccessToken = string.Empty;
         RefreshToken = string.Empty;
-        TokenType = string.Empty;
-        Scope = string.Empty;
         return this;
     }
 }

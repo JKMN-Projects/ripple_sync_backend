@@ -3,13 +3,13 @@ using System.Runtime.CompilerServices;
 
 namespace RippleSync.Infrastructure.JukmanORM.ClassAttributes;
 [AttributeUsage(AttributeTargets.Property)]
-public class SqlProperty : Attribute
+public class SqlPropertyAttribute : Attribute
 {
     public string? Name { get; }
     public QueryAction Action { get; }
     public UpdateAction Update { get; }
 
-    public SqlProperty(QueryAction action = default, UpdateAction update = default, [CallerMemberName] string propName = "")
+    public SqlPropertyAttribute(QueryAction action = default, UpdateAction update = default, [CallerMemberName] string propName = "")
     {
         Name = null;
 

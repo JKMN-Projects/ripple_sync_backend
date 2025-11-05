@@ -62,56 +62,35 @@ public class PostManager(
         );
     }
 
-    public async Task<string> GetImageByIdAsync(Guid userId)
-    => new(await postRepository.GetImageByIdAsync(userId));
+    public async Task<string?> GetImageByIdAsync(Guid userId)
+        => new(await postQueries.GetImageByIdAsync(userId));
 
-    public async Task<bool> CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
+    public async Task CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
     {
         DateTime? scheduledFor = timestamp.HasValue
             ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
             : null;
 
-        var postMedias = mediaAttachments?.Select(url => new PostMedia
-        {
-            Id = Guid.NewGuid(),
-            PostId = Guid.Empty, // temporary, updated once Post.Id is known
-            ImageUrl = url
-        }).ToList();
+        var postMedias = mediaAttachments?
+            .Select(PostMedia.New)
+            .ToList();
 
-        var postEvents = integrationIds.Select(id => new PostEvent
-        {
-            PostId = Guid.Empty, // temporary, updated once Post.Id is known
-            UserPlatformIntegrationId = id,
-            Status = scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft,
-            PlatformPostIdentifier = "",
-            PlatformResponse = new { }
-        }).ToList();
+        var postEvents = integrationIds
+            .Select(id => PostEvent.New(id, scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft, "", new { }))
+            .ToList();
 
         var post = Post.Create(
             userId,
             messageContent,
             scheduledFor,
-            postEvents,
-            postMedias
+            postMedias,
+            postEvents
         );
 
-        foreach (var e in post.PostEvents)
-        {
-            e.PostId = post.Id;
-        }
-
-        if (post.PostMedias != null)
-        {
-            foreach (var m in post.PostMedias)
-            {
-                m.PostId = post.Id;
-            }
-        }
-
-        return await postRepository.CreatePostAsync(post, cancellationToken);
+        await postRepository.CreateAsync(post, cancellationToken);
     }
 
-    public async Task<bool> UpdatePostAsync(Guid userId, Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
+    public async Task UpdatePostAsync(Guid userId, Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
     {
         Post? post = await postRepository.GetByIdAsync(postId, cancellationToken);
 
@@ -127,30 +106,19 @@ public class PostManager(
             ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
             : null;
 
-        post.PostMedias = mediaAttachments != null
-            ? [.. mediaAttachments.Select(url => new PostMedia
-            {
-                Id = Guid.NewGuid(),
-                PostId = post.Id,
-                ImageUrl = url
-            })]
-            : null;
+        if (mediaAttachments != null)
+        {
+            post.PostMedias = [.. mediaAttachments.Select(PostMedia.New)];
+        }
 
         if (integrationIds != null && integrationIds.Length > 0)
         {
-            post.PostEvents = [.. integrationIds.Select(id => new PostEvent
-            {
-                PostId = post.Id,
-                UserPlatformIntegrationId = id,
-                Status = PostStatus.Scheduled,
-                PlatformPostIdentifier = "",
-                PlatformResponse = new { }
-            })];
+            post.PostEvents = [.. integrationIds.Select(id => PostEvent.New(id, PostStatus.Scheduled, "", new { }))];
         }
 
         post.UpdatedAt = DateTime.UtcNow;
 
-        return await postRepository.UpdatePostAsync(post, cancellationToken);
+        await postRepository.UpdateAsync(post, cancellationToken);
     }
 
     public async Task DeletePostByIdAsync(Guid userId, Guid postId, CancellationToken cancellationToken = default)
@@ -173,12 +141,14 @@ public class PostManager(
     }
     public async Task<IEnumerable<Post>> GetPostReadyToPublish(CancellationToken cancellationToken = default)
     {
-        IEnumerable<Post> posts = await postRepository.GetPostsReadyToPublish(cancellationToken);
+        IEnumerable<Post> posts = await postRepository.GetPostsReadyToPublishAsync(cancellationToken);
 
         IEnumerable<Post> postsReadyToPost = posts.Where(p => p.IsReadyToPublish());
         return posts;
     }
-    public async Task<PostEvent> UpdatePostEventAsync(PostEvent postEvent) => await postRepository.UpdatePostEventStatus(postEvent);
+
+    public async Task<PostEvent> UpdatePostEventAsync(PostEvent postEvent)
+        => await postRepository.UpdatePostEventStatusAsync(postEvent);
 
     public async Task ProcessPostEventAsync(Post post, CancellationToken cancellationToken)
     {
@@ -194,7 +164,7 @@ public class PostManager(
 
         List<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId).ToList();
 
-        List<Integration> integrations = integrationRepository.GetIntegrationsByIds(userPlatformIntegrations).Result.ToList();
+        List<Integration> integrations = integrationRepository.GetIntegrationsByIdsAsync(userPlatformIntegrations, cancellationToken).Result.ToList();
 
         //Request platform
         foreach (var integration in integrations)

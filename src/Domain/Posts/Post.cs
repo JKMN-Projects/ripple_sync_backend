@@ -8,23 +8,26 @@ public class Post
     public Guid Id { get; private set; }
     public Guid UserId { get; private set; }
     public string MessageContent { get; set; } = string.Empty;
-    public DateTime UpdatedAt { get; set; }
+    public DateTime SubmittedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     public DateTime? ScheduledFor { get; set; }
+    public IEnumerable<PostMedia> PostMedias { get; set; }
     public IEnumerable<PostEvent> PostEvents { get; set; }
-    public IEnumerable<PostMedia>? PostMedias { get; set; }
 
-    private Post(Guid id, Guid userId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents, IEnumerable<PostMedia>? postMedias)
+    private Post(Guid id, Guid userId, string messageContent, DateTime submittedAt, DateTime? updatedAt, DateTime? scheduledFor, IEnumerable<PostMedia> postMedias, IEnumerable<PostEvent> postsEvents)
     {
         Id = id;
         UserId = userId;
         MessageContent = messageContent;
+        MessageContent = messageContent;
+        SubmittedAt = submittedAt;
         UpdatedAt = updatedAt;
         ScheduledFor = scheduledFor;
-        PostEvents = postsEvents;
         PostMedias = postMedias;
+        PostEvents = postsEvents;
     }
 
-    public static Post Create(Guid userId, string messageContent, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents, IEnumerable<PostMedia>? postMedias)
+    public static Post Create(Guid userId, string messageContent, DateTime? scheduledFor, IEnumerable<PostMedia> postMedias, IEnumerable<PostEvent> postsEvents)
     {
         if (scheduledFor != null && postsEvents.Any() is false)
             throw new ScheduledWithNoPostEventsException();
@@ -35,23 +38,25 @@ public class Post
             id: Guid.NewGuid(),
             userId: userId,
             messageContent: messageContent,
-            updatedAt: DateTime.UtcNow,
+            submittedAt: DateTime.UtcNow,
+            updatedAt: null,
             scheduledFor: scheduledFor,
-            postsEvents: postsEvents,
-            postMedias: postMedias
+            postMedias: postMedias,
+            postsEvents: postsEvents
         );
     }
 
-    public static Post Reconstitute(Guid id, Guid userId, string messageContent, DateTime updatedAt, DateTime? scheduledFor, IEnumerable<PostEvent> postsEvents, IEnumerable<PostMedia>? postMedias)
+    public static Post Reconstitute(Guid id, Guid userId, string messageContent, DateTime submittedAt, DateTime? updatedAt, DateTime? scheduledFor, IEnumerable<PostMedia> postMedias, IEnumerable<PostEvent> postsEvents)
     {
         return new Post(
             id: id,
             userId: userId,
             messageContent: messageContent,
+            submittedAt: submittedAt,
             updatedAt: updatedAt,
             scheduledFor: scheduledFor,
-            postsEvents: postsEvents,
-            postMedias: postMedias
+            postMedias: postMedias,
+            postsEvents: postsEvents
         );
     }
 

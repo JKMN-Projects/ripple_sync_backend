@@ -5,4 +5,5 @@ namespace RippleSync.Application.Common.Queries;
 public interface IPostQueries
 {
     Task<IEnumerable<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status, CancellationToken cancellationToken = default);
+    Task<string?> GetImageByIdAsync(Guid imageId, CancellationToken cancellationToken = default);
 }

@@ -3,6 +3,7 @@ using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Posts;
 using RippleSync.Domain.Posts;
+using System.Linq;
 
 namespace RippleSync.Infrastructure.PostRepository;
 
@@ -26,8 +27,8 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         var response = post.Select(p => new GetPostsByUserResponse(
             p.Id,
             p.MessageContent,
-            p.PostEvents.MaxBy(pe => pe.Status)!.Status.ToString(),
             p.PostMedias?.Select(pm => pm.Id).ToArray() ?? Array.Empty<Guid>(),
+            p.PostEvents.MaxBy(pe => pe.Status)!.Status.ToString(),
             p.ScheduledFor.HasValue ? new DateTimeOffset(p.ScheduledFor.Value).ToUnixTimeMilliseconds() : null,
             p.PostEvents.Select(pe => userIntegrations.FirstOrDefault(ui => ui.Id == pe.UserPlatformIntegrationId)?.Platform.ToString() ?? "Unknown").ToArray()
         ));
@@ -47,49 +48,41 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         return Task.FromResult<Post>(postEntity);
     }
 
-    public Task<string> GetImageByIdAsync(Guid imageId, CancellationToken cancellationToken = default)
+    public Task<string?> GetImageByIdAsync(Guid imageId, CancellationToken cancellationToken = default)
     {
         var imageUrl = InMemoryData.Posts
             .SelectMany(p => p.PostMedias ?? [])
             .Where(pm => pm.Id == imageId)
-            .Select(pm => pm.ImageUrl)
+            .Select(pm => pm.ImageData)
             .FirstOrDefault();
 
-        return Task.FromResult(imageUrl ?? "");
+        return Task.FromResult(imageUrl);
     }
 
 
-    public async Task<bool> CreatePostAsync(
-        Post post,
-        CancellationToken cancellationToken = default)
+    public async Task CreateAsync(Post post, CancellationToken cancellationToken = default)
     {
         await Task.Yield();
 
         InMemoryData.Posts.Add(post);
-
-        return true;
     }
 
-    public async Task<bool> UpdatePostAsync(
-        Post post,
-        CancellationToken cancellationToken = default)
-    {
-        await Task.Yield();
+    public async Task UpdateAsync(Post post, CancellationToken cancellationToken = default)
+        => await Task.Yield();
 
-        return true;
-    }
     public Task<IEnumerable<Post>> GetAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var posts = InMemoryData.Posts.Where(p => p.UserId == userId);
         return Task.FromResult(posts);
     }
 
-    public async Task<IEnumerable<Post>> GetPostsReadyToPublish(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Post>> GetPostsReadyToPublishAsync(CancellationToken cancellationToken = default)
     {
         var posts = InMemoryData.Posts.Where(p => p.IsReadyToPublish());
         return posts;
     }
 
-    public async Task<PostEvent> UpdatePostEventStatus(PostEvent postEvent, CancellationToken cancellationToken) => postEvent;
+    public async Task<PostEvent> UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken)
+        => postEvent;
 }
 

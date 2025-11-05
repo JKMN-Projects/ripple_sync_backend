@@ -1,5 +1,6 @@
 ﻿using RippleSync.Application.Common.Repositories;
 using RippleSync.Domain.Users;
+using System.Threading;
 
 namespace RippleSync.Infrastructure.UserRepository;
 internal sealed class InMemoryUserRepository : IUserRepository
@@ -27,7 +28,7 @@ internal sealed class InMemoryUserRepository : IUserRepository
         return Task.FromResult(user);
     }
 
-    public async Task<Guid> InsertAsync(User user, CancellationToken cancellationToken = default)
+    public async Task InsertAsync(User user, CancellationToken cancellationToken = default)
     {
         int delay = Random.Shared.Next(50, 400);
         await Task.Delay(delay, cancellationToken);
@@ -38,12 +39,11 @@ internal sealed class InMemoryUserRepository : IUserRepository
             user.PasswordHash,
             user.Salt, null);
         InMemoryData.Users.Add(userToAdd);
-        return userToAdd.Id;
     }
 
-    public async Task<User> UpdateAsync(User user, CancellationToken cancellation = default)
+    public async Task UpdateAsync(User user, CancellationToken cancellationToken = default)
     {
-        return user;
-
+        int delay = Random.Shared.Next(50, 400);
+        await Task.Delay(delay, cancellationToken);
     }
 }

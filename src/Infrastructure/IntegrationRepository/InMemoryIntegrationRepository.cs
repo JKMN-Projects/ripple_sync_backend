@@ -24,19 +24,19 @@ public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegratio
     }
 
     public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        => Task.FromResult(InMemoryData.Integrations.Where(i => i.UserId == userId));
+
+    public async Task UpdateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(InMemoryData.Integrations.Where(i => i.UserId == userId));
-    }
-    public Task UpdateAsync(Integration integration, CancellationToken cancellation = default)
-    {
-        return Task.CompletedTask;
+        int delay = Random.Shared.Next(50, 400);
+        await Task.Delay(delay, cancellationToken);
     }
 
-    public Task<IEnumerable<Integration>> GetIntegrationsByIds(List<Guid> integrationIds)
+    public Task<IEnumerable<Integration>> GetIntegrationsByIdsAsync(List<Guid> integrationIds, CancellationToken cancellationToken = default)
     {
         var integrations = InMemoryData.Integrations.Where(i => integrationIds.Contains(i.Id));
         return integrations.Any()
-            ? Task.FromResult(integrations) 
+            ? Task.FromResult(integrations)
             : Task.FromResult(Enumerable.Empty<Integration>());
     }
 }

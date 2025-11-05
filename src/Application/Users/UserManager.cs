@@ -142,7 +142,7 @@ public sealed class UserManager(
         foreach (var post in posts)
         {
             post.Anonymize();
-            await postRepository.UpdatePostAsync(post, cancellationToken);
+            await postRepository.UpdateAsync(post, cancellationToken);
         }
         logger.LogInformation("User with ID {UserId} deleted successfully", userId);
     }

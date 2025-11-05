@@ -9,7 +9,7 @@ internal class UserEntity
     public string Salt { get; }
 
 
-    [SqlConstructor("ripple_sync", "user")]
+    [SqlConstructorAttribute("ripple_sync", "user")]
     internal UserEntity(Guid id, string email, string password_hash, string salt)
     {
         Id = id;
