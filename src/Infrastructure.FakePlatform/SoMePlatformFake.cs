@@ -37,12 +37,15 @@ public class SoMePlatformFake(IOptions<FakePlatformOptions> options) : ISoMePlat
         foreach (var post in FakePlatformInMemoryData.PostData)
         {
             await Task.Delay(Random.Shared.Next(80, 150));
-            PostStats statsForPost = FakePlatformInMemoryData.PostStats[post.Id] ?? new PostStats(
-                Days: 0,
-                Likes: 0,
-                Reach: 0,
-                Engagement: 0
-            );
+            if (!FakePlatformInMemoryData.PostStats.TryGetValue(post.Id, out var statsForPost))
+            {
+                statsForPost = new PostStats(
+                    Days: 0,
+                    Likes: 0,
+                    Reach: 0,
+                    Engagement: 0
+                );
+            }
 
             int daysAtPreviousCalculation = statsForPost.Days;
             int reach = statsForPost.Reach;
@@ -58,7 +61,8 @@ public class SoMePlatformFake(IOptions<FakePlatformOptions> options) : ISoMePlat
                 engagement += Random.Shared.Next(25, 70);
                 likes += Random.Shared.Next(20, 65);
             }
-            FakePlatformInMemoryData.PostStats[post.Id] = statsForPost with {
+            FakePlatformInMemoryData.PostStats[post.Id] = statsForPost with
+            {
                 Days = post.DaysSincePosted,
                 Likes = likes,
                 Reach = reach,
