@@ -146,7 +146,7 @@ public sealed class AuthenticationController(
         }
     }
 
-    [HttpPost]
+    [HttpPost("[action]")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public IActionResult Logout()
     {
