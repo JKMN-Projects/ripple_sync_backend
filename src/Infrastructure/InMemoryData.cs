@@ -11,7 +11,7 @@ internal class InMemoryData
     private static readonly Guid _userId = Guid.Parse("a9856986-14e4-464b-acc7-dcb84ddf9f36");
 
     internal static readonly List<User> Users = [
-            User.Reconstitute(_userId, "jukman@gmail.com", "hyT8uOvqa5HsVzoYa7f8x5Fc79whJ85hnUVlthmk2Ak=", "VGVzdGluZ0FTYWx0VmFsdWVXcml0dGVuSW5QbGFpblRleHQ=")
+            User.Reconstitute(_userId, "jukman@gmail.com", "hyT8uOvqa5HsVzoYa7f8x5Fc79whJ85hnUVlthmk2Ak=", "VGVzdGluZ0FTYWx0VmFsdWVXcml0dGVuSW5QbGFpblRleHQ=", null)
         ];
 
     internal static readonly List<Integration> Integrations =
@@ -36,15 +36,6 @@ internal class InMemoryData
             "Bearer",
             "r_liteprofile w_member_social"
         )
-    ];
-
-    internal static readonly List<PlatformWithUserIntegrationResponse> IntegrationResponses =
-    [
-        new ((int)Platform.X, "X.com", "Share updates on X", false, ""),
-        new ((int)Platform.LinkedIn, "LinkedIn", "Share professional updates on LinkedIn", true, ""),
-        new ((int)Platform.Facebook, "Facebook", "Create posts on Facebook", false, ""),
-        new ((int)Platform.Instagram, "Instagram", "Post photos and stories on Instagram", false, ""),
-        new ((int)Platform.Threads, "Threads", "Post photos and stories on Instagram", false, "")
     ];
 
     internal static readonly List<Post> Posts =

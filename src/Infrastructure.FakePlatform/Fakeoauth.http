@@ -1,0 +1,4 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+@API_HostAddress = https://localhost:7275
+
+GET {{API_HostAddress}}/api/fakeoauth

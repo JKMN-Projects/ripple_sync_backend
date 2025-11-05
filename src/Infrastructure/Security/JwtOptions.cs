@@ -12,4 +12,7 @@ public sealed class JwtOptions
 
     [Required]
     public required int ValidityInMinutes { get; init; }
+
+    [Required]
+    public required int RefreshTokenValidityInDays { get; init; }
 }

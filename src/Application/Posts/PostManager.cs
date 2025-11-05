@@ -6,8 +6,6 @@ using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
-using RippleSync.Domain.Users;
-using System.Threading;
 
 namespace RippleSync.Application.Posts;
 
@@ -62,8 +60,6 @@ public class PostManager(
                     : 0)).ToList()
         );
     }
-    public async Task<ListResponse<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status)
-        => new(await postRepository.GetPostsByUserAsync(userId, status));
 
     public async Task<string?> GetImageByIdAsync(Guid userId)
         => new(await postQueries.GetImageByIdAsync(userId));
@@ -79,7 +75,7 @@ public class PostManager(
             .ToList();
 
         var postEvents = integrationIds
-            .Select(id => PostEvent.New(id, scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft, "", new { CreatedAt = DateTime.UtcNow }))
+            .Select(id => PostEvent.New(id, scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft, "", new { }))
             .ToList();
 
         var post = Post.Create(
@@ -116,7 +112,7 @@ public class PostManager(
 
         if (integrationIds != null && integrationIds.Length > 0)
         {
-            post.PostEvents = [.. integrationIds.Select(id => PostEvent.New(id, PostStatus.Scheduled, "", new { UpdatedAt = DateTime.UtcNow }))];
+            post.PostEvents = [.. integrationIds.Select(id => PostEvent.New(id, PostStatus.Scheduled, "", new { }))];
         }
 
         post.UpdatedAt = DateTime.UtcNow;
@@ -167,8 +163,7 @@ public class PostManager(
 
         List<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId).ToList();
 
-        //TODO: Get List of UserPlatformintegration from list of guids
-        List<Integration> integrations = []; // _integrationManager.GetIntegrationsByIds(userPlatformIntegrations);
+        List<Integration> integrations = integrationRepository.GetIntegrationsByIds(userPlatformIntegrations).Result.ToList();
 
         //Request platform
         foreach (var integration in integrations)
@@ -181,6 +176,12 @@ public class PostManager(
             try
             {
                 var responsePostEvent = await platform.PublishPostAsync(post, integration);
+
+                //If still processing, mark as posted
+                if (responsePostEvent.Status == PostStatus.Processing)
+                {
+                    responsePostEvent.Status = PostStatus.Posted;
+                }
                 await UpdatePostEventAsync(responsePostEvent);
             }
             catch (Exception ex)
