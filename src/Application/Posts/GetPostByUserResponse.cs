@@ -3,7 +3,7 @@
 public record GetPostsByUserResponse(
     Guid PostId,
     string MessageContent,
-    string[] MediaAttachment,
+    Guid[] MediaIds,
     string StatusName,
     long? TimestampUnix,
     string[] Platforms);

@@ -103,5 +103,6 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
     }
-    public Task<IEnumerable<Integration>> GetIntegrationsByIds(List<Guid> integrationIds) => throw new NotImplementedException();
+    public Task<IEnumerable<Integration>> GetIntegrationsByIdsAsync(List<Guid> integrationIds, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException();
 }

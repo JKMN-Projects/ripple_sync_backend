@@ -3,6 +3,7 @@ using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Posts;
 using RippleSync.Domain.Posts;
+using System.Linq;
 
 namespace RippleSync.Infrastructure.PostRepository;
 
@@ -26,9 +27,8 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         var response = post.Select(p => new GetPostsByUserResponse(
             p.Id,
             p.MessageContent,
-            [],
-            p.PostEvents.MaxBy(pe => pe.Status)!.Status.ToString(),
             p.PostMedias?.Select(pm => pm.Id).ToArray() ?? Array.Empty<Guid>(),
+            p.PostEvents.MaxBy(pe => pe.Status)!.Status.ToString(),
             p.ScheduledFor.HasValue ? new DateTimeOffset(p.ScheduledFor.Value).ToUnixTimeMilliseconds() : null,
             ["X", "LinkedIn"]
         ));

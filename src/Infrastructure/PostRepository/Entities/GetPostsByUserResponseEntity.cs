@@ -14,8 +14,8 @@ internal class GetPostsByUserResponseEntity
     public string MessageContent { get; set; }
 
 
-    [SqlPropertyAttribute(propName: "media_attachment")]
-    public string[] MediaAttachment { get; set; }
+    [SqlPropertyAttribute(propName: "media_ids")]
+    public Guid[] MediaIds { get; set; }
 
 
     [SqlPropertyAttribute(propName: "status_name")]
@@ -25,11 +25,11 @@ internal class GetPostsByUserResponseEntity
 
 
     [SqlConstructorAttribute("ripple_sync")]
-    internal GetPostsByUserResponseEntity(Guid id, string message_content, string[] media_attachment, string status_name, long? timestamp, string[] platforms)
+    internal GetPostsByUserResponseEntity(Guid id, string message_content, Guid[] media_ids, string status_name, long? timestamp, string[] platforms)
     {
         Id = id;
         MessageContent = message_content;
-        MediaAttachment = media_attachment;
+        MediaIds = media_ids;
         StatusName = status_name;
         Timestamp = timestamp;
         Platforms = platforms;

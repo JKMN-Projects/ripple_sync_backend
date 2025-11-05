@@ -29,7 +29,7 @@ public sealed class AuthenticationController(
             SetAccessTokenCookie(tokenResponse.Token, tokenResponse.ExpiresAt);
             AuthenticationResponse response = new AuthenticationResponse(
                 tokenResponse.RefreshToken,
-                request.Email, 
+                request.Email,
                 tokenResponse.ExpiresAt);
 
             return Ok(response);

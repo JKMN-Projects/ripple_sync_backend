@@ -146,7 +146,7 @@ public class PostManager(
         return posts;
     }
 
-    public async Task<PostEvent> UpdatePostEventAsync(PostEvent postEvent) 
+    public async Task<PostEvent> UpdatePostEventAsync(PostEvent postEvent)
         => await postRepository.UpdatePostEventStatusAsync(postEvent);
 
     public async Task ProcessPostEventAsync(Post post, CancellationToken cancellationToken)
@@ -163,7 +163,7 @@ public class PostManager(
 
         List<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId).ToList();
 
-        List<Integration> integrations = integrationRepository.GetIntegrationsByIds(userPlatformIntegrations).Result.ToList();
+        List<Integration> integrations = integrationRepository.GetIntegrationsByIdsAsync(userPlatformIntegrations, cancellationToken).Result.ToList();
 
         //Request platform
         foreach (var integration in integrations)

@@ -32,11 +32,11 @@ public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegratio
         await Task.Delay(delay, cancellationToken);
     }
 
-    public Task<IEnumerable<Integration>> GetIntegrationsByIds(List<Guid> integrationIds)
+    public Task<IEnumerable<Integration>> GetIntegrationsByIdsAsync(List<Guid> integrationIds, CancellationToken cancellationToken = default)
     {
         var integrations = InMemoryData.Integrations.Where(i => integrationIds.Contains(i.Id));
         return integrations.Any()
-            ? Task.FromResult(integrations) 
+            ? Task.FromResult(integrations)
             : Task.FromResult(Enumerable.Empty<Integration>());
     }
 }

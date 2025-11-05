@@ -27,9 +27,9 @@ internal class NpgsqlPostRepository(
             SELECT
                 p.id,
                 p.message_content,
-                (SELECT ARRAY_AGG(pm.image_data) 
+                (SELECT ARRAY_AGG(pm.id) 
                  FROM post_media AS pm 
-                 WHERE pm.post_id = p.id) AS media_attachments,
+                 WHERE pm.post_id = p.id) AS media_ids,
                 pe_data.status_name,
                 pe_data.timestamp,
                 pe_data.platforms
@@ -64,7 +64,7 @@ internal class NpgsqlPostRepository(
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
 
-        return userPostEntities.Any() ? userPostEntities.Select(up => new GetPostsByUserResponse(up.Id, up.MessageContent, up.MediaAttachment, string.IsNullOrWhiteSpace(up.StatusName) ? PostStatus.Draft.ToString() : up.StatusName, up.Timestamp, up.Platforms)) : [];
+        return userPostEntities.Any() ? userPostEntities.Select(up => new GetPostsByUserResponse(up.Id, up.MessageContent, up.MediaIds, string.IsNullOrWhiteSpace(up.StatusName) ? PostStatus.Draft.ToString() : up.StatusName, up.Timestamp, up.Platforms)) : [];
     }
 
     public async Task<string?> GetImageByIdAsync(Guid imageId, CancellationToken cancellationToken = default)

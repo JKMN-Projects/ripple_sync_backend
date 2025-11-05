@@ -28,13 +28,6 @@ internal sealed class InMemoryUserRepository : IUserRepository
         return Task.FromResult(user);
     }
 
-    public Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
-    {
-        User? user = InMemoryData.Users.SingleOrDefault(u =>
-            u.RefreshToken is not null && u.RefreshToken.Value == refreshToken);
-        return Task.FromResult(user);
-    }
-
     public async Task InsertAsync(User user, CancellationToken cancellationToken = default)
     {
         int delay = Random.Shared.Next(50, 400);
