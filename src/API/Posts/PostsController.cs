@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using RippleSync.API.Common.Extensions;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Posts;
+using System.Net.Http.Headers;
 using RippleSync.Domain.Posts.Exceptions;
 
 namespace RippleSync.API.Posts;
@@ -29,9 +30,9 @@ public partial class PostsController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<IActionResult> GetImage(Guid id)
     {
-        // Retrieve the base64 string from your database/service
         string base64Image = await _postManager.GetImageByIdAsync(id);
 
         if (string.IsNullOrEmpty(base64Image))
@@ -39,11 +40,9 @@ public partial class PostsController : ControllerBase
             return NotFound();
         }
 
-        // Convert the base64 string to a byte array
         byte[] imageBytes = Convert.FromBase64String(base64Image);
 
-        // Return the image as a File result
-        return File(imageBytes, "image/png"); // Adjust the content type as needed (e.g., "image/png")
+        return File(imageBytes, "image/png");
     }
 
     [HttpPost]

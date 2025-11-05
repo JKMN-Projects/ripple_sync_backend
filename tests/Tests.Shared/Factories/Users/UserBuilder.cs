@@ -11,6 +11,7 @@ public class UserBuilder
 
     private string _email = "default@example.com";
     private string _password = "Def4ultP@55";
+    private RefreshToken? _refreshToken;
 
     public UserBuilder(IPasswordHasher passwordHasher)
     {
@@ -28,6 +29,12 @@ public class UserBuilder
         return this;
     }
 
+    public UserBuilder WithRefreshToken(RefreshToken refreshToken)
+    {
+        _refreshToken = refreshToken;
+        return this;
+    }
+
     public User Build()
     {
         byte[] saltBytes = _passwordHasher.GenerateSalt();
@@ -35,6 +42,11 @@ public class UserBuilder
         byte[] hashedPassword = _passwordHasher.Hash(passwordBytes, saltBytes);
         string saltString = Convert.ToBase64String(saltBytes);
         string hashedPasswordString = Convert.ToBase64String(hashedPassword);
-        return User.Create(_email, hashedPasswordString, saltString);
+        User buildUser = User.Create(_email, hashedPasswordString, saltString);
+        if (_refreshToken is not null)
+        {
+            buildUser.AddRefreshToken(_refreshToken);
+        }
+        return buildUser;
     }
 }

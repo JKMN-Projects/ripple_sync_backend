@@ -10,7 +10,41 @@ public static class AuthenticationTokenProviderDoubles
 {
     public class Dummy : IAuthenticationTokenProvider
     {
+        public virtual Task<RefreshToken> GenerateRefreshTokenAsync(User user, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public virtual Task<AuthenticationToken> GenerateTokenAsync(User user, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    }
+
+    public class Composite : IAuthenticationTokenProvider
+    {
+        private readonly IAuthenticationTokenProvider first;
+        private readonly IAuthenticationTokenProvider second;
+        public Composite(IAuthenticationTokenProvider first, IAuthenticationTokenProvider second)
+        {
+            this.first = first;
+            this.second = second;
+        }
+        public Task<AuthenticationToken> GenerateTokenAsync(User user, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return first.GenerateTokenAsync(user, cancellationToken);
+            }
+            catch (NotImplementedException)
+            {
+                return second.GenerateTokenAsync(user, cancellationToken);
+            }
+        }
+        public Task<RefreshToken> GenerateRefreshTokenAsync(User user, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return first.GenerateRefreshTokenAsync(user, cancellationToken);
+            }
+            catch (NotImplementedException)
+            {
+                return second.GenerateRefreshTokenAsync(user, cancellationToken);
+            }
+        }
     }
 
     public static class Spies
@@ -44,8 +78,16 @@ public static class AuthenticationTokenProviderDoubles
                 AuthenticationToken fakeToken = new(
                     AccessToken: Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
                     TokenType: "Fake",
-                    ExpiresInMilliSeconds: 3600);
+                    ExpiresInMilliSeconds: 3600,
+                    Claims: []);
                 return Task.FromResult(fakeToken);
+            }
+            public Task<RefreshToken> GenerateRefreshTokenAsync(User user, CancellationToken cancellationToken = default)
+            {
+                return Task.FromResult(RefreshToken.Create(
+                    token: Guid.NewGuid().ToString(),
+                    timeProvider: TimeProvider.System,
+                    expiresAt: DateTimeOffset.UtcNow.AddDays(30).ToUnixTimeMilliseconds()));
             }
         }
 
@@ -86,7 +128,8 @@ public static class AuthenticationTokenProviderDoubles
                 AuthenticationToken fakeToken = new(
                     AccessToken: token,
                     TokenType: TokenType,
-                    ExpiresInMilliSeconds: expiresInSeconds);
+                    ExpiresInMilliSeconds: expiresInSeconds,
+                    Claims: []);
                 return Task.FromResult(fakeToken);
             }
 
@@ -130,6 +173,14 @@ public static class AuthenticationTokenProviderDoubles
                 string expString = payloadDoc.RootElement.GetProperty("exp").GetString() ?? throw new ArgumentException("Token does not contain expiration claim", nameof(token));
                 DateTimeOffset expiration = DateTimeOffset.Parse(expString, CultureInfo.InvariantCulture);
                 return (claims, expiration);
+            }
+
+            public Task<RefreshToken> GenerateRefreshTokenAsync(User user, CancellationToken cancellationToken = default)
+            {
+                return Task.FromResult(RefreshToken.Create(
+                    token: Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
+                    timeProvider: TimeProvider.System,
+                    expiresAt: DateTimeOffset.UtcNow.AddDays(30).ToUnixTimeMilliseconds()));
             }
         }
     }

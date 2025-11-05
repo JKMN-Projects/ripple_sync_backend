@@ -10,6 +10,7 @@ namespace RippleSync.Application.Users;
 
 public sealed class UserManager(
     ILogger<UserManager> logger,
+    TimeProvider timeProvider,
     IUserRepository userRepository,
     IIntegrationRepository integrationRepository,
     IPostRepository postRepository,
@@ -35,7 +36,7 @@ public sealed class UserManager(
         ArgumentException.ThrowIfNullOrWhiteSpace(email, nameof(email));
         ArgumentException.ThrowIfNullOrWhiteSpace(password, nameof(password));
 
-        User? user = await userRepository.GetUserByEmailAsync(email, cancellationToken);
+        User? user = await userRepository.GetByEmailAsync(email, cancellationToken);
 
         if (user is null)
         {
@@ -48,12 +49,22 @@ public sealed class UserManager(
 
         if (!passwordHasher.Verify(passwordBytes, salt, passwordHash))
         {
-            throw new ArgumentException("Invalid password", nameof(password));
+            throw new ArgumentException("Invalid password.", nameof(password));
         }
 
         logger.LogInformation("Generating authentication token for user with email {Email}", email);
         AuthenticationToken token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
-        return new AuthenticationTokenResponse(token.AccessToken, token.TokenType, token.ExpiresInMilliSeconds);
+
+        RefreshToken refreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
+        user.AddRefreshToken(refreshToken);
+        await userRepository.UpdateAsync(user, cancellationToken);
+        return new AuthenticationTokenResponse(
+            token.AccessToken,
+            token.TokenType,
+            token.ExpiresInMilliSeconds,
+            refreshToken.Value,
+            refreshToken.ExpiresAt,
+            token.Claims);
     }
 
     /// <summary>
@@ -84,7 +95,7 @@ public sealed class UserManager(
         else if (!password.Any(char.IsLower)) throw new ArgumentException("Password must contain at least one lowercase letter.", nameof(password));
         else if (!password.Any(ch => !char.IsLetterOrDigit(ch))) throw new ArgumentException("Password must contain at least one special character.", nameof(password));
 
-        User? existingUser = await userRepository.GetUserByEmailAsync(email, cancellationToken);
+        User? existingUser = await userRepository.GetByEmailAsync(email, cancellationToken);
         if (existingUser is not null) throw new EmailAlreadyInUseException(email);
 
         byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
@@ -112,14 +123,14 @@ public sealed class UserManager(
         CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Deleting user with ID {UserId}", userId);
-        User? user = await userRepository.GetUserByIdAsync(userId, cancellationToken);
+        User? user = await userRepository.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             throw EntityNotFoundException.ForEntity<User>(userId);
         }
         // Anonymize user data
         user.Anonymize();
-        await userRepository.UpdateUserAsync(user, cancellationToken);
+        await userRepository.UpdateAsync(user, cancellationToken);
 
         var integrations = await integrationRepository.GetByUserIdAsync(userId, cancellationToken);
         foreach (var integration in integrations)
@@ -134,6 +145,47 @@ public sealed class UserManager(
             await postRepository.UpdatePostAsync(post, cancellationToken);
         }
         logger.LogInformation("User with ID {UserId} deleted successfully", userId);
+    }
+
+    /// <summary>
+    /// Refreshes the authentication token using the provided refresh token.
+    /// </summary>
+    /// <param name="refreshToken"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>A new <see cref="AuthenticationTokenResponse"/>.</returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="EntityNotFoundException"></exception>
+    public async Task<AuthenticationTokenResponse> RefreshAuthenticationTokenAsync(
+        string refreshToken,
+        CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation("Refreshing authentication token for user with ID {RefreshToken}", refreshToken);
+        User? user = await userRepository.GetByRefreshTokenAsync(refreshToken, cancellationToken);
+
+        if (user is null)
+        {
+            throw EntityNotFoundException.ForEntity<User>(refreshToken, nameof(User.RefreshToken));
+        }
+
+        if (!user.VerifyRefreshToken(refreshToken, timeProvider))
+        {
+            logger.LogWarning("Invalid or expired refresh token for user with ID {UserId}", user.Id);
+            await userRepository.UpdateAsync(user, cancellationToken);
+            throw new ArgumentException("Invalid or expired refresh token.", nameof(refreshToken));
+        }
+
+        AuthenticationToken token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
+        RefreshToken newRefreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
+        user.AddRefreshToken(newRefreshToken);
+        await userRepository.UpdateAsync(user, cancellationToken);
+
+        return new AuthenticationTokenResponse(
+            token.AccessToken,
+            token.TokenType,
+            token.ExpiresInMilliSeconds,
+            newRefreshToken.Value,
+            newRefreshToken.ExpiresAt,
+            token.Claims);
     }
 }
 
