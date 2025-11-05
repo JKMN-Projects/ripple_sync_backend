@@ -32,39 +32,60 @@ public class SoMePlatformFake(IOptions<FakePlatformOptions> options) : ISoMePlat
         return request;
     }
 
-    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration)
+    public async Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration)
     {
-        int CalculatePostStat(int days, int multiplierMin, int multiplierMax)
+        foreach (var post in FakePlatformInMemoryData.PostData)
         {
-            int total = 0;
-            for (int i = 0; i < days; i++)
+            await Task.Delay(Random.Shared.Next(80, 150));
+            PostStats statsForPost = FakePlatformInMemoryData.PostStats[post.Id] ?? new PostStats(
+                Days: 0,
+                Likes: 0,
+                Reach: 0,
+                Engagement: 0
+            );
+
+            int daysAtPreviousCalculation = statsForPost.Days;
+            int reach = statsForPost.Reach;
+            int engagement = statsForPost.Engagement;
+            int likes = statsForPost.Likes;
+
+            if (daysAtPreviousCalculation >= post.DaysSincePosted)
+                continue;
+
+            for (int i = daysAtPreviousCalculation; i < post.DaysSincePosted; i++)
             {
-                total += Convert.ToInt32(Random.Shared.Next(multiplierMin, multiplierMax));
+                reach += Random.Shared.Next(35, 135);
+                engagement += Random.Shared.Next(25, 70);
+                likes += Random.Shared.Next(20, 65);
             }
-            return total;
+            FakePlatformInMemoryData.PostStats[post.Id] = statsForPost with {
+                Days = post.DaysSincePosted,
+                Likes = likes,
+                Reach = reach,
+                Engagement = engagement
+            };
         }
 
         int postCount = FakePlatformInMemoryData.PostData.Count;
-        int reach = FakePlatformInMemoryData.PostData
-            .Select(pd => Convert.ToInt32((pd.PostedOn - DateTime.UtcNow).TotalDays + 1))
-            .Sum(days => CalculatePostStat(days, 35, 135));
-        int engagement = FakePlatformInMemoryData.PostData
-            .Select(pd => Convert.ToInt32((pd.PostedOn - DateTime.UtcNow).TotalDays + 1))
-            .Sum(days => CalculatePostStat(days, 25, 70));
-        int likes = FakePlatformInMemoryData.PostData
-            .Select(pd => Convert.ToInt32((pd.PostedOn - DateTime.UtcNow).TotalDays + 1))
-            .Sum(days => CalculatePostStat(days, 20, 65));
+        int totalReach = FakePlatformInMemoryData.PostStats.Sum(kv => kv.Value.Reach);
+        int totalEngagement = FakePlatformInMemoryData.PostStats.Sum(kv => kv.Value.Engagement);
+        int totalLikes = FakePlatformInMemoryData.PostStats.Sum(kv => kv.Value.Likes);
 
-        return Task.FromResult(new PlatformStats(
+        return new PlatformStats(
             PostCount: postCount,
-            Reach: reach,
-            Engagement: engagement,
-            Likes: likes
-        ));
+            Reach: totalReach,
+            Engagement: totalEngagement,
+            Likes: totalLikes
+        );
     }
 
-    public Task<PostEvent> PublishPostAsync(Post post, Integration integration)
+    public async Task<PostEvent> PublishPostAsync(Post post, Integration integration)
     {
+        int mediaCount = post.PostMedias?.Count() ?? 0;
+        int delay = mediaCount > 0
+            ? Random.Shared.Next(800 * mediaCount, 1500 * mediaCount)
+            : Random.Shared.Next(400, 900);
+        await Task.Delay(delay);
         FakePlatformInMemoryData.PostData.Add(new PostData(
             Id: post.Id,
             PostedOn: DateTime.UtcNow,
@@ -72,19 +93,29 @@ public class SoMePlatformFake(IOptions<FakePlatformOptions> options) : ISoMePlat
             Media: post.PostMedias?.Select(pm => new PostDataMedia(pm.Id)) ?? []
         ));
 
-        return Task.FromResult(post.PostEvents.First());
+        return post.PostEvents.First();
     }
 }
 
 public static class FakePlatformInMemoryData
 {
     public static List<PostData> PostData { get; private set; } = [];
+    public static Dictionary<Guid, PostStats> PostStats { get; private set; } = [];
 }
 
 public sealed record PostData(
     Guid Id,
     string Content,
     DateTime PostedOn,
-    IEnumerable<PostDataMedia> Media);
+    IEnumerable<PostDataMedia> Media)
+{
+    public int DaysSincePosted => (DateTime.UtcNow - PostedOn).Days + 1;
+}
 
 public sealed record PostDataMedia(Guid Id);
+
+public sealed record PostStats(
+    int Days,
+    int Likes,
+    int Reach,
+    int Engagement);
