@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using RippleSync.API.Common.Extensions;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Posts;
-using System.Net.Http.Headers;
 
 namespace RippleSync.API.Posts;
 

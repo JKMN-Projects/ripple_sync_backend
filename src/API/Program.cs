@@ -7,14 +7,11 @@ using RippleSync.API.Platforms;
 using RippleSync.API.PostPublisher;
 using RippleSync.Application;
 using RippleSync.Application.Platforms;
-using RippleSync.Application.Posts;
-using RippleSync.Domain.Posts;
 using RippleSync.Infrastructure;
 using RippleSync.Infrastructure.Security;
 using RippleSync.Infrastructure.SoMePlatforms.X;
 using Serilog;
 using System.Globalization;
-using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseDefaultServiceProvider(options =>
@@ -45,7 +42,7 @@ if (builder.Environment.IsDevelopment())
 }
 
 // Add services to the container.
-
+builder.Services.AddHttpClient();
 builder.Services.AddControllersWithViews()
     .AddApplicationPart(FakeOAuthAssemblyReference.Assembly);
 
