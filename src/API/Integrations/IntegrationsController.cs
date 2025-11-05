@@ -12,24 +12,15 @@ namespace RippleSync.API.Integrations;
 [Route("api/[controller]")]
 [Authorize]
 [ApiController]
-public partial class IntegrationsController : ControllerBase
+public partial class IntegrationsController(ILogger<IntegrationsController> logger, IntegrationManager integrationManager) : ControllerBase
 {
-    private readonly ILogger<IntegrationsController> _logger;
-    private readonly IntegrationManager _integrationManager;
-
-    public IntegrationsController(ILogger<IntegrationsController> logger, IntegrationManager integrationManager)
-    {
-        _logger = logger;
-        _integrationManager = integrationManager;
-    }
-
     [HttpGet("")]
     [ProducesResponseType<ListResponse<PlatformWithUserIntegrationResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPlatformsWithUserIntegrationsAsync()
     {
         Guid userId = User.GetUserId();
 
-        var response = await _integrationManager.GetPlatformsWithUserIntegrationsAsync(userId);
+        var response = await integrationManager.GetPlatformsWithUserIntegrationsAsync(userId);
 
         return Ok(response);
     }
@@ -40,7 +31,7 @@ public partial class IntegrationsController : ControllerBase
     {
         Guid userId = User.GetUserId();
 
-        var response = await _integrationManager.GetConnectedIntegrationsAsync(userId);
+        var response = await integrationManager.GetConnectedIntegrationsAsync(userId);
 
         return Ok(response);
     }
@@ -82,14 +73,14 @@ public partial class IntegrationsController : ControllerBase
         Guid userId = User.GetUserId();
         if (!Enum.IsDefined(typeof(Platform), platformId))
         {
-            _logger.LogWarning("Invalid platform ID: {PlatformId}", platformId);
+            logger.LogWarning("Invalid platform ID: {PlatformId}", platformId);
             return Problem(
                 statusCode: StatusCodes.Status400BadRequest,
                 title: "Invalid request.",
                 detail: "Invalid Platform ID");
         }
 
-        await _integrationManager.DeleteIntegrationAsync(userId, (Platform)platformId);
+        await integrationManager.DeleteIntegrationAsync(userId, (Platform)platformId);
 
         return NoContent();
     }

@@ -63,7 +63,7 @@ public sealed class UserManager(
             token.TokenType,
             token.ExpiresInMilliSeconds,
             refreshToken.Value,
-            refreshToken.ExpiresAt,
+            ((DateTimeOffset)refreshToken.ExpiresAt).ToUnixTimeMilliseconds(),
             token.Claims);
     }
 
@@ -107,7 +107,7 @@ public sealed class UserManager(
             Convert.ToBase64String(userSalt)
         );
 
-        await userRepository.InsertAsync(newUser, cancellationToken);
+        await userRepository.CreateAsync(newUser, cancellationToken);
         logger.LogInformation("User with email {Email} registered successfully", email);
     }
 
@@ -184,7 +184,7 @@ public sealed class UserManager(
             token.TokenType,
             token.ExpiresInMilliSeconds,
             newRefreshToken.Value,
-            newRefreshToken.ExpiresAt,
+            ((DateTimeOffset)newRefreshToken.ExpiresAt).ToUnixTimeMilliseconds(),
             token.Claims);
     }
 }

@@ -1,5 +1,4 @@
-﻿using RippleSync.Domain.Users;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 
 namespace RippleSync.API.Common.Extensions;
 

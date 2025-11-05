@@ -6,9 +6,9 @@ public abstract class UserToken
     public UserTokenType Type { get; protected set; }
     public string Value { get; protected set; }
     public DateTime CreatedAt { get; protected set; }
-    public long ExpiresAt { get; protected set; }
+    public DateTime ExpiresAt { get; protected set; }
 
-    protected UserToken(Guid id, UserTokenType type, string value, DateTime createdAt, long expiresAt)
+    protected UserToken(Guid id, UserTokenType type, string value, DateTime createdAt, DateTime expiresAt)
     {
         Id = id;
         Type = type;
@@ -17,5 +17,5 @@ public abstract class UserToken
         ExpiresAt = expiresAt;
     }
 
-    public bool IsExpired(TimeProvider timeProvider) => timeProvider.GetUtcNow() >= DateTimeOffset.FromUnixTimeMilliseconds(ExpiresAt);
+    public bool IsExpired(TimeProvider timeProvider) => timeProvider.GetUtcNow() >= ExpiresAt;
 }

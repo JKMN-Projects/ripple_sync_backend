@@ -76,7 +76,7 @@ public static partial class NpgsqlExtensions
 
         ParameterInfo[] parameters = [.. constructor.GetParameters().Where(p => p.Name != null)];
 
-        var dbValues = new object[parameters.Length];
+        var dbValues = new object?[parameters.Length];
 
         try
         {
@@ -267,6 +267,7 @@ public static partial class NpgsqlExtensions
     /// update a single records in the database table corresponding to Type T.
     /// Update is based on properties not marked with <see cref="UpdateAction.Ignore"/>.
     /// Update uses on properties marked with <see cref="UpdateAction.Where"/> to defined Clause.
+    /// Properties marked with Where will never be updated either, they're considered identifiers.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="conn"></param>
@@ -284,6 +285,7 @@ public static partial class NpgsqlExtensions
     /// update multiple records in the database table corresponding to Type T.
     /// Update is based on properties not marked with <see cref="UpdateAction.Ignore"/>.
     /// Update uses properties marked with <see cref="UpdateAction.Where"/> to defined Clause.
+    /// Properties marked with Where will never be updated either, they're considered identifiers.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="conn"></param>
@@ -330,7 +332,7 @@ public static partial class NpgsqlExtensions
 
         IEnumerable<string> allFields = whereFields.Concat(updateFields);
 
-        List<List<string>> updateColumns = new List<List<string>>();
+        List<List<string>> updateColumns = [];
 
         var parameters = new List<NpgsqlParameter>();
         int paramIndex = 0;
@@ -480,7 +482,7 @@ public static partial class NpgsqlExtensions
     /// <returns></returns>
     private static object?[] ReadRow(NpgsqlDataReader reader, ParameterInfo[] parameters, ParameterNameBehavior nameBehavior)
     {
-        var values = new object[parameters.Length];
+        var values = new object?[parameters.Length];
 
         for (var i = 0; i < parameters.Length; i++)
         {
@@ -534,10 +536,9 @@ public static partial class NpgsqlExtensions
 
             var rowsAffected = await cmd.ExecuteNonQueryAsync(ct);
 
-            if (cmd.Transaction != null && cmd.Transaction.Connection == null)
-                throw new InvalidOperationException("Transaction was invalidated during execution.");
-
-            return rowsAffected;
+            return cmd.Transaction != null && cmd.Transaction.Connection == null
+                ? throw new InvalidOperationException("Transaction was invalidated during execution.")
+                : rowsAffected;
         }
         catch (Exception e)
         {
@@ -623,13 +624,15 @@ public static partial class NpgsqlExtensions
         var name = string.Empty;
 
         if (sqlAttribute != null && sqlAttribute.Name != null)
+        {
             name = sqlAttribute.Name;
+        }
         else if (property != null && property.Name.Length > 0)
         {
             name = property.Name[0].ToString().ToLower(System.Globalization.CultureInfo.InvariantCulture);
 
             if (property.Name.Length > 1)
-                name += property.Name.Substring(1);
+                name += property.Name[1..];
         }
 
         return name;

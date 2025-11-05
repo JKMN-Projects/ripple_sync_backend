@@ -5,11 +5,11 @@ internal class ConnectedIntegrationEntity
 {
     public Guid Id { get; set; }
 
-    [SqlPropertyAttribute(propName: "platform_name")]
+    [SqlProperty(propName: "platform_name")]
     public string Name { get; set; }
 
 
-    [SqlConstructorAttribute("ripple_sync")]
+    [SqlConstructor("ripple_sync")]
     internal ConnectedIntegrationEntity(Guid id, string platform_name)
     {
         Id = id;

@@ -76,7 +76,7 @@ public class PostManager(
             .ToList();
 
         var postEvents = integrationIds
-            .Select(id => PostEvent.New(id, scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft, "", new { }))
+            .Select(id => PostEvent.Create(id, scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft, "", new { }))
             .ToList();
 
         var post = Post.Create(
@@ -113,7 +113,7 @@ public class PostManager(
 
         if (integrationIds != null && integrationIds.Length > 0)
         {
-            post.PostEvents = [.. integrationIds.Select(id => PostEvent.New(id, PostStatus.Scheduled, "", new { }))];
+            post.PostEvents = [.. integrationIds.Select(id => PostEvent.Create(id, PostStatus.Scheduled, "", new { }))];
         }
 
         post.UpdatedAt = DateTime.UtcNow;

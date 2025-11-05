@@ -27,7 +27,7 @@ public sealed class IntegrationManager(
         TokenResponse tokenResponse,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(tokenResponse.AccessToken)) 
+        if (string.IsNullOrWhiteSpace(tokenResponse.AccessToken))
             throw new ArgumentNullException(nameof(tokenResponse));
 
         if (!Enum.IsDefined(typeof(Platform), platformId))
