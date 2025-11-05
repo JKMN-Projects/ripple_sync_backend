@@ -60,14 +60,14 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
     }
 
 
-    public async Task CreatePostAsync(Post post, CancellationToken cancellationToken = default)
+    public async Task CreateAsync(Post post, CancellationToken cancellationToken = default)
     {
         await Task.Yield();
 
         InMemoryData.Posts.Add(post);
     }
 
-    public async Task UpdatePostAsync(Post post, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(Post post, CancellationToken cancellationToken = default)
         => await Task.Yield();
 
     public Task<IEnumerable<Post>> GetAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)

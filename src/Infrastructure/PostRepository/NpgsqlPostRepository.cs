@@ -165,7 +165,7 @@ internal class NpgsqlPostRepository(
         return posts;
     }
 
-    public async Task CreatePostAsync(Post post, CancellationToken cancellationToken = default)
+    public async Task CreateAsync(Post post, CancellationToken cancellationToken = default)
     {
         var postEntity = new PostEntity(post.Id, post.UserId, post.MessageContent, post.SubmittedAt, post.UpdatedAt, post.ScheduledFor);
 
@@ -185,7 +185,7 @@ internal class NpgsqlPostRepository(
         }
     }
 
-    public async Task UpdatePostAsync(Post post, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(Post post, CancellationToken cancellationToken = default)
     {
         var postEntity = new PostEntity(post.Id, post.UserId, post.MessageContent, post.SubmittedAt, post.UpdatedAt, post.ScheduledFor);
         var postMediaEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));

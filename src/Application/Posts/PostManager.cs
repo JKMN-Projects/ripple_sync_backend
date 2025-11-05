@@ -86,7 +86,7 @@ public class PostManager(
             postEvents
         );
 
-        await postRepository.CreatePostAsync(post, cancellationToken);
+        await postRepository.CreateAsync(post, cancellationToken);
     }
 
     public async Task UpdatePostAsync(Guid userId, Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
@@ -117,7 +117,7 @@ public class PostManager(
 
         post.UpdatedAt = DateTime.UtcNow;
 
-        await postRepository.UpdatePostAsync(post, cancellationToken);
+        await postRepository.UpdateAsync(post, cancellationToken);
     }
 
     public async Task DeletePostByIdAsync(Guid userId, Guid postId, CancellationToken cancellationToken = default)
