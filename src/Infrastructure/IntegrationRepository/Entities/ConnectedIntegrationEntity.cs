@@ -9,8 +9,8 @@ internal class ConnectedIntegrationEntity
     public string Name { get; set; }
 
 
-    [SqlConstructor("ripple_sync")]
-    internal ConnectedIntegrationEntity(Guid id, string platform_name)
+    [SqlConstructor()]
+    public ConnectedIntegrationEntity(Guid id, string platform_name)
     {
         Id = id;
         Name = platform_name;

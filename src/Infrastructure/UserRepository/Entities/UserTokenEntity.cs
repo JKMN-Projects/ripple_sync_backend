@@ -1,8 +1,11 @@
 ﻿using RippleSync.Infrastructure.JukmanORM.ClassAttributes;
+using RippleSync.Infrastructure.JukmanORM.Enums;
 
 namespace RippleSync.Infrastructure.UserRepository.Entities;
 internal class UserTokenEntity
 {
+
+    [SqlProperty(update: UpdateAction.Where)]
     public Guid Id { get; }
 
     [SqlProperty(propName: "user_account_id")]
@@ -21,8 +24,8 @@ internal class UserTokenEntity
     public DateTime ExpiresAt { get; }
 
 
-    [SqlConstructor("ripple_sync", "user_token")]
-    internal UserTokenEntity(Guid id, Guid user_account_id, int token_type_id, string token_value, DateTime created_at, DateTime expires_at)
+    [SqlConstructor(tableName: "user_token")]
+    public UserTokenEntity(Guid id, Guid user_account_id, int token_type_id, string token_value, DateTime created_at, DateTime expires_at)
     {
         Id = id;
         UserAccountId = user_account_id;

@@ -20,8 +20,8 @@ internal class PostEventEntity
     public string? PlatformResponse { get; set; }
 
 
-    [SqlConstructor("ripple_sync", "post_event")]
-    internal PostEventEntity(Guid post_id, Guid user_platform_integration_id, int post_status_id, string platform_post_identifier, string? platform_response)
+    [SqlConstructor(tableName: "post_event")]
+    public PostEventEntity(Guid post_id, Guid user_platform_integration_id, int post_status_id, string platform_post_identifier, string? platform_response)
     {
         PostId = post_id;
         UserPlatformIntegrationId = user_platform_integration_id;

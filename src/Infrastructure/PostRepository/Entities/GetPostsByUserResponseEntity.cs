@@ -19,8 +19,8 @@ internal class GetPostsByUserResponseEntity
     public string[] Platforms { get; set; }
 
 
-    [SqlConstructor("ripple_sync")]
-    internal GetPostsByUserResponseEntity(Guid id, string message_content, Guid[] media_ids, string status_name, long? timestamp, string[] platforms)
+    [SqlConstructor()]
+    public GetPostsByUserResponseEntity(Guid id, string message_content, Guid[] media_ids, string status_name, long? timestamp, string[] platforms)
     {
         Id = id;
         MessageContent = message_content;
