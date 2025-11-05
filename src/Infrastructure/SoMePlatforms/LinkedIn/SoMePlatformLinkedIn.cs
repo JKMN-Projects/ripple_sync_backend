@@ -39,6 +39,14 @@ internal class SoMePlatformLinkedIn(IOptions<LinkedInOptions> options) : ISoMePl
         };
     }
 
-    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration) => throw new NotImplementedException();
+    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration)
+    {
+        return Task.FromResult(new PlatformStats(
+            PostCount: 0,
+            Reach: 0,
+            Engagement: 0,
+            Likes: 0
+        ));
+    }
     public Task<PostEvent> PublishPostAsync(Post post, Integration integration) => throw new NotImplementedException();
 }

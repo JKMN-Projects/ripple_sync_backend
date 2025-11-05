@@ -22,14 +22,14 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
             status is null ||
             post.PostEvents.MaxBy(pe => pe.Status)!.Status.ToString().Equals(status, StringComparison.OrdinalIgnoreCase)
         );
-
+        var userIntegrations = InMemoryData.Integrations.Where(i => i.UserId == userId);
         var response = post.Select(p => new GetPostsByUserResponse(
             p.Id,
             p.MessageContent,
             p.PostMedias?.Select(pm => pm.Id).ToArray() ?? Array.Empty<Guid>(),
             p.PostEvents.MaxBy(pe => pe.Status)!.Status.ToString(),
             p.ScheduledFor.HasValue ? new DateTimeOffset(p.ScheduledFor.Value).ToUnixTimeMilliseconds() : null,
-            ["X", "LinkedIn"]
+            p.PostEvents.Select(pe => userIntegrations.FirstOrDefault(ui => ui.Id == pe.UserPlatformIntegrationId)?.Platform.ToString() ?? "Unknown").ToArray()
         ));
 
         return Task.FromResult(response);
@@ -50,7 +50,7 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
     public Task<string?> GetImageByIdAsync(Guid imageId, CancellationToken cancellationToken = default)
     {
         var imageUrl = InMemoryData.Posts
-            .SelectMany(p => p.PostMedias ?? Enumerable.Empty<PostMedia>())
+            .SelectMany(p => p.PostMedias ?? [])
             .Where(pm => pm.Id == imageId)
             .Select(pm => pm.ImageData)
             .FirstOrDefault();

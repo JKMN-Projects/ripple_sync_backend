@@ -67,7 +67,7 @@ public sealed class AuthenticationController(
                 {
                     { "validationErrors", new Dictionary<string, string[]>
                         {
-                            { "email", [ex.Message, "TEST ERROR"] }
+                            { "email", [ex.Message] }
                         }
                     }
                 });
