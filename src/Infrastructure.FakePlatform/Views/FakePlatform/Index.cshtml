@@ -1,0 +1,66 @@
+@model IEnumerable<PostData>
+@using Infrastructure.FakePlatform
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Fake SoMe Platform</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f6fa;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            margin: 20px auto;
+            max-width: 400px;
+            padding: 16px;
+        }
+
+        .content {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+
+        .date {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .media {
+            margin-top: 8px;
+        }
+
+        .media {
+            width: 100px;
+            height: auto;
+            margin-right: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h2 style="text-align:center; color:#e84118;">Fake SoMe Platform</h2>
+    @foreach (var post in Model)
+    {
+        <div class="card">
+            <div class="content">@post.Content</div>
+            <div class="date">Posted on: @post.PostedOn.ToString("g")</div>
+            @if (post.Media != null && post.Media.Any())
+            {
+                <div class="media">
+                    <strong>Media IDs:</strong>
+                    @foreach (var media in post.Media)
+                    {
+                        <img src="/fakeplatform/image/@media.Id" class="media" />
+                    }
+                </div>
+            }
+        </div>
+    }
+</body>
+</html>

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Infrastructure.FakePlatform;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using RippleSync.Application.Common.Queries;
@@ -11,7 +12,6 @@ using RippleSync.Infrastructure.PlatformRepository;
 using RippleSync.Infrastructure.PostRepository;
 using RippleSync.Infrastructure.Security;
 using RippleSync.Infrastructure.SoMePlatforms.Facebook;
-using RippleSync.Infrastructure.SoMePlatforms.FakePlatform;
 using RippleSync.Infrastructure.SoMePlatforms.Instagram;
 using RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
 using RippleSync.Infrastructure.SoMePlatforms.Threads;
