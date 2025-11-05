@@ -3,26 +3,22 @@ using Microsoft.AspNetCore.Mvc;
 using RippleSync.API.Common.Extensions;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Posts;
+using RippleSync.Domain.Posts.Exceptions;
 
 namespace RippleSync.API.Posts;
 
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public partial class PostsController : ControllerBase
+public partial class PostsController(PostManager postManager) : ControllerBase
 {
-    private readonly PostManager _postManager;
-    public PostsController(PostManager postManager)
-    {
-        _postManager = postManager;
-    }
     [HttpGet("byUser")]
     [ProducesResponseType<ListResponse<GetPostsByUserResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPostsByUser([FromQuery] string? status = default, CancellationToken cancellationToken = default)
     {
         Guid userId = User.GetUserId();
 
-        var response = await _postManager.GetPostsByUserAsync(userId, status, cancellationToken);
+        var response = await postManager.GetPostsByUserAsync(userId, status, cancellationToken);
 
         return Ok(response);
     }
@@ -31,9 +27,10 @@ public partial class PostsController : ControllerBase
     [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any, NoStore = false)]
     public async Task<IActionResult> GetImage(Guid id)
     {
-        string base64Image = await _postManager.GetImageByIdAsync(id);
+        // Retrieve the base64 string from your database/service
+        string? base64Image = await postManager.GetImageByIdAsync(id);
 
-        if (string.IsNullOrEmpty(base64Image))
+        if (string.IsNullOrWhiteSpace(base64Image))
         {
             return NotFound();
         }
@@ -51,21 +48,48 @@ public partial class PostsController : ControllerBase
 
         var mediaAttachments = await ExtractFilesToBase64(request.Files);
 
-        CreatePostDto post = new CreatePostDto(
-                request.MessageContent,
-                request.Timestamp,
-                mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
-                request.IntegrationIds.ToArray()
+        try
+        {
+            await postManager.CreatePostAsync(userId,
+                    request.MessageContent,
+                    request.Timestamp,
+                    mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
+                    request.IntegrationIds.ToArray()
+                );
+            return Created();
+        }
+        catch (ScheduledWithNoPostEventsException ex)
+        {
+            return Problem(
+                title: "Invalid request",
+                detail: ex.Message,
+                statusCode: StatusCodes.Status400BadRequest,
+                extensions: new Dictionary<string, object?>
+                {
+                    { "validationErrors", new Dictionary<string, string[]>
+                        {
+                            { nameof(FormData.IntegrationIds), [ex.Message] }
+                        }
+                    }
+                }
             );
-
-        await _postManager.CreatePostAsync(userId,
-                request.MessageContent,
-                request.Timestamp,
-                mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
-                request.IntegrationIds.ToArray()
+        }
+        catch (DraftWithPostEventsException ex)
+        {
+            return Problem(
+                title: "Invalid request",
+                detail: ex.Message,
+                statusCode: StatusCodes.Status400BadRequest,
+                extensions: new Dictionary<string, object?>
+                {
+                    { "validationErrors", new Dictionary<string, string[]>
+                        {
+                            { nameof(FormData.IntegrationIds), [ex.Message] }
+                        }
+                    }
+                }
             );
-
-        return Created();
+        }
     }
 
     [HttpPut]
@@ -74,7 +98,7 @@ public partial class PostsController : ControllerBase
     {
         var mediaAttachments = await ExtractFilesToBase64(request.Files);
 
-        await _postManager.UpdatePostAsync(
+        await postManager.UpdatePostAsync(
                 User.GetUserId(),
                 request.PostId ?? new Guid(),
                 request.MessageContent,
@@ -111,7 +135,7 @@ public partial class PostsController : ControllerBase
     {
         Guid userId = User.GetUserId();
 
-        await _postManager.DeletePostByIdAsync(userId, postId, cancellationToken);
+        await postManager.DeletePostByIdAsync(userId, postId, cancellationToken);
 
         return NoContent();
 

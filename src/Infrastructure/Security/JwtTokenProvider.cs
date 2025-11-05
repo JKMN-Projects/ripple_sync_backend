@@ -49,7 +49,7 @@ public sealed class JwtTokenProvider(
     {
         string token = Guid.NewGuid().ToString();
         DateTimeOffset createdAt = timeProvider.GetUtcNow();
-        long expiresAt = createdAt.AddDays(Options.RefreshTokenValidityInDays).ToUnixTimeMilliseconds();
+        DateTime expiresAt = createdAt.AddDays(Options.RefreshTokenValidityInDays).UtcDateTime;
         RefreshToken refreshToken = RefreshToken.Create(token, timeProvider, expiresAt);
         return Task.FromResult(refreshToken);
     }

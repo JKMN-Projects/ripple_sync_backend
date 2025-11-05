@@ -9,6 +9,37 @@ public class PostEvent
     public string PlatformPostIdentifier { get; set; }
     public object? PlatformResponse { get; set; }
 
+    private PostEvent(Guid postId, Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
+    {
+        PostId = postId;
+        UserPlatformIntegrationId = userPlatformIntegrationId;
+        Status = status;
+        PlatformPostIdentifier = platformPostIdentifier;
+        PlatformResponse = platformResponse;
+    }
+
+    public static PostEvent Create(Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
+    {
+        return new PostEvent(
+            postId: Guid.NewGuid(),
+            userPlatformIntegrationId: userPlatformIntegrationId,
+            status: status,
+            platformPostIdentifier: platformPostIdentifier,
+            platformResponse: platformResponse
+        );
+    }
+
+    public static PostEvent Reconstitute(Guid postId, Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
+    {
+        return new PostEvent(
+            postId: postId,
+            userPlatformIntegrationId: userPlatformIntegrationId,
+            status: status,
+            platformPostIdentifier: platformPostIdentifier,
+            platformResponse: platformResponse
+        );
+    }
+
     public PostEvent Anonymize()
     {
         PlatformPostIdentifier = string.Empty;

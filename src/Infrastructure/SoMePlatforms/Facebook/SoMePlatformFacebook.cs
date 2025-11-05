@@ -4,7 +4,6 @@ using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
 using RippleSync.Infrastructure.SoMePlatforms.X;
-using System.Text.Json;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.Facebook;
 internal class SoMePlatformFacebook(IOptions<FacebookOptions> options) : ISoMePlatform
@@ -41,6 +40,14 @@ internal class SoMePlatformFacebook(IOptions<FacebookOptions> options) : ISoMePl
         };
     }
 
-    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration) => throw new NotImplementedException();
+    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration)
+    {
+        return Task.FromResult(new PlatformStats(
+            PostCount: 0,
+            Reach: 0,
+            Engagement: 0,
+            Likes: 0
+        ));
+    }
     public Task<PostEvent> PublishPostAsync(Post post, Integration integration) => throw new NotImplementedException();
 }

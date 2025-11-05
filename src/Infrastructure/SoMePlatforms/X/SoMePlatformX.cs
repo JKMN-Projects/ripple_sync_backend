@@ -3,9 +3,7 @@ using Microsoft.Extensions.Options;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
-using System.Net;
 using System.Text;
-using System.Text.Json;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.X;
 
@@ -47,6 +45,14 @@ internal class SoMePlatformX(IOptions<XOptions> options) : ISoMePlatform
         return request;
     }
 
-    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration) => throw new NotImplementedException();
+    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration)
+    {
+        return Task.FromResult(new PlatformStats(
+            PostCount: 0,
+            Reach: 0,
+            Engagement: 0,
+            Likes: 0
+        ));
+    }
     public Task<PostEvent> PublishPostAsync(Post post, Integration integration) => throw new NotImplementedException();
 }

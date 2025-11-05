@@ -9,7 +9,7 @@ namespace RippleSync.API.Authentication;
 [Route("api/[controller]")]
 [ApiController]
 public sealed class AuthenticationController(
-    ILogger<AuthenticationController> logger, 
+    ILogger<AuthenticationController> logger,
     UserManager userManager) : ControllerBase
 {
     [HttpPost("[action]")]
@@ -29,7 +29,7 @@ public sealed class AuthenticationController(
             SetAccessTokenCookie(tokenResponse.Token, tokenResponse.ExpiresAt);
             AuthenticationResponse response = new AuthenticationResponse(
                 tokenResponse.RefreshToken,
-                request.Email, 
+                request.Email,
                 tokenResponse.ExpiresAt);
 
             return Ok(response);
@@ -67,7 +67,7 @@ public sealed class AuthenticationController(
                 {
                     { "validationErrors", new Dictionary<string, string[]>
                         {
-                            { "email", [ex.Message, "TEST ERROR"] }
+                            { "email", [ex.Message] }
                         }
                     }
                 });
@@ -146,7 +146,7 @@ public sealed class AuthenticationController(
         }
     }
 
-    [HttpPost]
+    [HttpPost("[action]")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public IActionResult Logout()
     {

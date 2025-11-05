@@ -2,5 +2,5 @@
 
 public enum UserTokenType
 {
-    RefreshToken
+    Refresh = 1
 }

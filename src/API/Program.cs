@@ -88,6 +88,12 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<FakePlatformOptions>()
+        .Bind(integrationSection.GetSection("FakePlatform"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 bool targetProd = false;
 _ = bool.TryParse(Environment.GetEnvironmentVariable("TARGET_PROD"), out targetProd);
 connString = targetProd ? builder.Configuration.GetConnectionString("ProdPostgres") : connString;

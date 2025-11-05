@@ -2,11 +2,11 @@
 
 public sealed class RefreshToken : UserToken
 {
-    private RefreshToken(Guid id, string token, DateTime createdAt, long expiresAt)
-        : base(id, UserTokenType.RefreshToken, token, createdAt, expiresAt)
+    private RefreshToken(Guid id, string token, DateTime createdAt, DateTime expiresAt)
+        : base(id, UserTokenType.Refresh, token, createdAt, expiresAt)
     {
     }
-    public static RefreshToken Create(string token, TimeProvider timeProvider, long expiresAt)
+    public static RefreshToken Create(string token, TimeProvider timeProvider, DateTime expiresAt)
     {
         return new RefreshToken(
             Guid.NewGuid(),
@@ -14,7 +14,7 @@ public sealed class RefreshToken : UserToken
             timeProvider.GetUtcNow().UtcDateTime,
             expiresAt);
     }
-    public static RefreshToken Reconstitute(Guid id, string token, DateTime createdAt, long expiresAt)
+    public static RefreshToken Reconstitute(Guid id, string token, DateTime createdAt, DateTime expiresAt)
     {
         return new RefreshToken(
             id,

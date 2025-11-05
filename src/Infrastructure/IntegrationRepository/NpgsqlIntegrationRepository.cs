@@ -2,7 +2,6 @@
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Integrations;
-using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
 using RippleSync.Infrastructure.IntegrationRepository.Entities;
@@ -14,33 +13,65 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
 {
     public async Task<IEnumerable<ConnectedIntegrationsResponse>> GetConnectedIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var getIntegrationsQuery =
+        var getConnectedIntegrationsQuery =
             @"SELECT 
                 upi.id,
-                p.platform_name AS name
+                p.platform_name
             FROM platform p
             INNER JOIN user_platform_integration upi 
                 ON p.id = upi.platform_id 
-                AND upi.user_account_id = @userId
+                AND upi.user_account_id = @UserId
             ORDER BY p.platform_name;";
 
-        IEnumerable<UserIntegrationEntity> userIntegrationEntites = [];
+        IEnumerable<ConnectedIntegrationEntity> connectedIntegrationEntities = [];
 
         try
         {
-            userIntegrationEntites = await dbConnection.QueryAsync<UserIntegrationEntity>(getIntegrationsQuery, param: new { userId }, ct: cancellationToken);
+            connectedIntegrationEntities = await dbConnection.QueryAsync<ConnectedIntegrationEntity>(getConnectedIntegrationsQuery, param: new { UserId = userId }, ct: cancellationToken);
         }
         catch (Exception e)
         {
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
 
-        return userIntegrationEntites.Any() ? userIntegrationEntites.Select(i => new ConnectedIntegrationsResponse(i.Id, i.Name)) : [];
+        return connectedIntegrationEntities.Any() ? connectedIntegrationEntities.Select(i => new ConnectedIntegrationsResponse(i.Id, i.Name)) : [];
     }
 
+    public async Task<IEnumerable<Integration>> GetIntegrationsByIdsAsync(IEnumerable<Guid> integrationIds, CancellationToken cancellationToken = default)
+    {
+        IEnumerable<UserPlatformIntegrationEntity> integrations = [];
+
+        try
+        {
+            integrations = await dbConnection.SelectAsync<UserPlatformIntegrationEntity>("id = ANY(@IntegrationIds)", param: new { IntegrationIds = integrationIds }, ct: cancellationToken);
+        }
+        catch (Exception e)
+        {
+            ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
+        }
+
+        return integrations.Select(i => Integration.Reconstitute(i.Id, i.UserAccountId, (Platform)i.PlatformId, i.AccessToken, i.RefreshToken, i.Expiration, i.TokenType, i.Scope));
+    }
+
+
+    public async Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        IEnumerable<UserPlatformIntegrationEntity> integrations = [];
+
+        try
+        {
+            integrations = await dbConnection.SelectAsync<UserPlatformIntegrationEntity>("user_account_id = @UserId", param: new { UserId = userId }, ct: cancellationToken);
+        }
+        catch (Exception e)
+        {
+            ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
+        }
+
+        return integrations.Select(i => Integration.Reconstitute(i.Id, i.UserAccountId, (Platform)i.PlatformId, i.AccessToken, i.RefreshToken, i.Expiration, i.TokenType, i.Scope));
+    }
     public async Task CreateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        var userPlatformIntegration = UserPlatformIntegrationEntity.New(integration.UserId, (int)integration.Platform, integration.AccessToken);
+        var userPlatformIntegration = UserPlatformIntegrationEntity.New(integration.UserId, (int)integration.Platform, integration.AccessToken, integration.RefreshToken, integration.ExpiresAt, integration.TokenType, integration.Scope);
 
         try
         {
@@ -48,7 +79,23 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
 
             if (rowsAffected <= 0)
                 throw new RepositoryException("No rows were affected");
+        }
+        catch (Exception e)
+        {
+            ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
+        }
+    }
 
+    public async Task UpdateAsync(Integration integration, CancellationToken cancellationToken = default)
+    {
+        var userPlatformIntegration = UserPlatformIntegrationEntity.New(integration.UserId, (int)integration.Platform, integration.AccessToken, integration.RefreshToken, integration.ExpiresAt, integration.TokenType, integration.Scope);
+
+        try
+        {
+            int rowsAffected = await dbConnection.UpdateAsync(userPlatformIntegration, ct: cancellationToken);
+
+            if (rowsAffected <= 0)
+                throw new RepositoryException("No rows were affected");
         }
         catch (Exception e)
         {
@@ -66,15 +113,10 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
 
             if (rowsAffected <= 0)
                 throw new RepositoryException("No rows were affected");
-
         }
         catch (Exception e)
         {
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
     }
-
-    public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-    public Task UpdateAsync(Integration integration, CancellationToken cancellation = default) => throw new NotImplementedException();
-    public Task<IEnumerable<Integration>> GetIntegrationsByIds(List<Guid> integrationIds) => throw new NotImplementedException();
 }
