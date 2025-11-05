@@ -1,17 +1,9 @@
 ﻿namespace RippleSync.Infrastructure.JukmanORM.Exceptions;
-public class QueryException : Exception
+public class QueryException(string message, string failedQuery = "", object? param = null, Exception? innerException = null) : Exception
 {
-    public string QMessage;
-    public string FailedQuery;
-    public object? Param;
+    public string QMessage { get; private set; } = message;
+    public string FailedQuery { get; private set; } = failedQuery;
+    public object? Param { get; private set; } = param;
 
-    public Exception? QInnerException;
-
-    public QueryException(string message, string failedQuery = "", object? param = null, Exception? innerException = null)
-    {
-        QMessage = message;
-        FailedQuery = failedQuery;
-        Param = param;
-        QInnerException = innerException;
-    }
+    public Exception? QInnerException { get; private set; } = innerException;
 }

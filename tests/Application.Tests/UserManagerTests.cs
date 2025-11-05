@@ -421,7 +421,7 @@ public abstract class UserManagerTests
                     RefreshToken.Create(
                         token: "ExpiredToken",
                         timeProvider: fakeTimeProvider,
-                        expiresAt: fakeTimeProvider.GetUtcNow().AddDays(5).ToUnixTimeMilliseconds()))
+                        expiresAt: fakeTimeProvider.GetUtcNow().AddDays(5).UtcDateTime))
                 .Build();
             fakeTimeProvider.Advance(TimeSpan.FromDays(7));
             UserManager sut = GetSystemUnderTest(
@@ -448,7 +448,7 @@ public abstract class UserManagerTests
                     RefreshToken.Create(
                         token: "ExpiredToken",
                         timeProvider: fakeTimeProvider,
-                        expiresAt: fakeTimeProvider.GetUtcNow().AddDays(5).ToUnixTimeMilliseconds()))
+                        expiresAt: fakeTimeProvider.GetUtcNow().AddDays(5).UtcDateTime))
                 .Build();
             fakeTimeProvider.Advance(TimeSpan.FromDays(7));
             var updateUserSpy = new UserRepositoryDoubles.Spies.Update(

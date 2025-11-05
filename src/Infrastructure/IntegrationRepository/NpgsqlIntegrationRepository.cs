@@ -4,7 +4,6 @@ using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Integrations;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
-using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.IntegrationRepository.Entities;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
