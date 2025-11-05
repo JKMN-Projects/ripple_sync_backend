@@ -21,8 +21,9 @@ internal class UserTokenEntity
     public DateTime ExpiresAt { get; }
 
 
-    [SqlConstructor("ripple_sync", "user_token")]
-    internal UserTokenEntity(Guid id, Guid user_account_id, int token_type_id, string token_value, DateTime created_at, DateTime expires_at)
+    //[SqlConstructor("ripple_sync", "user_token")]
+    [SqlConstructor("public", "user_token")]
+    public UserTokenEntity(Guid id, Guid user_account_id, int token_type_id, string token_value, DateTime created_at, DateTime expires_at)
     {
         Id = id;
         UserAccountId = user_account_id;

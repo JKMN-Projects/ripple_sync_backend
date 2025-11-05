@@ -4,11 +4,13 @@ using System.Data;
 
 namespace RippleSync.Infrastructure.Tests.Configuration;
 
-internal abstract class RepositoryTestBase : IAsyncLifetime, IClassFixture<PostgresDatabaseFixture>
+public abstract class RepositoryTestBase : IAsyncLifetime, IClassFixture<PostgresDatabaseFixture>
 {
     private readonly PostgresDatabaseFixture _fixture;
     private Respawner _respawner = default!;
     protected NpgsqlConnection DbConnection { get; private set; } = default!;
+    protected DataSeeder DataSeeder => new(DbConnection);
+
     protected RepositoryTestBase(PostgresDatabaseFixture fixture)
     {
         _fixture = fixture;
@@ -20,7 +22,7 @@ internal abstract class RepositoryTestBase : IAsyncLifetime, IClassFixture<Postg
         await _respawner.ResetAsync(_fixture.ConnectionString);
     }
 
-    public async Task InitializeAsync()
+    public virtual async Task InitializeAsync()
     {
         if (DbConnection.State != ConnectionState.Open)
         {
@@ -36,5 +38,5 @@ internal abstract class RepositoryTestBase : IAsyncLifetime, IClassFixture<Postg
             ]
         });
     }
-    public Task DisposeAsync() => Task.CompletedTask;
+    public virtual Task DisposeAsync() => Task.CompletedTask;
 }

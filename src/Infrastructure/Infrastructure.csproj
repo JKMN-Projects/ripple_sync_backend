@@ -21,6 +21,7 @@
     <ProjectReference Include="..\Application\Application.csproj" />
     <ProjectReference Include="..\Infrastructure.FakePlatform\Infrastructure.FakePlatform.csproj" />
     <ProjectReference Include="..\Infrastructure.JukmanORM\Infrastructure.JukmanORM.csproj" />
+		<InternalsVisibleTo Include="RippleSync.Infrastructure.Tests" />
   </ItemGroup>
 
 </Project>

@@ -4,7 +4,7 @@ using Testcontainers.PostgreSql;
 
 namespace RippleSync.Infrastructure.Tests.Configuration;
 
-internal class PostgresDatabaseFixture : IAsyncLifetime
+public class PostgresDatabaseFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer postgreSqlContainer = new PostgreSqlBuilder()
         .WithDatabase("ripple_sync_test_db")

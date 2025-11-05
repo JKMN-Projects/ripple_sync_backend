@@ -18,8 +18,9 @@ internal class UserEntity
     public DateTime CreatedAt { get; }
 
 
-    [SqlConstructor("ripple_sync", "user_account")]
-    internal UserEntity(Guid id, string email, string password_hash, string salt, DateTime created_at)
+    //[SqlConstructor("ripple_sync", "user_account")]
+    [SqlConstructor("public", "user_account")]
+    public UserEntity(Guid id, string email, string password_hash, string salt, DateTime created_at)
     {
         Id = id;
         Email = email;
