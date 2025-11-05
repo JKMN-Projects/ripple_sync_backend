@@ -15,7 +15,7 @@ public class NpgsqlUserRepositoryTests : RepositoryTestBase
 
     public NpgsqlUserRepositoryTests(PostgresDatabaseFixture fixture) : base(fixture)
     {
-        _sut = new NpgsqlUserRepository(DbConnection);
+        _sut = new NpgsqlUserRepository(UnitOfWork);
     }
 
     public override async Task DisposeAsync()
@@ -45,6 +45,212 @@ public class NpgsqlUserRepositoryTests : RepositoryTestBase
 
             // Assert
             Assert.Null(receivedUser);
+        }
+
+        [Fact]
+        public async Task Should_ReturnUserWithRefreshToken_WhenUserExists()
+        {
+            // Arrange
+            var refreshToken = RefreshToken.Create(Guid.NewGuid().ToString(), TimeProvider.System, TimeProvider.System.GetUtcNow().AddHours(1).UtcDateTime);
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .WithEmail("jukman@gmail.com")
+                .WithRefreshToken(refreshToken)
+                .Build();
+            await DataSeeder.SeedUserAsync(user);
+
+            // Act
+            User? receivedUser = await _sut.GetByEmailAsync(user.Email);
+
+            // Assert
+            Assert.Equal(user.Id, receivedUser?.Id);
+            Assert.Equal(user.Email, receivedUser?.Email);
+            Assert.Equal(user.PasswordHash, receivedUser?.PasswordHash);
+            Assert.Equal(user.Salt, receivedUser?.Salt);
+            Assert.NotNull(receivedUser?.RefreshToken);
+        }
+    }
+
+    public sealed class GetByIdAsync : NpgsqlUserRepositoryTests
+    {
+        public GetByIdAsync(PostgresDatabaseFixture fixture) : base(fixture)
+        {
+        }
+
+        [Fact]
+        public async Task Should_ReturnNull_WhenUserDoesNotExist()
+        {
+            // Arrange
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .Build();
+            await DataSeeder.SeedUserAsync(user);
+
+            // Act
+            User? receivedUser = await _sut.GetByIdAsync(Guid.NewGuid());
+
+            // Assert
+            Assert.Null(receivedUser);
+        }
+
+        [Fact]
+        public async Task Should_ReturnUserWithRefreshToken_WhenUserExists()
+        {
+            // Arrange
+            var refreshToken = RefreshToken.Create(Guid.NewGuid().ToString(), TimeProvider.System, TimeProvider.System.GetUtcNow().AddHours(1).UtcDateTime);
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .WithRefreshToken(refreshToken)
+                .Build();
+            await DataSeeder.SeedUserAsync(user);
+
+            // Act
+            User? receivedUser = await _sut.GetByIdAsync(user.Id);
+
+            // Assert
+            Assert.Equal(user.Id, receivedUser?.Id);
+            Assert.Equal(user.Email, receivedUser?.Email);
+            Assert.Equal(user.PasswordHash, receivedUser?.PasswordHash);
+            Assert.Equal(user.Salt, receivedUser?.Salt);
+            Assert.NotNull(receivedUser?.RefreshToken);
+        }
+    }
+
+    public sealed class GetByRefreshTokenAsync : NpgsqlUserRepositoryTests
+    {
+        public GetByRefreshTokenAsync(PostgresDatabaseFixture fixture) : base(fixture)
+        {
+        }
+
+        [Fact]
+        public async Task Should_ReturnNull_WhenUserDoesNotExist()
+        {
+            // Arrange
+            var refreshToken = RefreshToken.Create(Guid.NewGuid().ToString(), TimeProvider.System, TimeProvider.System.GetUtcNow().AddHours(1).UtcDateTime);
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .WithRefreshToken(refreshToken)
+                .Build();
+            await DataSeeder.SeedUserAsync(user);
+
+            // Act
+            User? receivedUser = await _sut.GetByRefreshTokenAsync(Guid.NewGuid().ToString());
+
+            // Assert
+            Assert.Null(receivedUser);
+        }
+
+        [Fact]
+        public async Task Should_ReturnUserWithRefreshToken_WhenUserExists()
+        {
+            // Arrange
+            var refreshToken = RefreshToken.Create(Guid.NewGuid().ToString(), TimeProvider.System, TimeProvider.System.GetUtcNow().AddHours(1).UtcDateTime);
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .WithRefreshToken(refreshToken)
+                .Build();
+            await DataSeeder.SeedUserAsync(user);
+
+            // Act
+            User? receivedUser = await _sut.GetByIdAsync(user.Id);
+
+            // Assert
+            Assert.Equal(user.Id, receivedUser?.Id);
+            Assert.Equal(user.Email, receivedUser?.Email);
+            Assert.Equal(user.PasswordHash, receivedUser?.PasswordHash);
+            Assert.Equal(user.Salt, receivedUser?.Salt);
+            Assert.NotNull(receivedUser?.RefreshToken);
+        }
+    }
+
+    public sealed class CreateAsync : NpgsqlUserRepositoryTests
+    {
+        public CreateAsync(PostgresDatabaseFixture fixture) : base(fixture)
+        {
+        }
+
+        [Fact]
+        public async Task Should_SaveUserAndRefreshTokenToDatabase_WhenCreatingUserWithRefreshToken()
+        {
+            // Arrange
+            var refreshToken = RefreshToken.Create(Guid.NewGuid().ToString(), TimeProvider.System, TimeProvider.System.GetUtcNow().AddHours(1).UtcDateTime);
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .WithRefreshToken(refreshToken)
+                .Build();
+
+            // Act
+            await _sut.CreateAsync(user);
+
+            // Assert
+            User? receivedUser = await _sut.GetByIdAsync(user.Id);
+            Assert.Equal(user.Id, receivedUser?.Id);
+            Assert.Equal(user.Email, receivedUser?.Email);
+            Assert.Equal(user.PasswordHash, receivedUser?.PasswordHash);
+            Assert.Equal(user.Salt, receivedUser?.Salt);
+            Assert.NotNull(receivedUser?.RefreshToken);
+        }
+
+        [Fact]
+        public async Task Should_OnlySaveUserToDatabase_WhenCreatingUserWithoutRefreshToken()
+        {
+            // Arrange
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .Build();
+
+            // Act
+            await _sut.CreateAsync(user);
+
+            // Assert
+            User? receivedUser = await _sut.GetByIdAsync(user.Id);
+            Assert.Equal(user.Id, receivedUser?.Id);
+            Assert.Equal(user.Email, receivedUser?.Email);
+            Assert.Equal(user.PasswordHash, receivedUser?.PasswordHash);
+            Assert.Equal(user.Salt, receivedUser?.Salt);
+            Assert.Null(receivedUser?.RefreshToken);
+        }
+    }
+
+    public sealed class UpdateAsync : NpgsqlUserRepositoryTests
+    {
+        public UpdateAsync(PostgresDatabaseFixture fixture) : base(fixture)
+        {
+        }
+
+        [Fact]
+        public async Task Should_UpdateUserInDatabase()
+        {
+            // Arrange
+            RefreshToken firstRefreshToken = RefreshToken.Create("first_token", TimeProvider.System, TimeProvider.System.GetUtcNow().AddHours(1).UtcDateTime);
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .WithRefreshToken(firstRefreshToken)
+                .Build();
+            await _sut.CreateAsync(user);
+            RefreshToken secondRefreshToken = RefreshToken.Create("second_token", TimeProvider.System, TimeProvider.System.GetUtcNow().AddHours(1).UtcDateTime);
+            user.AddRefreshToken(secondRefreshToken);
+
+            // Act
+            await _sut.UpdateAsync(user);
+
+            // Assert
+            User? persistetUser = await _sut.GetByIdAsync(user.Id);
+            Assert.NotNull(persistetUser);
+            Assert.NotEqual(secondRefreshToken.Value, firstRefreshToken.Value);
+        }
+
+        [Fact]
+        public async Task Should_RemoveRefreshTokenFromDatabase_WhenUserRefreshTokenIsNull()
+        {
+            // Arrange
+            RefreshToken firstRefreshToken = RefreshToken.Create("first_token", TimeProvider.System, TimeProvider.System.GetUtcNow().AddHours(1).UtcDateTime);
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .WithRefreshToken(firstRefreshToken)
+                .Build();
+            await _sut.CreateAsync(user);
+            RefreshToken secondRefreshToken = RefreshToken.Create("second_token", TimeProvider.System, TimeProvider.System.GetUtcNow().AddHours(1).UtcDateTime);
+            user.RevokeRefreshToken();
+
+            // Act
+            await _sut.UpdateAsync(user);
+
+            // Assert
+            User? persistetUser = await _sut.GetByIdAsync(user.Id);
+            Assert.NotNull(persistetUser);
+            Assert.Null(persistetUser?.RefreshToken);
         }
     }
 }

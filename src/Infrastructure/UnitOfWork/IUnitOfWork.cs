@@ -1,7 +1,7 @@
 ﻿using Npgsql;
 
 namespace RippleSync.Infrastructure.UnitOfWork;
-internal interface IUnitOfWork
+public interface IUnitOfWork
 {
     NpgsqlConnection Connection { get; }
     NpgsqlTransaction? Transaction { get; }

@@ -21,15 +21,18 @@ public class DataSeeder
         if (_dbConnection.State != System.Data.ConnectionState.Open)
             await _dbConnection.OpenAsync();
         var transaction = await _dbConnection.BeginTransactionAsync();
-        List<string> valueSets = [];
-        List<NpgsqlParameter> parameters = [];
+        List<string> insertUsersValueSets = [];
+        List<NpgsqlParameter> insertUsersParameters = [];
+
+        List<string> insertRefreshTokensValueSets = [];
+        List<NpgsqlParameter> insertRefreshTokensParameters = [];
         try
         {
             for (var i = 0; i < users.Count(); i++)
             {
                 var user = users.ElementAt(i);
-                valueSets.Add($"(@id{i}, @email{i}, @salt{i}, @password_hash{i}, @created_at{i})");
-                parameters.AddRange(
+                insertUsersValueSets.Add($"(@id{i}, @email{i}, @salt{i}, @password_hash{i}, @created_at{i})");
+                insertUsersParameters.AddRange(
                 [
                     new NpgsqlParameter($"id{i}", user.Id),
                     new NpgsqlParameter($"email{i}", user.Email),
@@ -37,16 +40,43 @@ public class DataSeeder
                     new NpgsqlParameter($"password_hash{i}", user.PasswordHash),
                     new NpgsqlParameter($"created_at{i}", user.CreatedAt)
                 ]);
+
+                if (user.RefreshToken is not null)
+                {
+                    insertRefreshTokensValueSets.Add($"(@id{i}, @token_type_id{i}, @token_value{i}, @created_at{i}, @expires_at{i}, @user_account_id{i})");
+                    insertRefreshTokensParameters.AddRange(
+                    [
+                        new NpgsqlParameter($"id{i}", user.RefreshToken.Id),
+                        new NpgsqlParameter($"token_type_id{i}",   (int)user.RefreshToken.Type),
+                        new NpgsqlParameter($"token_value{i}", user.RefreshToken.Value),
+                        new NpgsqlParameter($"created_at{i}", user.RefreshToken.CreatedAt),
+                        new NpgsqlParameter($"expires_at{i}", user.RefreshToken.ExpiresAt),
+                        new NpgsqlParameter($"user_account_id{i}", user.Id)
+                    ]);
+                }
             }
 
             var insertCommand = new NpgsqlCommand(
                 @$"
 INSERT INTO user_account (id, email, salt, password_hash, created_at) 
-VALUES {string.Join(", ", valueSets)}",
+VALUES {string.Join(", ", insertUsersValueSets)}",
                 _dbConnection,
                 transaction);
-            insertCommand.Parameters.AddRange(parameters.ToArray());
+            insertCommand.Parameters.AddRange(insertUsersParameters.ToArray());
             await insertCommand.ExecuteNonQueryAsync();
+
+            if (insertRefreshTokensValueSets.Count > 0)
+            {
+                var insertTokensCommand = new NpgsqlCommand(
+                    @$"
+INSERT INTO user_token (id, token_type_id, token_value, created_at, expires_at, user_account_id) 
+VALUES {string.Join(", ", insertRefreshTokensValueSets)}",
+                    _dbConnection,
+                    transaction);
+                insertTokensCommand.Parameters.AddRange(insertRefreshTokensParameters.ToArray());
+                await insertTokensCommand.ExecuteNonQueryAsync();
+            }
+
             await transaction.CommitAsync();
         }
         catch
