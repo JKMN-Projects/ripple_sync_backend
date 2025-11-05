@@ -1,11 +1,8 @@
-﻿using Microsoft.Data.SqlClient;
-using RippleSync.Domain.Users;
-using RippleSync.Infrastructure.Security;
+﻿using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.Tests.Configuration;
 using RippleSync.Infrastructure.UserRepository;
 using RippleSync.Tests.Shared.Factories.Users;
 using RippleSync.Tests.Shared.TestDoubles.Security;
-using System.Text;
 
 namespace RippleSync.Infrastructure.Tests.Repositories;
 
@@ -37,7 +34,8 @@ public class NpgsqlUserRepositoryTests : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .WithEmail("jukman@gmail.com")
                 .Build();
-            await DataSeeder.SeedUserAsync(user);
+            await _sut.CreateAsync(user);
+            //await DataSeeder.SeedUserAsync(user);
             string email = "notjukman@gmail.com";
 
             // Act
@@ -56,7 +54,8 @@ public class NpgsqlUserRepositoryTests : RepositoryTestBase
                 .WithEmail("jukman@gmail.com")
                 .WithRefreshToken(refreshToken)
                 .Build();
-            await DataSeeder.SeedUserAsync(user);
+            await _sut.CreateAsync(user);
+            //await DataSeeder.SeedUserAsync(user);
 
             // Act
             User? receivedUser = await _sut.GetByEmailAsync(user.Email);
@@ -82,7 +81,8 @@ public class NpgsqlUserRepositoryTests : RepositoryTestBase
             // Arrange
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
-            await DataSeeder.SeedUserAsync(user);
+            await _sut.CreateAsync(user);
+            //await DataSeeder.SeedUserAsync(user);
 
             // Act
             User? receivedUser = await _sut.GetByIdAsync(Guid.NewGuid());
@@ -99,7 +99,8 @@ public class NpgsqlUserRepositoryTests : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .WithRefreshToken(refreshToken)
                 .Build();
-            await DataSeeder.SeedUserAsync(user);
+            await _sut.CreateAsync(user);
+            //await DataSeeder.SeedUserAsync(user);
 
             // Act
             User? receivedUser = await _sut.GetByIdAsync(user.Id);
@@ -127,7 +128,8 @@ public class NpgsqlUserRepositoryTests : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .WithRefreshToken(refreshToken)
                 .Build();
-            await DataSeeder.SeedUserAsync(user);
+            await _sut.CreateAsync(user);
+            //await DataSeeder.SeedUserAsync(user);
 
             // Act
             User? receivedUser = await _sut.GetByRefreshTokenAsync(Guid.NewGuid().ToString());
@@ -144,7 +146,8 @@ public class NpgsqlUserRepositoryTests : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .WithRefreshToken(refreshToken)
                 .Build();
-            await DataSeeder.SeedUserAsync(user);
+            await _sut.CreateAsync(user);
+            //await DataSeeder.SeedUserAsync(user);
 
             // Act
             User? receivedUser = await _sut.GetByIdAsync(user.Id);

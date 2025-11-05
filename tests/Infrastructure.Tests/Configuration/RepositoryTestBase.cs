@@ -1,6 +1,7 @@
 ﻿using Npgsql;
 using Respawn;
 using Respawn.Graph;
+using RippleSync.Domain.Platforms;
 using RippleSync.Infrastructure.UnitOfWork;
 using System.Data;
 
@@ -12,7 +13,6 @@ public abstract class RepositoryTestBase : IAsyncLifetime, IClassFixture<Postgre
     private Respawner _respawner = default!;
 
     protected NpgsqlConnection DbConnection { get; private set; } = default!;
-    protected DataSeeder DataSeeder => new(DbConnection);
     protected IUnitOfWork UnitOfWork { get; private set; } = default!;
 
     protected RepositoryTestBase(PostgresDatabaseFixture fixture)
@@ -41,8 +41,10 @@ public abstract class RepositoryTestBase : IAsyncLifetime, IClassFixture<Postgre
             TablesToIgnore = [
                 new Table("token_type"),
                 new Table("post_status"),
+                //new Table("platform"),
             ]
         });
+        await new DataSeeder.Platforms(DbConnection).SeedPlatformsAsync(Enum.GetValues<Platform>());
     }
     public virtual Task DisposeAsync() => Task.CompletedTask;
 }
