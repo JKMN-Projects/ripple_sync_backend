@@ -31,9 +31,9 @@ public partial class PostsController : ControllerBase
     public async Task<IActionResult> GetImage(Guid id)
     {
         // Retrieve the base64 string from your database/service
-        string base64Image = await _postManager.GetImageByIdAsync(id);
+        string? base64Image = await _postManager.GetImageByIdAsync(id);
 
-        if (string.IsNullOrEmpty(base64Image))
+        if (string.IsNullOrWhiteSpace(base64Image))
         {
             return NotFound();
         }

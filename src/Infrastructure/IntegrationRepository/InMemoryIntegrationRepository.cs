@@ -34,11 +34,11 @@ public class InMemoryIntegrationRepository : IIntegrationRepository, IIntegratio
     }
 
     public Task<IEnumerable<Integration>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        => Task.FromResult(InMemoryData.Integrations.Where(i => i.UserId == userId));
+
+    public async Task UpdateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(InMemoryData.Integrations.Where(i => i.UserId == userId));
-    }
-    public Task UpdateAsync(Integration integration, CancellationToken cancellation = default)
-    {
-        return Task.CompletedTask;
+        int delay = Random.Shared.Next(50, 400);
+        await Task.Delay(delay, cancellationToken);
     }
 }

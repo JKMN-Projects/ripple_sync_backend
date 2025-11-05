@@ -49,56 +49,19 @@ internal class InMemoryData
 
     internal static readonly List<Post> Posts =
     [
-        Post.Reconstitute(Guid.NewGuid(), _userId,"My first post",DateTime.UtcNow, DateTime.UtcNow.AddDays(2),
-        [
-            new() {
-                PostId = Guid.NewGuid(),
-                UserPlatformIntegrationId = Guid.NewGuid(),
-                Status = PostStatus.Posted,
-                PlatformPostIdentifier = "123456",
-                PlatformResponse = null
-            }
-        ],
-        null),
-        Post.Reconstitute(Guid.NewGuid(), _userId,"My Scheduled post",DateTime.UtcNow, DateTime.UtcNow.AddDays(5),[
-            new() {
-                PostId = Guid.NewGuid(),
-                UserPlatformIntegrationId = Guid.NewGuid(),
-                Status = PostStatus.Scheduled,
-                PlatformPostIdentifier = "654321",
-                PlatformResponse = null
-            }
-        ],
-        null),
-        Post.Reconstitute(Guid.NewGuid(), _userId,"Stuck while processing",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
-            new() {
-                PostId = Guid.NewGuid(),
-                UserPlatformIntegrationId = Guid.NewGuid(),
-                Status = PostStatus.Processing,
-                PlatformPostIdentifier = "",
-                PlatformResponse = null
-            }
-        ],
-        null),
-        Post.Reconstitute(Guid.NewGuid(), _userId,"My post will not upload",DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-2),[
-            new() {
-                PostId = Guid.NewGuid(),
-                UserPlatformIntegrationId = Guid.NewGuid(),
-                Status = PostStatus.Failed,
-                PlatformPostIdentifier = "",
-                PlatformResponse = "Error"
-            }
-        ],
-        null),
-        Post.Reconstitute(Guid.NewGuid(), _userId,"Just created this post - NOT DONE",DateTime.UtcNow, null,[
-            new() {
-                PostId = Guid.NewGuid(),
-                UserPlatformIntegrationId = Guid.NewGuid(),
-                Status = PostStatus.Draft,
-                PlatformPostIdentifier = "",
-                PlatformResponse = null
-            }
-        ],
-        null)
+        Post.Reconstitute(Guid.NewGuid(), _userId, "My first post", DateTime.UtcNow, null, DateTime.UtcNow.AddDays(2), [],
+            [PostEvent.Reconstitute(Guid.NewGuid(), Guid.NewGuid(), PostStatus.Posted, "123456", null)]),
+
+        Post.Reconstitute(Guid.NewGuid(), _userId, "My Scheduled post", DateTime.UtcNow, null, DateTime.UtcNow.AddDays(5), [],
+            [PostEvent.Reconstitute(Guid.NewGuid(), Guid.NewGuid(), PostStatus.Scheduled, "654321", null)]),
+
+        Post.Reconstitute(Guid.NewGuid(), _userId,"Stuck while processing", DateTime.UtcNow.AddDays(-2), null, DateTime.UtcNow.AddDays(-2), [],
+            [PostEvent.Reconstitute(Guid.NewGuid(), Guid.NewGuid(), PostStatus.Processing, "", null)]),
+
+        Post.Reconstitute(Guid.NewGuid(), _userId,"My post will not upload", DateTime.UtcNow.AddDays(-2), null, DateTime.UtcNow.AddDays(-2), [],
+            [PostEvent.Reconstitute(Guid.NewGuid(), Guid.NewGuid(), PostStatus.Failed, "", "Error")]),
+
+        Post.Reconstitute(Guid.NewGuid(), _userId,"Just created this post - NOT DONE", DateTime.UtcNow, null, null, [],
+            [PostEvent.Reconstitute(Guid.NewGuid(), Guid.NewGuid(), PostStatus.Draft, "", null)]),
     ];
 }

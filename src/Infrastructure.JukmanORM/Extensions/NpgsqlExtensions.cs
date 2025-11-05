@@ -1,8 +1,8 @@
-﻿using RippleSync.Infrastructure.JukmanORM.ClassAttributes;
+﻿using Npgsql;
+using NpgsqlTypes;
+using RippleSync.Infrastructure.JukmanORM.ClassAttributes;
 using RippleSync.Infrastructure.JukmanORM.Enums;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
-using Npgsql;
-using NpgsqlTypes;
 using System.Reflection;
 
 namespace RippleSync.Infrastructure.JukmanORM.Extensions;
@@ -13,6 +13,12 @@ public static partial class NpgsqlExtensions
     /// Flags for acquiring all instance properties (public and private) from a type and its base classes.
     /// </summary>
     private static readonly BindingFlags _acquirePropFlags = BindingFlags.FlattenHierarchy | BindingFlags.Default | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+
+    public enum WhereJoiner
+    {
+        OR,
+        AND
+    }
 
     /// <summary>
     /// Executes the query and returns the result as an enumerable of type T
@@ -96,8 +102,8 @@ public static partial class NpgsqlExtensions
     /// <param name="ct">Cancellation token</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public static async Task<IEnumerable<T>> SelectAsync<T>(this NpgsqlConnection conn, string whereClause, CancellationToken ct = default)
-        => await conn.SelectAsync<T>(null, whereClause, "", "", ct: ct);
+    public static async Task<IEnumerable<T>> SelectAsync<T>(this NpgsqlConnection conn, string whereClause, object? param = null, CancellationToken ct = default)
+        => await conn.SelectAsync<T>(null, whereClause, param, "", "", ct: ct);
 
     /// <summary>
     /// Executes a select query and returns the result as an enumerable of type T
@@ -108,7 +114,7 @@ public static partial class NpgsqlExtensions
     /// <param name="whereClause">Add a where clause, "WHERE" being optional</param>
     /// <param name="param"></param>
     /// <param name="overwriteSchemaName"></param>
-    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructorAttribute"/></param>
     /// <param name="ct">Cancellation token</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
@@ -124,6 +130,18 @@ public static partial class NpgsqlExtensions
     }
 
     /// <summary>
+    /// Executes a select query and returns the result as an enumerable of type T
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="whereClause">Add a where clause, "WHERE" being optional</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public static async Task<T?> SelectSingleOrDefaultAsync<T>(this NpgsqlConnection conn, string whereClause, object? param = null, CancellationToken ct = default)
+        => await conn.SelectSingleOrDefaultAsync<T>(null, whereClause, param, "", "", ct: ct);
+
+    /// <summary>
     /// Executes a select query and returns a single result of type T or Default of type T
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -132,7 +150,7 @@ public static partial class NpgsqlExtensions
     /// <param name="whereClause">Add a where clause, "WHERE" being optional</param>
     /// <param name="param"></param>
     /// <param name="overwriteSchemaName"></param>
-    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructorAttribute"/></param>
     /// <param name="ct">Cancellation token</param>
     /// <returns></returns>
     public static async Task<T?> SelectSingleOrDefaultAsync<T>(this NpgsqlConnection conn, NpgsqlTransaction? trans = null, string whereClause = "", object? param = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
@@ -169,7 +187,7 @@ public static partial class NpgsqlExtensions
     /// <param name="datas"></param>
     /// <param name="trans">The transaction to use</param>
     /// <param name="overwriteSchemaName">If defined, overrides the schema name</param>
-    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructorAttribute"/></param>
     /// <param name="ct">Cancellation token</param>
     /// <returns>Number of affected rows</returns>
     public static async Task<int> InsertAsync<T>(this NpgsqlConnection conn, T data, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
@@ -184,7 +202,7 @@ public static partial class NpgsqlExtensions
     /// <param name="datas"></param>
     /// <param name="trans">The transaction to use</param>
     /// <param name="overwriteSchemaName">If defined, overrides the schema name</param>
-    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructorAttribute"/></param>
     /// <param name="ct">Cancellation token</param>
     /// <returns>Number of affected rows</returns>
     public static async Task<int> InsertAsync<T>(this NpgsqlConnection conn, IEnumerable<T> datas, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
@@ -203,7 +221,7 @@ public static partial class NpgsqlExtensions
 
         foreach (var property in typeof(T).GetProperties(_acquirePropFlags))
         {
-            var attribute = property.GetCustomAttributes(false).OfType<SqlProperty>().FirstOrDefault();
+            var attribute = property.GetCustomAttributes(false).OfType<SqlPropertyAttribute>().FirstOrDefault();
             if (attribute != null && attribute.Action == QueryAction.IgnoreInsert)
                 continue;
 
@@ -222,7 +240,8 @@ public static partial class NpgsqlExtensions
 
             foreach (var property in data?.GetType().GetProperties(_acquirePropFlags) ?? Enumerable.Empty<PropertyInfo>())
             {
-                var attribute = property.GetCustomAttributes(false).OfType<SqlProperty>().FirstOrDefault();
+                var attribute = property.GetCustomAttributes(false).OfType<SqlPropertyAttribute>().FirstOrDefault();
+
                 if (attribute != null && attribute.Action == QueryAction.IgnoreInsert)
                     continue;
 
@@ -245,6 +264,112 @@ public static partial class NpgsqlExtensions
     }
 
     /// <summary>
+    /// update a single records in the database table corresponding to Type T.
+    /// Update is based on properties not marked with <see cref="UpdateAction.Ignore"/>.
+    /// Update uses on properties marked with <see cref="UpdateAction.Where"/> to defined Clause.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="datas"></param>
+    /// <param name="trans"></param>
+    /// <param name="overwriteSchemaName"></param>
+    /// <param name="overwriteTableName"></param>
+    /// <param name="joiner">How to join the different wheres, default is AND</param>
+    /// <param name="ct"></param>
+    /// <returns>the number of affected rows</returns>
+    public static async Task<int> UpdateAsync<T>(this NpgsqlConnection conn, T data, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", WhereJoiner joiner = WhereJoiner.AND, CancellationToken ct = default)
+        => await conn.UpdateAsync(new[] { data }, trans, overwriteSchemaName, overwriteTableName, joiner, ct);
+
+    /// <summary>
+    /// update multiple records in the database table corresponding to Type T.
+    /// Update is based on properties not marked with <see cref="UpdateAction.Ignore"/>.
+    /// Update uses properties marked with <see cref="UpdateAction.Where"/> to defined Clause.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="datas"></param>
+    /// <param name="trans"></param>
+    /// <param name="overwriteSchemaName"></param>
+    /// <param name="overwriteTableName"></param>
+    /// <param name="joiner">How to join the different wheres, default is AND</param>
+    /// <param name="ct"></param>
+    /// <returns>the number of affected rows</returns>
+    public static async Task<int> UpdateAsync<T>(this NpgsqlConnection conn, IEnumerable<T> datas, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", WhereJoiner joiner = WhereJoiner.AND, CancellationToken ct = default)
+    {
+        if (datas == null || datas.Any())
+            return 0;
+
+        var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
+
+        var (schemaName, tableName) = GetSchemaAndTableName<T>(overwriteSchemaName, overwriteTableName, sqlConstructor);
+
+        List<string> updateFields = [];
+        List<string> whereFields = [];
+
+        foreach (var property in typeof(T).GetProperties(_acquirePropFlags))
+        {
+            bool updateField = true;
+            var attribute = property.GetCustomAttributes(false).OfType<SqlPropertyAttribute>().FirstOrDefault();
+
+            if (attribute != null && attribute.Update == UpdateAction.Ignore)
+            {
+                continue;
+            }
+            else if (attribute != null && attribute.Update == UpdateAction.Where)
+            {
+                updateField = false;
+            }
+
+            string name = GetPropertyName(attribute, property);
+
+            if (updateField)
+                updateFields.Add($"\"{name}\"");
+            else
+                whereFields.Add($"\"{name}\"");
+        }
+
+        IEnumerable<string> allFields = whereFields.Concat(updateFields);
+
+        List<List<string>> updateColumns = new List<List<string>>();
+
+        var parameters = new List<NpgsqlParameter>();
+        int paramIndex = 0;
+
+        foreach (var data in datas)
+        {
+            List<string> rowPlaceholders = [];
+
+            foreach (var property in data?.GetType().GetProperties(_acquirePropFlags) ?? Enumerable.Empty<PropertyInfo>())
+            {
+                var attribute = property.GetCustomAttributes(false).OfType<SqlPropertyAttribute>().FirstOrDefault();
+
+                if (attribute != null && attribute.Update == UpdateAction.Ignore)
+                    continue;
+
+                var (propParams, placeholder) = CreatePropertyParameter(property, data, ref paramIndex);
+                parameters.AddRange(propParams);
+                rowPlaceholders.Add(placeholder);
+            }
+
+            updateColumns.Add(rowPlaceholders);
+        }
+
+        string update = $"UPDATE {schemaName}{tableName} SET {string.Join(", ", updateFields.Select(u => $"{u} = b2.{u}"))}";
+        string values = $" FROM (VALUES ({string.Join("), (", updateColumns.Select(u => string.Join(", ", u)))}";
+        string valuesAsTable = $") ) AS b2({string.Join(", ", allFields)}) WHERE ";
+        string where = string.Join($" {joiner} ", whereFields.Select(w => $"{tableName}.{w} = b2.{w}"));
+        string query = update + values + valuesAsTable + where;
+
+        using var cmd = new NpgsqlCommand(query, conn, trans);
+        cmd.Parameters.AddRange(parameters.ToArray());
+
+        int rowsAffected = await LoggedExecuteNonQueryAsync(cmd, ct);
+
+        return rowsAffected;
+    }
+
+
+    /// <summary>
     /// Removes a record from the database table corresponding to Type T.
     /// Deletion is based on properties marked with <see cref="UpdateAction.Where"/>.
     /// </summary>
@@ -253,12 +378,12 @@ public static partial class NpgsqlExtensions
     /// <param name="datas"></param>
     /// <param name="trans">The transaction to use</param>
     /// <param name="overwriteSchemaName">If defined, overrides the schema name</param>
-    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructorAttribute"/></param>
     /// <param name="ct">Cancellation token</param>
     /// <returns>Number of affected rows</returns>
     /// <exception cref="InvalidOperationException">If no <see cref="UpdateAction.Where"/> were defined on Type T</exception>
-    public static async Task<int> RemoveAsync<T>(this NpgsqlConnection conn, T data, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
-        => await conn.RemoveAsync(new[] { data }, trans, overwriteSchemaName, overwriteTableName, ct);
+    public static async Task<int> RemoveAsync<T>(this NpgsqlConnection conn, T data, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", WhereJoiner joiner = WhereJoiner.AND, CancellationToken ct = default)
+        => await conn.RemoveAsync(new[] { data }, trans, overwriteSchemaName, overwriteTableName, joiner, ct);
 
     /// <summary>
     /// Removes multiple records from the database table corresponding to Type T.
@@ -269,11 +394,11 @@ public static partial class NpgsqlExtensions
     /// <param name="datas"></param>
     /// <param name="trans">The transaction to use</param>
     /// <param name="overwriteSchemaName">If defined, overrides the schema name</param>
-    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructorAttribute"/></param>
     /// <param name="ct">Cancellation token</param>
     /// <returns>Number of affected rows</returns>
     /// <exception cref="InvalidOperationException">If no <see cref="UpdateAction.Where"/> were defined on Type T</exception>
-    public static async Task<int> RemoveAsync<T>(this NpgsqlConnection conn, IEnumerable<T> datas, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
+    public static async Task<int> RemoveAsync<T>(this NpgsqlConnection conn, IEnumerable<T> datas, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", WhereJoiner joiner = WhereJoiner.AND, CancellationToken ct = default)
     {
         if (datas == null || !datas.Any())
             return 0;
@@ -291,7 +416,7 @@ public static partial class NpgsqlExtensions
             List<string> rowConditions = [];
             foreach (var property in data?.GetType().GetProperties(_acquirePropFlags) ?? Enumerable.Empty<PropertyInfo>())
             {
-                var attribute = property.GetCustomAttributes(false).OfType<SqlProperty>().FirstOrDefault();
+                var attribute = property.GetCustomAttributes(false).OfType<SqlPropertyAttribute>().FirstOrDefault();
 
                 if (attribute == null || attribute.Update != UpdateAction.Where)
                     continue;
@@ -306,7 +431,7 @@ public static partial class NpgsqlExtensions
             if (rowConditions.Count == 0)
                 throw new InvalidOperationException($"Type {typeof(T).Name} has no properties marked with UpdateAction.Where for deletion.");
 
-            whereConditions.Add($"({string.Join(" AND ", rowConditions)})");
+            whereConditions.Add($"({string.Join($" {joiner} ", rowConditions)})");
         }
 
         var query = $"DELETE FROM {schemaName}{tableName} WHERE {string.Join(" OR ", whereConditions)}";
@@ -325,7 +450,7 @@ public static partial class NpgsqlExtensions
     /// <typeparam name="T"></typeparam>s
     /// <param name="whereClause"></param>
     /// <param name="overwriteSchemaName">If defined, overrides the schema name</param>
-    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructor"/></param>
+    /// <param name="overwriteTableName">If defined, takes priority over assumed name from <typeparamref name="T"/> and over name potentially defined in <see cref="SqlConstructorAttribute"/></param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
     private static string SelectQuery<T>(string whereClause = "", string overwriteSchemaName = "", string overwriteTableName = "")
@@ -428,8 +553,8 @@ public static partial class NpgsqlExtensions
     /// <exception cref="InvalidOperationException"></exception>
     private static ConstructorInfo GetSqlConstructor<T>()
     {
-        return typeof(T).GetConstructors().FirstOrDefault(c => Attribute.IsDefined(c, typeof(SqlConstructor)))
-           ?? throw new InvalidOperationException($"No {nameof(SqlConstructor)} was defined in {typeof(T).FullName}");
+        return typeof(T).GetConstructors().FirstOrDefault(c => Attribute.IsDefined(c, typeof(SqlConstructorAttribute)))
+           ?? throw new InvalidOperationException($"No {nameof(SqlConstructorAttribute)} was defined in {typeof(T).FullName}");
     }
 
     /// <summary>
@@ -438,24 +563,24 @@ public static partial class NpgsqlExtensions
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    private static SqlConstructor GetConstructorOfTypeSqlConstructor<T>()
+    private static SqlConstructorAttribute GetConstructorOfTypeSqlConstructor<T>()
     {
         var constructor = GetSqlConstructor<T>();
 
-        return constructor.GetCustomAttributes(false).OfType<SqlConstructor>().FirstOrDefault()
-            ?? throw new InvalidOperationException($"No {nameof(SqlConstructor)} could be parsed from {typeof(T).FullName}");
+        return constructor.GetCustomAttributes(false).OfType<SqlConstructorAttribute>().FirstOrDefault()
+            ?? throw new InvalidOperationException($"No {nameof(SqlConstructorAttribute)} could be parsed from {typeof(T).FullName}");
     }
 
     /// <summary>
     /// Extrapolates Schema and Table name
-    ///     Prioritizes overwrites, followed by <see cref="SqlConstructor"/>, then by class name.
+    ///     Prioritizes overwrites, followed by <see cref="SqlConstructorAttribute"/>, then by class name.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="overwriteTableName"></param>
     /// <param name="overwriteSchemaName"></param>
     /// <param name="ctorSqlAttribute"></param>
     /// <returns>schema and table name as tuple</returns>
-    private static (string schemaName, string tableName) GetSchemaAndTableName<T>(string overwriteTableName, string overwriteSchemaName, SqlConstructor? ctorSqlAttribute = null)
+    private static (string schemaName, string tableName) GetSchemaAndTableName<T>(string overwriteTableName, string overwriteSchemaName, SqlConstructorAttribute? ctorSqlAttribute = null)
     {
         var table = overwriteTableName;
 
@@ -493,7 +618,7 @@ public static partial class NpgsqlExtensions
     /// <param name="sqlAttribute"></param>
     /// <param name="property"></param>
     /// <returns></returns>
-    private static string GetPropertyName(SqlProperty? sqlAttribute, PropertyInfo property)
+    private static string GetPropertyName(SqlPropertyAttribute? sqlAttribute, PropertyInfo property)
     {
         var name = string.Empty;
 

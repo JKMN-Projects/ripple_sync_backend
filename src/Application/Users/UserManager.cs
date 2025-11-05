@@ -119,7 +119,7 @@ public sealed class UserManager(
         }
         // Anonymize user data
         user.Anonymize();
-        await userRepository.UpdateUserAsync(user, cancellationToken);
+        await userRepository.UpdateAsync(user, cancellationToken);
 
         var integrations = await integrationRepository.GetByUserIdAsync(userId, cancellationToken);
         foreach (var integration in integrations)

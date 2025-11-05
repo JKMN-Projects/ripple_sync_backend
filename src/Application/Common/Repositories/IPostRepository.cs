@@ -9,14 +9,12 @@ public interface IPostRepository
 
     Task<Post?> GetByIdAsync(Guid postId, CancellationToken cancellationToken = default);
 
-    Task<string> GetImageByIdAsync(Guid imageId, CancellationToken cancellationToken = default);
+    Task CreatePostAsync(Post post, CancellationToken cancellationToken = default);
 
-    Task<bool> CreatePostAsync(Post post, CancellationToken cancellationToken = default);
-
-    Task<bool> UpdatePostAsync(Post post, CancellationToken cancellationToken = default);
+    Task UpdatePostAsync(Post post, CancellationToken cancellationToken = default);
 
     Task DeleteAsync(Post post, CancellationToken cancellationToken = default);
     Task<IEnumerable<Post>> GetAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
-    Task<IEnumerable<Post>> GetPostsReadyToPublish(CancellationToken cancellationToken = default);
-    Task<PostEvent> UpdatePostEventStatus(PostEvent postEvent, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Post>> GetPostsReadyToPublishAsync(CancellationToken cancellationToken = default);
+    Task<PostEvent> UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken = default);
 }

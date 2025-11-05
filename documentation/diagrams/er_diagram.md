@@ -38,7 +38,7 @@
         int id PK
         text platform_name UK "twitter, youtube, facebook, etc"
         text platform_description
-        text image_url
+        text image_data
     }
 
     user_platform_integration {
@@ -64,7 +64,7 @@
     post_media {
         uuid id PK
         uuid post_id FK
-        text image_url 
+        text image_data 
     }
 
     post_event {
