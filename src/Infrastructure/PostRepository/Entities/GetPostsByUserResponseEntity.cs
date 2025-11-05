@@ -1,30 +1,25 @@
 ﻿using RippleSync.Infrastructure.JukmanORM.ClassAttributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RippleSync.Infrastructure.PostRepository.Entities;
 internal class GetPostsByUserResponseEntity
 {
     public Guid Id { get; set; }
 
-    [SqlPropertyAttribute(propName: "message_content")]
+    [SqlProperty(propName: "message_content")]
     public string MessageContent { get; set; }
 
 
-    [SqlPropertyAttribute(propName: "media_ids")]
+    [SqlProperty(propName: "media_ids")]
     public Guid[] MediaIds { get; set; }
 
 
-    [SqlPropertyAttribute(propName: "status_name")]
+    [SqlProperty(propName: "status_name")]
     public string StatusName { get; set; }
     public long? Timestamp { get; set; }
     public string[] Platforms { get; set; }
 
 
-    [SqlConstructorAttribute("ripple_sync")]
+    [SqlConstructor("ripple_sync")]
     internal GetPostsByUserResponseEntity(Guid id, string message_content, Guid[] media_ids, string status_name, long? timestamp, string[] platforms)
     {
         Id = id;

@@ -18,7 +18,7 @@ public class PostEvent
         PlatformResponse = platformResponse;
     }
 
-    public static PostEvent New(Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
+    public static PostEvent Create(Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
     {
         return new PostEvent(
             postId: Guid.NewGuid(),

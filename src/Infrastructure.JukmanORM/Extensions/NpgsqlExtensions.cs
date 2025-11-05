@@ -267,6 +267,7 @@ public static partial class NpgsqlExtensions
     /// update a single records in the database table corresponding to Type T.
     /// Update is based on properties not marked with <see cref="UpdateAction.Ignore"/>.
     /// Update uses on properties marked with <see cref="UpdateAction.Where"/> to defined Clause.
+    /// Properties marked with Where will never be updated either, they're considered identifiers.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="conn"></param>
@@ -284,6 +285,7 @@ public static partial class NpgsqlExtensions
     /// update multiple records in the database table corresponding to Type T.
     /// Update is based on properties not marked with <see cref="UpdateAction.Ignore"/>.
     /// Update uses properties marked with <see cref="UpdateAction.Where"/> to defined Clause.
+    /// Properties marked with Where will never be updated either, they're considered identifiers.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="conn"></param>

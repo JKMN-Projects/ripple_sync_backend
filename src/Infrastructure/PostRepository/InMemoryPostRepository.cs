@@ -3,7 +3,6 @@ using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Posts;
 using RippleSync.Domain.Posts;
-using System.Linq;
 
 namespace RippleSync.Infrastructure.PostRepository;
 

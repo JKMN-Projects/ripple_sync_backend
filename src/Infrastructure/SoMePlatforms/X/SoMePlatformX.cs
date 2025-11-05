@@ -3,9 +3,7 @@ using Microsoft.Extensions.Options;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
-using System.Net;
 using System.Text;
-using System.Text.Json;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.X;
 

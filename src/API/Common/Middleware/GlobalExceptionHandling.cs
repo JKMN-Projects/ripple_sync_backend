@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using RippleSync.Application.Common.Exceptions;
-using System.ComponentModel.DataAnnotations;
 
 namespace RippleSync.API.Common.Middleware;
 
