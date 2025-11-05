@@ -27,7 +27,7 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
             p.Id,
             p.MessageContent,
             p.PostEvents.MaxBy(pe => pe.Status)!.Status.ToString(),
-            [],
+            p.PostMedias?.Select(pm => pm.Id).ToArray() ?? Array.Empty<Guid>(),
             p.ScheduledFor.HasValue ? new DateTimeOffset(p.ScheduledFor.Value).ToUnixTimeMilliseconds() : null,
             p.PostEvents.Select(pe => userIntegrations.FirstOrDefault(ui => ui.Id == pe.UserPlatformIntegrationId)?.Platform.ToString() ?? "Unknown").ToArray()
         ));
