@@ -1,10 +1,12 @@
 ﻿using Npgsql;
-using RippleSync.Infrastructure.UnitOfWork;
+using RippleSync.Application.Common;
 
 namespace RippleSync.Infrastructure.Base;
 internal class BaseRepository(IUnitOfWork unitOfWork)
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-    protected NpgsqlConnection Connection => _unitOfWork.Connection;
-    protected NpgsqlTransaction? Transaction => _unitOfWork.Transaction;
+
+
+    protected NpgsqlConnection Connection => (NpgsqlConnection)_unitOfWork.Connection;
+    protected NpgsqlTransaction? Transaction => (NpgsqlTransaction?)_unitOfWork.Transaction;
 }

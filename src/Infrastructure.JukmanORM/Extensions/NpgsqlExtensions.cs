@@ -93,10 +93,9 @@ public static partial class NpgsqlExtensions
         catch (Exception e)
         { throw new QueryException("Querying to class error", query, e); }
 
-        if (dbValues.All(v => v == null || v == DBNull.Value))
-            return default;
-
-        return (T)constructor.Invoke(dbValues);
+        return dbValues.All(v => v == null || v == DBNull.Value) ?
+            default
+            : (T)constructor.Invoke(dbValues);
     }
 
     /// <summary>
@@ -216,7 +215,7 @@ public static partial class NpgsqlExtensions
     /// <returns>Number of affected rows</returns>
     public static async Task<int> InsertAsync<T>(this NpgsqlConnection conn, IEnumerable<T> datas, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
     {
-        if (datas == null || !datas.Any())
+        if (datas.NullOrEmpty())
             return 0;
 
         var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
@@ -310,7 +309,7 @@ public static partial class NpgsqlExtensions
     /// <returns>the number of affected rows</returns>
     public static async Task<int> UpdateAsync<T>(this NpgsqlConnection conn, IEnumerable<T> datas, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", WhereJoiner joiner = WhereJoiner.AND, CancellationToken ct = default)
     {
-        if (datas == null || !datas.Any())
+        if (datas.NullOrEmpty())
             return 0;
 
         var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
@@ -417,7 +416,7 @@ public static partial class NpgsqlExtensions
     /// <exception cref="InvalidOperationException">If no <see cref="UpdateAction.Where"/> were defined on Type T</exception>
     public static async Task<int> RemoveAsync<T>(this NpgsqlConnection conn, IEnumerable<T> datas, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", WhereJoiner joiner = WhereJoiner.AND, CancellationToken ct = default)
     {
-        if (datas == null || !datas.Any())
+        if (datas.NullOrEmpty())
             return 0;
 
         var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
@@ -673,9 +672,15 @@ public static partial class NpgsqlExtensions
                 var paramValue = dataValue ?? GetDefaultValue(underlyingType ?? type) ?? DBNull.Value;
                 var paramName = property.Name.StartsWith("@", StringComparison.InvariantCultureIgnoreCase) ? property.Name : $"@{property.Name}";
 
+                SqlPropertyAttribute? attribute = property.GetCustomAttributes(false).OfType<SqlPropertyAttribute>().FirstOrDefault();
+
+                var dbType = attribute != null && attribute.DbType != NpgsqlDbType.Unknown
+                    ? attribute.DbType
+                    : GetNpgsqlDbType(underlyingType ?? type, dataValue);
+
                 var parameter = new NpgsqlParameter(paramName, paramValue)
                 {
-                    NpgsqlDbType = GetNpgsqlDbType(underlyingType ?? type, dataValue)
+                    NpgsqlDbType = dbType
                 };
 
                 cmd.Parameters.Add(parameter);
@@ -703,9 +708,15 @@ public static partial class NpgsqlExtensions
             : dataValue ?? GetDefaultValue(underlyingType ?? type) ?? DBNull.Value;
 
         var paramName = $"@p{paramIndex}";
+        SqlPropertyAttribute? attribute = property.GetCustomAttributes(false).OfType<SqlPropertyAttribute>().FirstOrDefault();
+
+        var dbType = attribute != null && attribute.DbType != NpgsqlDbType.Unknown
+                    ? attribute.DbType
+                    : GetNpgsqlDbType(underlyingType ?? type, dataValue);
+
         var param = new NpgsqlParameter(paramName, paramValue)
         {
-            NpgsqlDbType = GetNpgsqlDbType(underlyingType ?? type)
+            NpgsqlDbType = dbType
         };
 
         parameters.Add(param);

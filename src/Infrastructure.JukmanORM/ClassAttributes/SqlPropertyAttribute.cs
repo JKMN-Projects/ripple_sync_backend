@@ -1,4 +1,5 @@
-﻿using RippleSync.Infrastructure.JukmanORM.Enums;
+﻿using NpgsqlTypes;
+using RippleSync.Infrastructure.JukmanORM.Enums;
 using System.Runtime.CompilerServices;
 
 namespace RippleSync.Infrastructure.JukmanORM.ClassAttributes;
@@ -8,8 +9,9 @@ public class SqlPropertyAttribute : Attribute
     public string? Name { get; }
     public QueryAction Action { get; }
     public UpdateAction Update { get; }
+    public NpgsqlDbType DbType { get; }
 
-    public SqlPropertyAttribute(QueryAction action = default, UpdateAction update = default, [CallerMemberName] string propName = "")
+    public SqlPropertyAttribute(QueryAction action = default, UpdateAction update = default, NpgsqlDbType dbType = NpgsqlDbType.Unknown, [CallerMemberName] string propName = "")
     {
         Name = null;
 
@@ -21,5 +23,6 @@ public class SqlPropertyAttribute : Attribute
 
         Action = action;
         Update = update;
+        DbType = dbType;
     }
 }

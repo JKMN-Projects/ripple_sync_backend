@@ -1,11 +1,10 @@
-﻿using Npgsql;
+﻿using RippleSync.Application.Common;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Platforms;
 using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.PlatformRepository.Entities;
-using RippleSync.Infrastructure.UnitOfWork;
 
 namespace RippleSync.Infrastructure.PlatformRepository;
 

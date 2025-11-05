@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.Extensions.Logging;
+using RippleSync.Application.Common;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
@@ -11,6 +12,7 @@ namespace RippleSync.Application.Posts;
 
 public class PostManager(
     ILogger<PostManager> logger,
+    IUnitOfWork unitOfWork,
     IPostRepository postRepository,
     IPostQueries postQueries,
     IIntegrationRepository integrationRepository,
@@ -73,7 +75,7 @@ public class PostManager(
 
         var postMedias = mediaAttachments?
             .Select(PostMedia.New)
-            .ToList();
+            .ToList() ?? [];
 
         var postEvents = integrationIds
             .Select(id => PostEvent.Create(id, scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft, "", new { }))
@@ -87,7 +89,17 @@ public class PostManager(
             postEvents
         );
 
-        await postRepository.CreateAsync(post, cancellationToken);
+        unitOfWork.BeginTransaction();
+        try
+        {
+            await postRepository.CreateAsync(post, cancellationToken);
+            unitOfWork.Save();
+        }
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
+        }
     }
 
     public async Task UpdatePostAsync(Guid userId, Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
@@ -117,8 +129,17 @@ public class PostManager(
         }
 
         post.UpdatedAt = DateTime.UtcNow;
-
-        await postRepository.UpdateAsync(post, cancellationToken);
+        unitOfWork.BeginTransaction();
+        try
+        {
+            await postRepository.UpdateAsync(post, cancellationToken);
+            unitOfWork.Save();
+        }
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
+        }
     }
 
     public async Task DeletePostByIdAsync(Guid userId, Guid postId, CancellationToken cancellationToken = default)
@@ -131,13 +152,24 @@ public class PostManager(
         {
             throw new UnauthorizedException("Post does not belong to the user.");
         }
-        if (post.IsDeletable() is false)
+
+        if (!post.IsDeletable())
         {
             throw new InvalidOperationException("Post cannot be deleted in its current state.");
         }
 
         // Then delete
-        await postRepository.DeleteAsync(post, cancellationToken);
+        unitOfWork.BeginTransaction();
+        try
+        {
+            await postRepository.DeleteAsync(post, cancellationToken);
+            unitOfWork.Save();
+        }
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
+        }
     }
     public async Task<IEnumerable<Post>> GetPostReadyToPublish(CancellationToken cancellationToken = default)
     {
@@ -146,9 +178,6 @@ public class PostManager(
         IEnumerable<Post> postsReadyToPost = posts.Where(p => p.IsReadyToPublish());
         return posts;
     }
-
-    public async Task<PostEvent> UpdatePostEventAsync(PostEvent postEvent)
-        => await postRepository.UpdatePostEventStatusAsync(postEvent);
 
     public async Task ProcessPostEventAsync(Post post, CancellationToken cancellationToken)
     {
@@ -159,7 +188,17 @@ public class PostManager(
         foreach (var postEvent in post.PostEvents)
         {
             postEvent.Status = PostStatus.Processing;
-            await UpdatePostEventAsync(postEvent);
+            unitOfWork.BeginTransaction();
+            try
+            {
+                await postRepository.UpdatePostEventStatusAsync(postEvent, cancellationToken);
+                unitOfWork.Save();
+            }
+            catch (Exception)
+            {
+                unitOfWork.Cancel();
+                throw;
+            }
         }
 
         List<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId).ToList();
@@ -174,16 +213,17 @@ public class PostManager(
                     post.Id,
                     integration.Platform);
             ISoMePlatform platform = platformFactory.Create(integration.Platform);
+
+            PostEvent postEvent;
             try
             {
-                var responsePostEvent = await platform.PublishPostAsync(post, integration);
+                postEvent = await platform.PublishPostAsync(post, integration);
 
                 //If still processing, mark as posted
-                if (responsePostEvent.Status == PostStatus.Processing)
+                if (postEvent.Status == PostStatus.Processing)
                 {
-                    responsePostEvent.Status = PostStatus.Posted;
+                    postEvent.Status = PostStatus.Posted;
                 }
-                await UpdatePostEventAsync(responsePostEvent);
             }
             catch (Exception ex)
             {
@@ -192,9 +232,20 @@ public class PostManager(
                     integration.Platform,
                     ex.Message
                 );
-                var postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id);
+                postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id);
                 postEvent!.Status = PostStatus.Failed;
-                await UpdatePostEventAsync(postEvent);
+            }
+
+            unitOfWork.BeginTransaction();
+            try
+            {
+                await postRepository.UpdatePostEventStatusAsync(postEvent, cancellationToken);
+                unitOfWork.Save();
+            }
+            catch (Exception)
+            {
+                unitOfWork.Cancel();
+                throw;
             }
         }
         logger.LogInformation(

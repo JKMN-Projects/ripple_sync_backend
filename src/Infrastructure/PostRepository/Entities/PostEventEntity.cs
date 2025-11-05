@@ -1,4 +1,5 @@
-﻿using RippleSync.Infrastructure.JukmanORM.ClassAttributes;
+﻿using NpgsqlTypes;
+using RippleSync.Infrastructure.JukmanORM.ClassAttributes;
 using RippleSync.Infrastructure.JukmanORM.Enums;
 
 namespace RippleSync.Infrastructure.PostRepository.Entities;
@@ -16,7 +17,7 @@ internal class PostEventEntity
     [SqlProperty(propName: "platform_post_identifier")]
     public string PlatformPostIdentifier { get; set; }
 
-    [SqlProperty(propName: "platform_response")]
+    [SqlProperty(propName: "platform_response", dbType: NpgsqlDbType.Jsonb)]
     public string? PlatformResponse { get; set; }
 
 

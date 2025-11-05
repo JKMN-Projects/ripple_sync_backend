@@ -1,4 +1,4 @@
-﻿using Npgsql;
+﻿using RippleSync.Application.Common;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Integrations;
@@ -8,7 +8,6 @@ using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.IntegrationRepository.Entities;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
-using RippleSync.Infrastructure.UnitOfWork;
 
 namespace RippleSync.Infrastructure.IntegrationRepository;
 internal class NpgsqlIntegrationRepository(IUnitOfWork uow) : BaseRepository(uow), IIntegrationRepository, IIntegrationQueries

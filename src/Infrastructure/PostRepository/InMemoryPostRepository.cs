@@ -81,7 +81,7 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         return posts;
     }
 
-    public async Task<PostEvent> UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken)
-        => postEvent;
+    public Task UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken) 
+        => Task.CompletedTask;
 }
 

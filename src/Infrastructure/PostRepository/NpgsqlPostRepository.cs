@@ -1,4 +1,4 @@
-﻿using Npgsql;
+﻿using RippleSync.Application.Common;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Posts;
@@ -7,7 +7,6 @@ using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.PostRepository.Entities;
-using RippleSync.Infrastructure.UnitOfWork;
 
 namespace RippleSync.Infrastructure.PostRepository;
 internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPostRepository, IPostQueries
@@ -125,7 +124,7 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
                 postEntity.ScheduledFor,
                 postMedias.Select(pme => PostMedia.Reconstitute(pme.Id, pme.ImageData)),
                 postEvents.Select(pee => PostEvent.Reconstitute(pee.PostId, pee.UserPlatformIntegrationId, (PostStatus)pee.PostStatusId, pee.PlatformPostIdentifier, pee.PlatformResponse))
-                );
+            );
         }
         catch (Exception e)
         {
@@ -176,7 +175,7 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
             if (rowsAffected <= 0)
                 throw new RepositoryException("No rows were affected on post insert");
 
-            if (post.PostMedias.Any())
+            if (!post.PostMedias.NullOrEmpty())
             {
                 var postMediasEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
 
@@ -186,7 +185,7 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
                     throw new RepositoryException("No rows were affected on PostMedias insert");
             }
 
-            if (post.PostEvents.Any())
+            if (!post.PostEvents.NullOrEmpty())
             {
                 var postEventsEntities = post.PostEvents.Select(pe => new PostEventEntity(post.Id, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
 
@@ -212,14 +211,14 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
         {
             int rowsAffected = await Connection.UpdateAsync(postEntity, trans: Transaction, ct: cancellationToken);
 
-            if (post.PostMedias.Any())
+            if (!post.PostMedias.NullOrEmpty())
             {
                 var postMediasEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
 
                 rowsAffected += await Connection.UpdateAsync(postMediaEntities, trans: Transaction, ct: cancellationToken);
             }
 
-            if (post.PostEvents.Any())
+            if (!post.PostEvents.NullOrEmpty())
             {
                 var postEventsEntities = post.PostEvents.Select(pe => new PostEventEntity(post.Id, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
 
@@ -252,7 +251,7 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
         }
     }
 
-    public async Task<PostEvent> UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken = default)
+    public Task UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken = default)
         => throw new NotImplementedException();
 
     private async Task<IEnumerable<Post>> GetMediaAndEventsForPosts(IEnumerable<PostEntity> postEntities, CancellationToken cancellationToken = default)

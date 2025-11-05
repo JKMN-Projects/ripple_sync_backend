@@ -1,9 +1,9 @@
-﻿using RippleSync.Application.Common.Repositories;
+﻿using RippleSync.Application.Common;
+using RippleSync.Application.Common.Repositories;
 using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
-using RippleSync.Infrastructure.UnitOfWork;
 using RippleSync.Infrastructure.UserRepository.Entities;
 
 namespace RippleSync.Infrastructure.UserRepository;

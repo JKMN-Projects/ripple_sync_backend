@@ -1,7 +1,7 @@
 ﻿using Infrastructure.FakePlatform;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
+using RippleSync.Application.Common;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
@@ -45,6 +45,8 @@ public static class DependencyInjection
         services.AddKeyedSingleton<ISoMePlatform, SoMePlatformThreads>(Platform.Threads);
         services.AddKeyedSingleton<ISoMePlatform, SoMePlatformFake>(Platform.FakePlatform);
 
+        services.AddScoped<IUnitOfWork>(sp => new NpgsqlUnitOfWork(connectionString));
+
         bool inMemory = false;
         if (inMemory)
         {
@@ -58,8 +60,6 @@ public static class DependencyInjection
         }
         else
         {
-            services.AddScoped<IUnitOfWork>(sp => new NpgsqlUnitOfWork(connectionString));
-
             services.AddScoped<IPlatformQueries, NpgsqlPlatformRepository>();
             services.AddScoped<IIntegrationQueries, NpgsqlIntegrationRepository>();
             services.AddScoped<IPostQueries, NpgsqlPostRepository>();

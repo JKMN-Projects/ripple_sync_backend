@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using RippleSync.Application.Common;
 using System.Data;
 
 namespace RippleSync.Infrastructure.UnitOfWork;
@@ -10,13 +11,15 @@ internal class NpgsqlUnitOfWork : IDisposable, IUnitOfWork
 
     private bool _transactionManaged;
 
+    private bool _transactionFromBiggerScope;
+
     public NpgsqlUnitOfWork(string connectionString)
     {
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
         _dataSource = dataSourceBuilder.Build();
     }
 
-    public NpgsqlConnection Connection
+    public IDbConnection Connection
     {
         get
         {
@@ -34,36 +37,43 @@ internal class NpgsqlUnitOfWork : IDisposable, IUnitOfWork
         }
     }
 
-    public NpgsqlTransaction? Transaction { get; private set; }
+    public IDbTransaction? Transaction { get; private set; }
 
-    public async Task BeginTransactionAsync()
+    public void BeginTransaction()
     {
         if (Transaction != null)
-            throw new InvalidOperationException("Transaction already active");
-
-        Transaction = await Connection.BeginTransactionAsync();
+        {
+            _transactionFromBiggerScope = true;
+        }
+        else
+        {
+            Transaction = Connection.BeginTransaction();
+        }
     }
 
-    public async Task CommitAsync()
+    public void Save()
     {
         if (Transaction == null)
             throw new InvalidOperationException("No active transaction");
 
-        await Transaction.CommitAsync();
-        _transactionManaged = true;
-        await Transaction.DisposeAsync();
+        if(!_transactionFromBiggerScope)
+        {
+            Transaction.Commit();
+            _transactionManaged = true;
+            Transaction.Dispose();
 
-        Transaction = null;
+            Transaction = null;
+        }
     }
 
-    public async Task RollbackAsync()
+    public void Cancel()
     {
         if (Transaction == null)
             throw new InvalidOperationException("No active transaction");
 
-        await Transaction.RollbackAsync();
+        Transaction.Rollback();
         _transactionManaged = true;
-        await Transaction.DisposeAsync();
+        Transaction.Dispose();
 
         Transaction = null;
     }

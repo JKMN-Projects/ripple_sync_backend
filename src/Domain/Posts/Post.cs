@@ -29,7 +29,7 @@ public class Post
 
     public static Post Create(Guid userId, string messageContent, DateTime? scheduledFor, IEnumerable<PostMedia> postMedias, IEnumerable<PostEvent> postsEvents)
     {
-        if (scheduledFor != null && postsEvents.Any() is false)
+        if (scheduledFor != null && !postsEvents.Any())
             throw new ScheduledWithNoPostEventsException();
         else if (scheduledFor is null && postsEvents.Any())
             throw new DraftWithPostEventsException();
