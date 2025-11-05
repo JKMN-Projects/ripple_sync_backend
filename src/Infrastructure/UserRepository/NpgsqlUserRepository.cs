@@ -20,6 +20,6 @@ internal sealed class NpgsqlUserRepository(NpgsqlConnection dbConnection)
             ExceptionFactory.ThrowRepositoryException(this.GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
 
-        return userEntity == null ? null : User.Reconstitute(userEntity.Id, userEntity.Email, userEntity.PasswordHash, userEntity.Salt);
+        return userEntity == null ? null : User.Reconstitute(userEntity.Id, userEntity.Email, userEntity.PasswordHash, userEntity.Salt, null);
     }
 }

@@ -8,17 +8,10 @@ using RippleSync.Application.Users.Exceptions;
 namespace RippleSync.API.Authentication;
 [Route("api/[controller]")]
 [ApiController]
-public sealed class AuthenticationController : ControllerBase
+public sealed class AuthenticationController(
+    ILogger<AuthenticationController> logger, 
+    UserManager userManager) : ControllerBase
 {
-    private readonly ILogger<AuthenticationController> _logger;
-    private readonly UserManager _userManager;
-
-    public AuthenticationController(ILogger<AuthenticationController> logger, UserManager userManager)
-    {
-        _logger = logger;
-        _userManager = userManager;
-    }
-
     [HttpPost("[action]")]
     [AllowAnonymous]
     [ProducesResponseType<AuthenticationTokenResponse>(StatusCodes.Status200OK)]
@@ -32,28 +25,23 @@ public sealed class AuthenticationController : ControllerBase
 
         try
         {
-            AuthenticationTokenResponse tokenResponse = await _userManager.GetAuthenticationTokenAsync(request.Email, request.Password, cancellationToken);
-            HttpContext.Response.Cookies.Append("AccessToken", tokenResponse.Token, new CookieOptions
-            {
-                //Expires = DateTimeOffset.FromUnixTimeMilliseconds(tokenResponse.ExpiresAt).UtcDateTime,
-                IsEssential = true,
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None
-            });
-
-            AuthenticationResponse response = new AuthenticationResponse(request.Email, tokenResponse.ExpiresAt);
+            AuthenticationTokenResponse tokenResponse = await userManager.GetAuthenticationTokenAsync(request.Email, request.Password, cancellationToken);
+            SetAccessTokenCookie(tokenResponse.Token, tokenResponse.ExpiresAt);
+            AuthenticationResponse response = new AuthenticationResponse(
+                tokenResponse.RefreshToken,
+                request.Email, 
+                tokenResponse.ExpiresAt);
 
             return Ok(response);
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Failed login attempt with email {Email}.", request.Email);
+            logger.LogWarning(ex, "Failed login attempt with email {Email}.", request.Email);
             return safeResult;
         }
         catch (EntityNotFoundException)
         {
-            _logger.LogInformation("Failed login attempt with email {Email}. No user with that email.", request.Email);
+            logger.LogInformation("Failed login attempt with email {Email}. No user with that email.", request.Email);
             return safeResult;
         }
     }
@@ -66,7 +54,7 @@ public sealed class AuthenticationController : ControllerBase
     {
         try
         {
-            await _userManager.RegisterUserAsync(request.Email, request.Password, cancellationToken);
+            await userManager.RegisterUserAsync(request.Email, request.Password, cancellationToken);
             return Created();
         }
         catch (EmailAlreadyInUseException ex)
@@ -83,7 +71,7 @@ public sealed class AuthenticationController : ControllerBase
                         }
                     }
                 });
-            _logger.LogInformation("Failed register attempt with email {Email}. Email already in use.", request.Email);
+            logger.LogInformation("Failed register attempt with email {Email}. Email already in use.", request.Email);
             return result;
         }
         catch (ArgumentException ex)
@@ -110,18 +98,62 @@ public sealed class AuthenticationController : ControllerBase
             switch (ex.ParamName)
             {
                 case "email":
-                    _logger.LogWarning(ex, "Failed register attempt with email {Email}. Invalid email was supplied.", request.Email);
+                    logger.LogWarning(ex, "Failed register attempt with email {Email}. Invalid email was supplied.", request.Email);
                     break;
                 case "password":
-                    _logger.LogWarning(ex, "Failed register attempt with email {Email}. Invalid password was supplied.", request.Email);
+                    logger.LogWarning(ex, "Failed register attempt with email {Email}. Invalid password was supplied.", request.Email);
                     break;
                 default:
-                    _logger.LogWarning(ex, "Failed register attempt with email {Email}.", request.Email);
+                    logger.LogWarning(ex, "Failed register attempt with email {Email}.", request.Email);
                     break;
             }
             return result;
         }
     }
+
+    [HttpPost("[action]")]
+    [AllowAnonymous]
+    [ProducesResponseType<AuthenticationResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+    {
+        var safeResult = Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Invalid request.",
+                detail: "Invalid refresh token.");
+        try
+        {
+            AuthenticationTokenResponse tokenResponse = await userManager.RefreshAuthenticationTokenAsync(request.RefreshToken);
+            SetAccessTokenCookie(tokenResponse.Token, tokenResponse.ExpiresAt);
+            string userEmail = tokenResponse.Claims.FindEmail()
+                ?? throw new InvalidOperationException("Email claim not found.");
+            AuthenticationResponse response = new AuthenticationResponse(
+                tokenResponse.RefreshToken,
+                userEmail,
+                tokenResponse.ExpiresAt);
+            return Ok(response);
+        }
+        catch (ArgumentException ex)
+        {
+            logger.LogWarning(ex, "Failed token refresh attempt. Invalid refresh token was supplied.");
+            ClearAccessTokenCookie();
+            return safeResult;
+        }
+        catch (EntityNotFoundException)
+        {
+            logger.LogInformation("Failed token refresh attempt. No user found for the supplied refresh token.");
+            return safeResult;
+        }
+    }
+
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public IActionResult Logout()
+    {
+        ClearAccessTokenCookie();
+        return NoContent();
+    }
+
 
     [HttpDelete("user")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -130,8 +162,24 @@ public sealed class AuthenticationController : ControllerBase
     {
         Guid userId = User.GetUserId();
 
-        await _userManager.DeleteUserAsync(userId);
+        await userManager.DeleteUserAsync(userId);
+        ClearAccessTokenCookie();
 
         return NoContent();
     }
+
+    private void SetAccessTokenCookie(string token, long expiresAt)
+    {
+        HttpContext.Response.Cookies.Append("AccessToken", token, new CookieOptions
+        {
+            //Expires = DateTimeOffset.FromUnixTimeMilliseconds(expiresAt).UtcDateTime,
+            IsEssential = true,
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
+    }
+
+    private void ClearAccessTokenCookie()
+        => HttpContext.Response.Cookies.Delete("AccessToken");
 }
