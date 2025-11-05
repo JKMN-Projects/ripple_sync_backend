@@ -48,7 +48,10 @@ public static partial class NpgsqlExtensions
             using var reader = await cmd.ExecuteReaderAsync(ct);
             while (await reader.ReadAsync(ct))
             {
-                dbValues.Add(ReadRow(reader, parameters, nameBehavior));
+                var row = ReadRow(reader, parameters, nameBehavior);
+
+                if (!row.All(v => v == null || v == DBNull.Value))
+                    dbValues.Add(row);
             }
         }
         catch (Exception e)
@@ -89,6 +92,9 @@ public static partial class NpgsqlExtensions
         }
         catch (Exception e)
         { throw new QueryException("Querying to class error", query, e); }
+
+        if (dbValues.All(v => v == null || v == DBNull.Value))
+            return default;
 
         return (T)constructor.Invoke(dbValues);
     }
@@ -191,7 +197,10 @@ public static partial class NpgsqlExtensions
     /// <param name="ct">Cancellation token</param>
     /// <returns>Number of affected rows</returns>
     public static async Task<int> InsertAsync<T>(this NpgsqlConnection conn, T data, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", CancellationToken ct = default)
-        => await conn.InsertAsync(new[] { data }, trans, overwriteSchemaName, overwriteTableName, ct);
+    {
+        IEnumerable<T> collection = [data];
+        return await conn.InsertAsync(collection, trans, overwriteSchemaName, overwriteTableName, ct);
+    }
 
     /// <summary>
     /// Inserts multiple records into the database table corresponding to Type T.
@@ -279,7 +288,10 @@ public static partial class NpgsqlExtensions
     /// <param name="ct"></param>
     /// <returns>the number of affected rows</returns>
     public static async Task<int> UpdateAsync<T>(this NpgsqlConnection conn, T data, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", WhereJoiner joiner = WhereJoiner.AND, CancellationToken ct = default)
-        => await conn.UpdateAsync(new[] { data }, trans, overwriteSchemaName, overwriteTableName, joiner, ct);
+    {
+        IEnumerable<T> collection = [data];
+        return await conn.UpdateAsync(collection, trans, overwriteSchemaName, overwriteTableName, joiner, ct);
+    }
 
     /// <summary>
     /// update multiple records in the database table corresponding to Type T.
@@ -298,7 +310,7 @@ public static partial class NpgsqlExtensions
     /// <returns>the number of affected rows</returns>
     public static async Task<int> UpdateAsync<T>(this NpgsqlConnection conn, IEnumerable<T> datas, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", WhereJoiner joiner = WhereJoiner.AND, CancellationToken ct = default)
     {
-        if (datas == null || datas.Any())
+        if (datas == null || !datas.Any())
             return 0;
 
         var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
@@ -385,7 +397,10 @@ public static partial class NpgsqlExtensions
     /// <returns>Number of affected rows</returns>
     /// <exception cref="InvalidOperationException">If no <see cref="UpdateAction.Where"/> were defined on Type T</exception>
     public static async Task<int> RemoveAsync<T>(this NpgsqlConnection conn, T data, NpgsqlTransaction? trans = null, string overwriteSchemaName = "", string overwriteTableName = "", WhereJoiner joiner = WhereJoiner.AND, CancellationToken ct = default)
-        => await conn.RemoveAsync(new[] { data }, trans, overwriteSchemaName, overwriteTableName, joiner, ct);
+    {
+        IEnumerable<T> collection = [data];
+        return await conn.RemoveAsync(collection, trans, overwriteSchemaName, overwriteTableName, joiner, ct);
+    }
 
     /// <summary>
     /// Removes multiple records from the database table corresponding to Type T.
@@ -660,7 +675,7 @@ public static partial class NpgsqlExtensions
 
                 var parameter = new NpgsqlParameter(paramName, paramValue)
                 {
-                    NpgsqlDbType = GetNpgsqlDbType(underlyingType ?? type)
+                    NpgsqlDbType = GetNpgsqlDbType(underlyingType ?? type, dataValue)
                 };
 
                 cmd.Parameters.Add(parameter);
@@ -705,9 +720,18 @@ public static partial class NpgsqlExtensions
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    private static NpgsqlDbType GetNpgsqlDbType(Type type)
+    private static NpgsqlDbType GetNpgsqlDbType(Type type, object? value = null)
     {
         var actualType = Nullable.GetUnderlyingType(type) ?? type;
+
+#pragma warning disable IDE0046 // Convert to conditional expression
+        if (actualType == typeof(DateTime) && value is DateTime dt)
+        {
+            return dt.Kind == DateTimeKind.Unspecified
+                ? NpgsqlDbType.Timestamp
+                : NpgsqlDbType.TimestampTz;
+        }
+#pragma warning restore IDE0046 // Convert to conditional expression
 
         return actualType switch
         {
@@ -719,7 +743,7 @@ public static partial class NpgsqlExtensions
             var t when t == typeof(decimal) => NpgsqlDbType.Numeric,
             var t when t == typeof(double) => NpgsqlDbType.Double,
             var t when t == typeof(float) => NpgsqlDbType.Real,
-            var t when t == typeof(DateTime) => NpgsqlDbType.Timestamp,
+            var t when t == typeof(DateTime) => NpgsqlDbType.TimestampTz, // Default to TimestampTz
             var t when t == typeof(DateTimeOffset) => NpgsqlDbType.TimestampTz,
             var t when t == typeof(TimeSpan) => NpgsqlDbType.Interval,
             var t when t == typeof(Guid) => NpgsqlDbType.Uuid,

@@ -1,35 +1,36 @@
 ﻿using Npgsql;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Platforms;
+using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.PlatformRepository.Entities;
+using RippleSync.Infrastructure.UnitOfWork;
 
 namespace RippleSync.Infrastructure.PlatformRepository;
 
-internal class NpgsqlPlatformRepository(
-    NpgsqlConnection dbConnection) : IPlatformQueries
+internal class NpgsqlPlatformRepository(IUnitOfWork uow) : BaseRepository(uow), IPlatformQueries
 {
     public async Task<IEnumerable<PlatformWithUserIntegrationResponse>> GetPlatformsWithUserIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var getPlatformsQuery =
             @"SELECT 
                 p.id,
-                p.platform_name
+                p.platform_name,
                 CASE WHEN upi.id IS NOT NULL THEN true ELSE false END AS connected,
-                p.platform_description
+                p.platform_description,
                 p.image_data
             FROM platform p
             LEFT JOIN user_platform_integration upi 
                 ON p.id = upi.platform_id 
-                AND upi.user_account_id = @userId
+                AND upi.user_account_id = @UserId
             ORDER BY p.platform_name;";
 
         IEnumerable<PlatformIntegrationResponseEntity> platformEntities = [];
 
         try
         {
-            platformEntities = await dbConnection.QueryAsync<PlatformIntegrationResponseEntity>(getPlatformsQuery, param: new { userId }, ct: cancellationToken);
+            platformEntities = await Connection.QueryAsync<PlatformIntegrationResponseEntity>(getPlatformsQuery, param: new { UserId = userId }, trans: Transaction, ct: cancellationToken);
         }
         catch (Exception e)
         {

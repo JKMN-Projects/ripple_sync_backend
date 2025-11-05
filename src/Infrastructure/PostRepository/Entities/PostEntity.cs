@@ -23,8 +23,8 @@ internal class PostEntity
     public DateTime? ScheduledFor { get; set; }
 
 
-    [SqlConstructor("ripple_sync", "post")]
-    internal PostEntity(Guid id, Guid user_account_id, string message_content, DateTime submitted_at, DateTime? updated_at, DateTime? scheduled_for)
+    [SqlConstructor(tableName: "post")]
+    public PostEntity(Guid id, Guid user_account_id, string message_content, DateTime submitted_at, DateTime? updated_at, DateTime? scheduled_for)
     {
         Id = id;
         UserAccountId = user_account_id;

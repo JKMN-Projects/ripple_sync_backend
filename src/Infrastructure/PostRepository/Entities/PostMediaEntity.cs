@@ -14,8 +14,8 @@ internal class PostMediaEntity
     public string ImageData { get; set; }
 
 
-    [SqlConstructor("ripple_sync", "post_media")]
-    internal PostMediaEntity(Guid id, Guid post_id, string image_data)
+    [SqlConstructor(tableName: "post_media")]
+    public PostMediaEntity(Guid id, Guid post_id, string image_data)
     {
         Id = id;
         PostId = post_id;

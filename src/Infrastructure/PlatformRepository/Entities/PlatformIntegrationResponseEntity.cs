@@ -16,8 +16,8 @@ internal class PlatformIntegrationResponseEntity
     public string ImageData { get; set; }
 
 
-    [SqlConstructor("ripple_sync")]
-    internal PlatformIntegrationResponseEntity(int id, string platform_name, string platform_description, bool connected, string image_data)
+    [SqlConstructor()]
+    public PlatformIntegrationResponseEntity(int id, string platform_name, string platform_description, bool connected, string image_data)
     {
         Id = id;
         Name = platform_name;

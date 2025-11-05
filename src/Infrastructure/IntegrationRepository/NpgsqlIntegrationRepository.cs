@@ -4,12 +4,14 @@ using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Integrations;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
+using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.IntegrationRepository.Entities;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
+using RippleSync.Infrastructure.UnitOfWork;
 
 namespace RippleSync.Infrastructure.IntegrationRepository;
-internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IIntegrationRepository, IIntegrationQueries
+internal class NpgsqlIntegrationRepository(IUnitOfWork uow) : BaseRepository(uow), IIntegrationRepository, IIntegrationQueries
 {
     public async Task<IEnumerable<ConnectedIntegrationsResponse>> GetConnectedIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
@@ -27,7 +29,7 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
 
         try
         {
-            connectedIntegrationEntities = await dbConnection.QueryAsync<ConnectedIntegrationEntity>(getConnectedIntegrationsQuery, param: new { UserId = userId }, ct: cancellationToken);
+            connectedIntegrationEntities = await Connection.QueryAsync<ConnectedIntegrationEntity>(getConnectedIntegrationsQuery, param: new { UserId = userId }, trans: Transaction, ct: cancellationToken);
         }
         catch (Exception e)
         {
@@ -43,7 +45,7 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
 
         try
         {
-            integrations = await dbConnection.SelectAsync<UserPlatformIntegrationEntity>("id = ANY(@IntegrationIds)", param: new { IntegrationIds = integrationIds }, ct: cancellationToken);
+            integrations = await Connection.SelectAsync<UserPlatformIntegrationEntity>("id = ANY(@IntegrationIds)", param: new { IntegrationIds = integrationIds }, ct: cancellationToken);
         }
         catch (Exception e)
         {
@@ -60,7 +62,7 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
 
         try
         {
-            integrations = await dbConnection.SelectAsync<UserPlatformIntegrationEntity>("user_account_id = @UserId", param: new { UserId = userId }, ct: cancellationToken);
+            integrations = await Connection.SelectAsync<UserPlatformIntegrationEntity>("user_account_id = @UserId", param: new { UserId = userId }, ct: cancellationToken);
         }
         catch (Exception e)
         {
@@ -71,14 +73,14 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
     }
     public async Task CreateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        var userPlatformIntegration = UserPlatformIntegrationEntity.New(integration.UserId, (int)integration.Platform, integration.AccessToken, integration.RefreshToken, integration.ExpiresAt, integration.TokenType, integration.Scope);
+        var userPlatformIntegration = new UserPlatformIntegrationEntity(integration.Id, integration.UserId, (int)integration.Platform, integration.AccessToken, integration.RefreshToken, integration.ExpiresAt, integration.TokenType, integration.Scope);
 
         try
         {
-            int rowsAffected = await dbConnection.InsertAsync(userPlatformIntegration, ct: cancellationToken);
+            int rowsAffected = await Connection.InsertAsync(userPlatformIntegration, trans: Transaction, ct: cancellationToken);
 
             if (rowsAffected <= 0)
-                throw new RepositoryException("No rows were affected");
+                throw new RepositoryException("No rows were affected on integration insert");
         }
         catch (Exception e)
         {
@@ -88,14 +90,14 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
 
     public async Task UpdateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        var userPlatformIntegration = UserPlatformIntegrationEntity.New(integration.UserId, (int)integration.Platform, integration.AccessToken, integration.RefreshToken, integration.ExpiresAt, integration.TokenType, integration.Scope);
+        var userPlatformIntegration = new UserPlatformIntegrationEntity(integration.Id, integration.UserId, (int)integration.Platform, integration.AccessToken, integration.RefreshToken, integration.ExpiresAt, integration.TokenType, integration.Scope);
 
         try
         {
-            int rowsAffected = await dbConnection.UpdateAsync(userPlatformIntegration, ct: cancellationToken);
+            int rowsAffected = await Connection.UpdateAsync(userPlatformIntegration, trans: Transaction, ct: cancellationToken);
 
             if (rowsAffected <= 0)
-                throw new RepositoryException("No rows were affected");
+                throw new RepositoryException("No rows were affected on integration update");
         }
         catch (Exception e)
         {
@@ -109,10 +111,10 @@ internal class NpgsqlIntegrationRepository(NpgsqlConnection dbConnection) : IInt
 
         try
         {
-            int rowsAffected = await dbConnection.RemoveAsync(userPlatformIntegration, ct: cancellationToken);
+            int rowsAffected = await Connection.RemoveAsync(userPlatformIntegration, trans: Transaction, ct: cancellationToken);
 
             if (rowsAffected <= 0)
-                throw new RepositoryException("No rows were affected");
+                throw new RepositoryException("No rows were affected on integration remove");
         }
         catch (Exception e)
         {
