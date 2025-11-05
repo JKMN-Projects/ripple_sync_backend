@@ -10,20 +10,15 @@ namespace RippleSync.API.Posts;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public partial class PostsController : ControllerBase
+public partial class PostsController(PostManager postManager) : ControllerBase
 {
-    private readonly PostManager _postManager;
-    public PostsController(PostManager postManager)
-    {
-        _postManager = postManager;
-    }
     [HttpGet("byUser")]
     [ProducesResponseType<ListResponse<GetPostsByUserResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPostsByUser([FromQuery] string? status = default, CancellationToken cancellationToken = default)
     {
         Guid userId = User.GetUserId();
 
-        var response = await _postManager.GetPostsByUserAsync(userId, status, cancellationToken);
+        var response = await postManager.GetPostsByUserAsync(userId, status, cancellationToken);
 
         return Ok(response);
     }
@@ -33,7 +28,7 @@ public partial class PostsController : ControllerBase
     public async Task<IActionResult> GetImage(Guid id)
     {
         // Retrieve the base64 string from your database/service
-        string? base64Image = await _postManager.GetImageByIdAsync(id);
+        string? base64Image = await postManager.GetImageByIdAsync(id);
 
         if (string.IsNullOrWhiteSpace(base64Image))
         {
@@ -55,7 +50,7 @@ public partial class PostsController : ControllerBase
 
         try
         {
-            await _postManager.CreatePostAsync(userId,
+            await postManager.CreatePostAsync(userId,
                     request.MessageContent,
                     request.Timestamp,
                     mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
@@ -103,7 +98,7 @@ public partial class PostsController : ControllerBase
     {
         var mediaAttachments = await ExtractFilesToBase64(request.Files);
 
-        await _postManager.UpdatePostAsync(
+        await postManager.UpdatePostAsync(
                 User.GetUserId(),
                 request.PostId ?? new Guid(),
                 request.MessageContent,
@@ -140,7 +135,7 @@ public partial class PostsController : ControllerBase
     {
         Guid userId = User.GetUserId();
 
-        await _postManager.DeletePostByIdAsync(userId, postId, cancellationToken);
+        await postManager.DeletePostByIdAsync(userId, postId, cancellationToken);
 
         return NoContent();
 
