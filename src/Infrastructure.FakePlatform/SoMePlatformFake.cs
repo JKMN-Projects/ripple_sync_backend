@@ -1,15 +1,25 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
+using System.ComponentModel.DataAnnotations;
 
 namespace Infrastructure.FakePlatform;
-
-public class SoMePlatformFake : ISoMePlatform
+public class FakePlatformOptions
 {
+    [Required]
+    public string UrlBase { get; set; }
+}
+
+
+public class SoMePlatformFake(IOptions<FakePlatformOptions> options) : ISoMePlatform
+{
+    private FakePlatformOptions Options => options.Value;
+
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfigs)
     {
-        var urlBase = "https://localhost:7275/api/oauth/callback";
+        var urlBase = Options.UrlBase + "/api/oauth/callback";
         var queryString = new QueryString()
             .Add("state", authConfigs.State)
             .Add("code", "fake_code");
@@ -18,7 +28,7 @@ public class SoMePlatformFake : ISoMePlatform
 
     public HttpRequestMessage GetTokenRequest(TokenAccessConfiguration tokenConfigs)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://localhost:7275/api/fakeoauth/token");
+        var request = new HttpRequestMessage(HttpMethod.Post, Options.UrlBase + "/api/fakeoauth/token");
         return request;
     }
 
