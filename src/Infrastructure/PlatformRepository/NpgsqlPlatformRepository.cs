@@ -10,8 +10,21 @@ namespace RippleSync.Infrastructure.PlatformRepository;
 
 internal class NpgsqlPlatformRepository(IUnitOfWork uow) : BaseRepository(uow), IPlatformQueries
 {
-    public Task<IEnumerable<PlatformResponse>> GetAllPlatformsAsync(CancellationToken cancellationToken = default) 
-        => throw new NotImplementedException();
+    public Task<IEnumerable<PlatformResponse>> GetAllPlatformsAsync(CancellationToken cancellationToken = default)
+    {
+        IEnumerable<PlatformResponseEntity> platformEntities = [];
+
+        try
+        {
+            platformEntities = await Connection.QueryAsync<PlatformResponseEntity>("SELECT p.platform_name FROM platform p", trans: Transaction, ct: cancellationToken);
+        }
+        catch (Exception e)
+        {
+            ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
+        }
+
+        return platformEntities.Any() ? platformEntities.Select(i => new PlatformResponse(i.Name)) : [];
+    }
 
     public async Task<IEnumerable<PlatformWithUserIntegrationResponse>> GetPlatformsWithUserIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
     {

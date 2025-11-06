@@ -1,5 +1,4 @@
-﻿using RippleSync.Application.Common.Repositories;
-using RippleSync.Domain.Integrations;
+﻿using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
 using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.IntegrationRepository;
