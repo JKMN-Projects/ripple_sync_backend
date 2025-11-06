@@ -5,8 +5,10 @@ using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
 using RippleSync.Infrastructure.SoMePlatforms.X;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
@@ -53,28 +55,137 @@ internal class SoMePlatformLinkedIn(IOptions<LinkedInOptions> options, IEncrypti
             Likes: 0
         ));
     }
+    private class PublishPayload()
+    {
+        [JsonPropertyName("author")]
+        public string Author { get; set; }
+        [JsonPropertyName("commentary")]
+        public string Commentary { get; set; }
+        [JsonPropertyName("visibility")]
+        public string Visibility { get; set; } = "PUBLIC";
+        [JsonPropertyName("lifecycleState")]
+        public string LifecycleState { get; set; } = "PUBLISHED";
+        [JsonPropertyName("isReshareDisabledByAuthor")]
+        public bool IsReshareDisabledByAuthor { get; set; } = false;
+        [JsonPropertyName("distribution")]
+        public Distribution Distribution { get; set; } = new Distribution();
+        [JsonPropertyName("content")]
+        public Content Content { get; set; }
+
+    }
+    private partial class Distribution
+    {
+        [JsonPropertyName("feedDistribution")]
+        public string FeedDistribution { get; set; } = "MAIN_FEED";
+        [JsonPropertyName("targetEntities")]
+        public List<string> TargetEntities { get; set; } = new List<string>();
+        [JsonPropertyName("thirdPartyDistributionChannels")]
+        public List<string> ThirdPartyDistributionChannels { get; set; } = new List<string>();
+    }
+
+    private partial class Content
+    {
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("multiImage")]
+        public MultiImage MultiImage { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("media")]
+        public Media Media { get; set; }
+    }
+
+    private partial class MultiImage
+    {
+        [JsonPropertyName("images")]
+        public List<Media> Images { get; set; }
+    }
+    private partial class Media
+    {
+        [JsonPropertyName("altText")]
+        public string AltText { get; set; }
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+    }
+
     public async Task<PostEvent> PublishPostAsync(Post post, Integration integration)
     {
         var postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id)
             ?? throw new InvalidOperationException("PostEvent not found for the given integration.");
         var authorUrn = await GetLinkedInAuthorUrnAsync(integration);
-        //TODO: Implement LinkedIn post publishing
         var url = "https://api.linkedin.com/rest/posts";
-        var linkedInPayload = new
+
+        List<string> imageUrns = new List<string>();
+        if (post.PostMedias.Any())
         {
-            author = authorUrn,
-            commentary = post.MessageContent,
-            visibility = "PUBLIC",
-            distribution = new
+            foreach (var postMedia in post.PostMedias)
             {
-                feedDistribution = "MAIN_FEED",
-                targetEntities = new List<string>(),
-                thirdPartyDistributionChannels = new List<string>()
-            },
-            lifecycleState = "PUBLISHED",
-            isReshareDisabledByAuthor = false
+                var initResponse = await InitImage(integration);
+                await UploadImage(integration, postMedia.ImageData, initResponse.uploadUrl);
+                imageUrns.Add(initResponse.image);
+            }
+        }
+
+        //TODO: Create Payload class model
+        var publishPayload = new PublishPayload()
+        {
+            Author = authorUrn,
+            Commentary = post.MessageContent,
+            Visibility = "PUBLIC",
+            LifecycleState = "PUBLISHED",
+            IsReshareDisabledByAuthor = false,
+            Distribution = new Distribution()
+            {
+                FeedDistribution = "MAIN_FEED",
+                TargetEntities = new List<string>(),
+                ThirdPartyDistributionChannels = new List<string>()
+            }
         };
-        var jsonContent = JsonSerializer.Serialize(linkedInPayload);
+
+        //If single image append to media
+        if (imageUrns.Count == 1)
+        {
+            publishPayload.Content = new Content()
+            {
+                Media = new Media()
+                {
+                    AltText = "Uploaded Image",
+                    Id = imageUrns.First()
+                }
+            };
+        }
+        //If mutliple images append to multi image
+        if (imageUrns.Count > 1)
+        {
+            publishPayload.Content = new Content()
+            {
+                MultiImage = new MultiImage()
+                {
+                    Images = imageUrns.Select(urn => new Media()
+                    {
+                        AltText = "Uploaded Image",
+                        Id = urn
+                    }).ToList()
+                }
+            };
+
+        }
+
+
+        //var linkedInPayload = new
+        //{
+        //    author = authorUrn,
+        //    commentary = post.MessageContent,
+        //    visibility = "PUBLIC",
+        //    distribution = new
+        //    {
+        //        feedDistribution = "MAIN_FEED",
+        //        targetEntities = new List<string>(),
+        //        thirdPartyDistributionChannels = new List<string>()
+        //    },
+        //    lifecycleState = "PUBLISHED",
+        //    isReshareDisabledByAuthor = false
+        //};
+
+        var jsonContent = JsonSerializer.Serialize(publishPayload);
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
 
@@ -140,4 +251,56 @@ internal class SoMePlatformLinkedIn(IOptions<LinkedInOptions> options, IEncrypti
         [JsonPropertyName("email")]
         public string Email { get; set; }
     }
+    private async Task UploadImage(Integration integration, string base64Img, string url)
+    {
+
+        using var httpClient = new HttpClient();
+
+        // Set authorization header
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", encryptor.Decrypt(integration.AccessToken));
+        
+        var imageBytes = Convert.FromBase64String(base64Img);
+        using var content = new ByteArrayContent(imageBytes);
+        content.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+        content.Headers.Add("X-Restli-Protocol-Version", "2.0.0");
+        content.Headers.Add("Linkedin-Version", "202510");
+        var response = await httpClient.PutAsync(url, content);
+        var responseBody = await response.Content.ReadAsStringAsync();
+    }
+    private async Task<LinkedInMediaInitResponse> InitImage(Integration integration)
+    {
+        var initImagePayload = new
+        {
+            initializeUploadRequest = new
+            {
+                owner = await GetLinkedInAuthorUrnAsync(integration)
+            }
+        };
+
+        var jsonContent = JsonSerializer.Serialize(initImagePayload);
+        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.linkedin.com/rest/images?action=initializeUpload")
+        {
+            Content = content
+        };
+        request.Headers.Add("X-Restli-Protocol-Version", "2.0.0");
+        request.Headers.Add("Linkedin-Version", "202510");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            integration.TokenType,
+            encryptor.Decrypt(integration.AccessToken)
+        );
+
+        using var httpClient = new HttpClient();
+        var intitMediaContent = await httpClient.SendAsync(request);
+        var intitMediaContentResponse = await intitMediaContent.Content.ReadAsStringAsync();
+        InitMedia mediaResponse = null;
+        if (intitMediaContent.IsSuccessStatusCode)
+        {
+            mediaResponse = JsonSerializer.Deserialize<InitMedia>(intitMediaContentResponse);
+        }
+        return mediaResponse!.value;
+    }
+    record InitMedia(LinkedInMediaInitResponse value);
+    record LinkedInMediaInitResponse(string uploadUrl, string image);
 }

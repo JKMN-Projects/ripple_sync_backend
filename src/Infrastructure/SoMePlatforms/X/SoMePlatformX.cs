@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.VisualBasic;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
@@ -8,6 +9,7 @@ using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.X;
 
@@ -91,7 +93,6 @@ internal class SoMePlatformX(ILogger<SoMePlatformX> logger, IOptions<XOptions> o
 
             if (response.IsSuccessStatusCode)
             {
-                //TODO: Save url for the post
                 var postResponse = JsonSerializer.Deserialize<PostResponse>(responseContent);
                 postEvent.PlatformPostIdentifier = postResponse?.Data?.Id;
                 if (postEvent.PlatformPostIdentifier == null) logger.LogWarning("Platform Identification could not be found");
@@ -111,4 +112,5 @@ internal class SoMePlatformX(ILogger<SoMePlatformX> logger, IOptions<XOptions> o
     }
     private record PostResponse(PostResponseData Data);
     private record PostResponseData(string Id);
+   
 }
