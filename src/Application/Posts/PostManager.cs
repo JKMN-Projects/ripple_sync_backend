@@ -139,6 +139,7 @@ public class PostManager(
         // Then delete
         await postRepository.DeleteAsync(post, cancellationToken);
     }
+
     public async Task<IEnumerable<Post>> GetPostReadyToPublish(CancellationToken cancellationToken = default)
     {
         IEnumerable<Post> posts = await postRepository.GetPostsReadyToPublishAsync(cancellationToken);
@@ -150,7 +151,7 @@ public class PostManager(
     public async Task<PostEvent> UpdatePostEventAsync(PostEvent postEvent)
         => await postRepository.UpdatePostEventStatusAsync(postEvent);
 
-    public async Task ProcessPostEventAsync(Post post, CancellationToken cancellationToken)
+    public async Task ProcessPostAsync(Post post, CancellationToken cancellationToken)
     {
         logger.LogInformation(
             "Processing post: PostId={PostId}",

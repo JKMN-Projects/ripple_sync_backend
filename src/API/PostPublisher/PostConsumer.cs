@@ -16,7 +16,7 @@ public class PostConsumer(ILogger<PostConsumer> logger, IServiceProvider service
             {
                 using var serviceScope = serviceProvider.CreateScope();
                 var postManager = serviceScope.ServiceProvider.GetRequiredService<PostManager>();
-                await postManager.ProcessPostEventAsync(message, stoppingToken);
+                await postManager.ProcessPostAsync(message, stoppingToken);
             }
             catch (Exception ex)
             {
