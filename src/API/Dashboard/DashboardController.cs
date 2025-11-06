@@ -12,7 +12,7 @@ public class DashboardController(
     PostManager postManager) : ControllerBase
 {
     [HttpGet("total")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<TotalPostStatsResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetTotal([FromQuery] string period = "alltime")
     {
@@ -22,7 +22,7 @@ public class DashboardController(
             "alltime" => null,
             _ => null
         };
-        var stats = await postManager.GetPostStatForPeriodAsync(userId, fromDate);
+        TotalPostStatsResponse stats = await postManager.GetPostStatForPeriodAsync(userId, fromDate);
         return Ok(stats);
     }
 }

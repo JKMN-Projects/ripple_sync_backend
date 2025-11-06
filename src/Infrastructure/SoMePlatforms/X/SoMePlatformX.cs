@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Infrastructure.FakePlatform;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RippleSync.Application.Common.Security;
@@ -6,6 +7,7 @@ using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
 using RippleSync.Domain.Posts;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
@@ -91,8 +93,12 @@ internal class SoMePlatformX(
 
         if (!response.IsSuccessStatusCode)
         {
-            logger.LogWarning("Failed to retrieve insights for Integration ID {IntegrationId}. Response Status: {StatusCode}", integration.Id, response.StatusCode);
-            return PlatformStats.Empty;
+            string responseContent = await response.Content.ReadAsStringAsync();
+            logger.LogWarning("Failed to retrieve insights for Integration ID {IntegrationId}. Response Status: {StatusCode} - {ResponseContent}", 
+                integration.Id, response.StatusCode, responseContent);
+            return response.StatusCode == HttpStatusCode.TooManyRequests
+                ? await PostStatGenerator.CalculateAsync(integration, publishedPostsOnPlatform)
+                : PlatformStats.Empty;
         }
         var jsonObject = await response.Content.ReadFromJsonAsync<JsonObject>();
         if (jsonObject == null)

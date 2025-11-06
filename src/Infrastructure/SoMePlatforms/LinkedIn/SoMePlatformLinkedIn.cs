@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Infrastructure.FakePlatform;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
 using RippleSync.Infrastructure.SoMePlatforms.X;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -44,21 +46,15 @@ internal class SoMePlatformLinkedIn(IOptions<LinkedInOptions> options, IEncrypti
         };
     }
 
-    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration, IEnumerable<Post> publishedPostsOnPlatform)
-    {
-        return Task.FromResult(new PlatformStats(
-            PostCount: 0,
-            Reach: 0,
-            Engagement: 0,
-            Likes: 0
-        ));
-    }
+    public async Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration, IEnumerable<Post> publishedPostsOnPlatform)
+        => await PostStatGenerator.CalculateAsync(integration, publishedPostsOnPlatform);
+
     public async Task<PostEvent> PublishPostAsync(Post post, Integration integration)
     {
         var postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id)
             ?? throw new InvalidOperationException("PostEvent not found for the given integration.");
         var authorUrn = await GetLinkedInAuthorUrnAsync(integration);
-        //TODO: Implement LinkedIn post publishing
+
         var url = "https://api.linkedin.com/rest/posts";
         var linkedInPayload = new
         {
@@ -84,7 +80,7 @@ internal class SoMePlatformLinkedIn(IOptions<LinkedInOptions> options, IEncrypti
         };
         request.Headers.Add("X-Restli-Protocol-Version", "2.0.0");
         request.Headers.Add("Linkedin-Version", "202510");
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+        request.Headers.Authorization = new AuthenticationHeaderValue(
             "Bearer",
             encryptor.Decrypt(integration.AccessToken)
         );
