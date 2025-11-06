@@ -10,7 +10,7 @@ public partial class PostsController
 
         public long? Timestamp { get; set; }
 
-        public required List<Guid> IntegrationIds { get; set; }
+        public List<Guid>? IntegrationIds { get; set; }
 
         public List<IFormFile>? Files { get; set; }
     }

@@ -36,35 +36,6 @@ public partial class IntegrationsController(ILogger<IntegrationsController> logg
         return Ok(response);
     }
 
-    //[HttpPost("")]
-    //[ProducesResponseType(StatusCodes.Status201Created)]
-    //[ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    //public async Task<IActionResult> CreateIntegration([FromBody] CreateIntegrationRequest request)
-    //{
-    //    Guid userId = User.GetUserId();
-
-    //    /// FRONTEND SHOULD CALL ANOTHER ENDPOINT THAT STARTS THE OAUTH PROCESS
-    //    /// THEN OAUTH REDIRECT SHOULD HAPPEN 
-    //    /// OAUTH SHOULD THEN REDIRECT TO THIS ENDPOINT
-    //    /// OAUTH REQUEST SHOULD BE ABLE TO HOLD USERS ID 
-    //    /// THEN THIS ENDPOINT SHOULD RETURN A REDIRECT BACK TO INTEGRATION PAGE
-
-    //    try
-    //    {
-    //        await _integrationManager.CreateIntegrationWithEncryption(userId, request.PlatformId, request.AccessToken);
-
-    //        return Created();
-    //    }
-    //    catch (ArgumentNullException ex)
-    //    {
-    //        _logger.LogWarning(ex, "No accessToken defined");
-    //        return Problem(
-    //            statusCode: StatusCodes.Status400BadRequest,
-    //            title: "Invalid request.",
-    //            detail: "No AccessToken Defined"); ;
-    //    }
-    //}
-
     [HttpDelete("{platformId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]

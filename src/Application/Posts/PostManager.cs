@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.Extensions.Logging;
+using RippleSync.Application.Common;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
@@ -11,6 +12,7 @@ namespace RippleSync.Application.Posts;
 
 public class PostManager(
     ILogger<PostManager> logger,
+    IUnitOfWork unitOfWork,
     IPostRepository postRepository,
     IPostQueries postQueries,
     IIntegrationRepository integrationRepository,
@@ -67,19 +69,19 @@ public class PostManager(
     public async Task<string?> GetImageByIdAsync(Guid userId)
         => new(await postQueries.GetImageByIdAsync(userId));
 
-    public async Task CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
+    public async Task CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[]? integrationIds, CancellationToken cancellationToken = default)
     {
         DateTime? scheduledFor = timestamp.HasValue
             ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
             : null;
 
         var postMedias = mediaAttachments?
-            .Select(PostMedia.New)
-            .ToList();
+            .Select(PostMedia.Create)
+            .ToList() ?? [];
 
-        var postEvents = integrationIds
+        var postEvents = integrationIds?
             .Select(id => PostEvent.Create(id, scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft, "", new { }))
-            .ToList();
+            .ToList() ?? [];
 
         var post = Post.Create(
             userId,
@@ -89,10 +91,20 @@ public class PostManager(
             postEvents
         );
 
-        await postRepository.CreateAsync(post, cancellationToken);
+        unitOfWork.BeginTransaction();
+        try
+        {
+            await postRepository.CreateAsync(post, cancellationToken);
+            unitOfWork.Save();
+        }
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
+        }
     }
 
-    public async Task UpdatePostAsync(Guid userId, Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
+    public async Task UpdatePostAsync(Guid userId, Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[]? integrationIds, CancellationToken cancellationToken = default)
     {
         Post? post = await postRepository.GetByIdAsync(postId, cancellationToken);
 
@@ -108,19 +120,29 @@ public class PostManager(
             ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
             : null;
 
-        if (mediaAttachments != null)
-        {
-            post.PostMedias = [.. mediaAttachments.Select(PostMedia.New)];
-        }
+        post.PostMedias = mediaAttachments?
+            .Select(PostMedia.Create)
+            .ToList() ?? [];
 
-        if (integrationIds != null && integrationIds.Length > 0)
+        if (post.ScheduledFor.HasValue)
         {
-            post.PostEvents = [.. integrationIds.Select(id => PostEvent.Create(id, PostStatus.Scheduled, "", new { }))];
+            post.PostEvents = integrationIds?
+                .Select(id => PostEvent.Create(id, PostStatus.Scheduled, "", new { }))
+                .ToList() ?? [];
         }
 
         post.UpdatedAt = DateTime.UtcNow;
-
-        await postRepository.UpdateAsync(post, cancellationToken);
+        unitOfWork.BeginTransaction();
+        try
+        {
+            await postRepository.UpdateAsync(post, cancellationToken);
+            unitOfWork.Save();
+        }
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
+        }
     }
 
     public async Task DeletePostByIdAsync(Guid userId, Guid postId, CancellationToken cancellationToken = default)
@@ -133,24 +155,33 @@ public class PostManager(
         {
             throw new UnauthorizedException("Post does not belong to the user.");
         }
-        if (post.IsDeletable() is false)
+
+        if (!post.IsDeletable())
         {
             throw new InvalidOperationException("Post cannot be deleted in its current state.");
         }
 
         // Then delete
-        await postRepository.DeleteAsync(post, cancellationToken);
+        unitOfWork.BeginTransaction();
+        try
+        {
+            await postRepository.DeleteAsync(post, cancellationToken);
+            unitOfWork.Save();
+        }
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
+        }
     }
     public async Task<IEnumerable<Post>> GetPostReadyToPublish(CancellationToken cancellationToken = default)
     {
         IEnumerable<Post> posts = await postRepository.GetPostsReadyToPublishAsync(cancellationToken);
 
         IEnumerable<Post> postsReadyToPost = posts.Where(p => p.IsReadyToPublish());
-        return posts;
-    }
 
-    public async Task<PostEvent> UpdatePostEventAsync(PostEvent postEvent)
-        => await postRepository.UpdatePostEventStatusAsync(postEvent);
+        return postsReadyToPost;
+    }
 
     public async Task ProcessPostEventAsync(Post post, CancellationToken cancellationToken)
     {
@@ -161,7 +192,18 @@ public class PostManager(
         foreach (var postEvent in post.PostEvents)
         {
             postEvent.Status = PostStatus.Processing;
-            await UpdatePostEventAsync(postEvent);
+        }
+
+        unitOfWork.BeginTransaction();
+        try
+        {
+            await postRepository.UpdateAsync(post, cancellationToken);
+            unitOfWork.Save();
+        }
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
         }
 
         IEnumerable<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId);
@@ -176,16 +218,17 @@ public class PostManager(
                     post.Id,
                     integration.Platform);
             ISoMePlatform platform = platformFactory.Create(integration.Platform);
+
+            PostEvent? postEvent;
             try
             {
-                var responsePostEvent = await platform.PublishPostAsync(post, integration);
+                postEvent = await platform.PublishPostAsync(post, integration);
 
                 //If still processing, mark as posted
-                if (responsePostEvent.Status == PostStatus.Processing)
+                if (postEvent.Status == PostStatus.Processing)
                 {
-                    responsePostEvent.Status = PostStatus.Posted;
+                    postEvent.Status = PostStatus.Posted;
                 }
-                await UpdatePostEventAsync(responsePostEvent);
             }
             catch (Exception ex)
             {
@@ -194,14 +237,33 @@ public class PostManager(
                     integration.Platform,
                     ex.Message
                 );
-                var postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id);
-                postEvent!.Status = PostStatus.Failed;
-                await UpdatePostEventAsync(postEvent);
+                postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id);
+                if (postEvent != null)
+                {
+                    postEvent.Status = PostStatus.Failed;
+                }
+            }
+
+            if (postEvent != null)
+            {
+                post.PostEvents = [.. post.PostEvents.Select(pe => pe.UserPlatformIntegrationId == integration.Id ? postEvent : pe)];
             }
         }
+
+        unitOfWork.BeginTransaction();
+        try
+        {
+            await postRepository.UpdateAsync(post, cancellationToken);
+            unitOfWork.Save();
+        }
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
+        }
+
         logger.LogInformation(
             "Post has been published: PostId={PostId}",
             post.Id);
-
     }
 }

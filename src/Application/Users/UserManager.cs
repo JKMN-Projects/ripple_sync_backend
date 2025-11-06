@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.Extensions.Logging;
+using RippleSync.Application.Common;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
 using RippleSync.Application.Users.Exceptions;
@@ -11,6 +12,7 @@ namespace RippleSync.Application.Users;
 public sealed class UserManager(
     ILogger<UserManager> logger,
     TimeProvider timeProvider,
+    IUnitOfWork unitOfWork,
     IUserRepository userRepository,
     IIntegrationRepository integrationRepository,
     IPostRepository postRepository,
@@ -107,7 +109,18 @@ public sealed class UserManager(
             Convert.ToBase64String(userSalt)
         );
 
-        await userRepository.CreateAsync(newUser, cancellationToken);
+        unitOfWork.BeginTransaction();
+        try
+        {
+            await userRepository.CreateAsync(newUser, cancellationToken);
+            unitOfWork.Save();
+        }
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
+        }
+
         logger.LogInformation("User with email {Email} registered successfully", email);
     }
 
@@ -128,22 +141,35 @@ public sealed class UserManager(
         {
             throw EntityNotFoundException.ForEntity<User>(userId);
         }
-        // Anonymize user data
-        user.Anonymize();
-        await userRepository.UpdateAsync(user, cancellationToken);
 
-        var integrations = await integrationRepository.GetByUserIdAsync(userId, cancellationToken);
-        foreach (var integration in integrations)
+        unitOfWork.BeginTransaction();
+        try
         {
-            integration.Anonymize();
-            await integrationRepository.UpdateAsync(integration, cancellationToken);
+            // Anonymize user data
+            user.Anonymize();
+            await userRepository.UpdateAsync(user, cancellationToken);
+
+            var integrations = await integrationRepository.GetByUserIdAsync(userId, cancellationToken);
+            foreach (var integration in integrations)
+            {
+                integration.Anonymize();
+                await integrationRepository.UpdateAsync(integration, cancellationToken);
+            }
+            var posts = await postRepository.GetAllByUserIdAsync(userId, cancellationToken);
+            foreach (var post in posts)
+            {
+                post.Anonymize();
+                await postRepository.UpdateAsync(post, cancellationToken);
+            }
+
+            unitOfWork.Save();
         }
-        var posts = await postRepository.GetAllByUserIdAsync(userId, cancellationToken);
-        foreach (var post in posts)
+        catch (Exception)
         {
-            post.Anonymize();
-            await postRepository.UpdateAsync(post, cancellationToken);
+            unitOfWork.Cancel();
+            throw;
         }
+
         logger.LogInformation("User with ID {UserId} deleted successfully", userId);
     }
 
@@ -167,25 +193,38 @@ public sealed class UserManager(
             throw EntityNotFoundException.ForEntity<User>(refreshToken, nameof(User.RefreshToken));
         }
 
-        if (!user.VerifyRefreshToken(refreshToken, timeProvider))
+        unitOfWork.BeginTransaction();
+        try
         {
-            logger.LogWarning("Invalid or expired refresh token for user with ID {UserId}", user.Id);
+            if (!user.VerifyRefreshToken(refreshToken, timeProvider))
+            {
+                logger.LogWarning("Invalid or expired refresh token for user with ID {UserId}", user.Id);
+                await userRepository.UpdateAsync(user, cancellationToken);
+                throw new ArgumentException("Invalid or expired refresh token.", nameof(refreshToken));
+            }
+
+            AuthenticationToken token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
+            RefreshToken newRefreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
+            user.AddRefreshToken(newRefreshToken);
+
             await userRepository.UpdateAsync(user, cancellationToken);
-            throw new ArgumentException("Invalid or expired refresh token.", nameof(refreshToken));
+
+            unitOfWork.Save();
+
+            return new AuthenticationTokenResponse(
+                token.AccessToken,
+                token.TokenType,
+                token.ExpiresInMilliSeconds,
+                newRefreshToken.Value,
+                ((DateTimeOffset)newRefreshToken.ExpiresAt).ToUnixTimeMilliseconds(),
+                token.Claims
+            );
         }
-
-        AuthenticationToken token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
-        RefreshToken newRefreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
-        user.AddRefreshToken(newRefreshToken);
-        await userRepository.UpdateAsync(user, cancellationToken);
-
-        return new AuthenticationTokenResponse(
-            token.AccessToken,
-            token.TokenType,
-            token.ExpiresInMilliSeconds,
-            newRefreshToken.Value,
-            ((DateTimeOffset)newRefreshToken.ExpiresAt).ToUnixTimeMilliseconds(),
-            token.Claims);
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
+        }
     }
 }
 

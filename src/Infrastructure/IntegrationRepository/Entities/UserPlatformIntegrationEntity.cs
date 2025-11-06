@@ -25,8 +25,8 @@ internal class UserPlatformIntegrationEntity
     public string? Scope { get; set; }
 
 
-    [SqlConstructor("ripple_sync", "user_platform_integration")]
-    internal UserPlatformIntegrationEntity(Guid id, Guid user_account_id, int platform_id, string access_token, string? refresh_token, DateTime? expiration, string? token_type, string? scope)
+    [SqlConstructor(tableName: "user_platform_integration")]
+    public UserPlatformIntegrationEntity(Guid id, Guid user_account_id, int platform_id, string access_token, string? refresh_token, DateTime? expiration, string? token_type, string? scope)
     {
         Id = id;
         UserAccountId = user_account_id;
@@ -39,8 +39,5 @@ internal class UserPlatformIntegrationEntity
     }
 
     internal static UserPlatformIntegrationEntity New(Guid userAccountId, int platformId)
-        => New(userAccountId, platformId, "", null, null, null, null);
-
-    internal static UserPlatformIntegrationEntity New(Guid userAccountId, int platformId, string accessToken, string? refreshToken, DateTime? expiration, string? tokenType, string? scope)
-        => new(Guid.Empty, userAccountId, platformId, accessToken, refreshToken, expiration, tokenType, scope);
+        => new(Guid.Empty, userAccountId, platformId, "", null, null, null, null);
 }

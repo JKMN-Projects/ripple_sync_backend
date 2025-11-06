@@ -3,15 +3,13 @@ namespace RippleSync.Domain.Posts;
 
 public class PostEvent
 {
-    public Guid PostId { get; set; }
     public Guid UserPlatformIntegrationId { get; set; }
     public PostStatus Status { get; set; }
     public string? PlatformPostIdentifier { get; set; }
     public object? PlatformResponse { get; set; }
 
-    private PostEvent(Guid postId, Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
+    private PostEvent(Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
     {
-        PostId = postId;
         UserPlatformIntegrationId = userPlatformIntegrationId;
         Status = status;
         PlatformPostIdentifier = platformPostIdentifier;
@@ -21,7 +19,6 @@ public class PostEvent
     public static PostEvent Create(Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
     {
         return new PostEvent(
-            postId: Guid.NewGuid(),
             userPlatformIntegrationId: userPlatformIntegrationId,
             status: status,
             platformPostIdentifier: platformPostIdentifier,
@@ -29,10 +26,9 @@ public class PostEvent
         );
     }
 
-    public static PostEvent Reconstitute(Guid postId, Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
+    public static PostEvent Reconstitute(Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
     {
         return new PostEvent(
-            postId: postId,
             userPlatformIntegrationId: userPlatformIntegrationId,
             status: status,
             platformPostIdentifier: platformPostIdentifier,
