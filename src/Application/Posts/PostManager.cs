@@ -74,7 +74,7 @@ public class PostManager(
             : null;
 
         var postMedias = mediaAttachments?
-            .Select(PostMedia.New)
+            .Select(PostMedia.Create)
             .ToList() ?? [];
 
         var postEvents = integrationIds?
@@ -119,13 +119,13 @@ public class PostManager(
             : null;
 
         post.PostMedias = mediaAttachments?
-            .Select(PostMedia.New)
+            .Select(PostMedia.Create)
             .ToList() ?? [];
 
         if (post.ScheduledFor.HasValue)
         {
             post.PostEvents = integrationIds?
-                .Select(id => PostEvent.Create(id, PostStatus.Scheduled , "", new { }))
+                .Select(id => PostEvent.Create(id, PostStatus.Scheduled, "", new { }))
                 .ToList() ?? [];
         }
 

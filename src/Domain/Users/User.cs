@@ -80,11 +80,13 @@ public class User
 
         if (!isValid)
         {
-            RefreshToken = null;
+            RevokeRefreshToken();
         }
 
         return isValid;
     }
+
+    public void RevokeRefreshToken() => RefreshToken = null;
 
     public User Anonymize()
     {

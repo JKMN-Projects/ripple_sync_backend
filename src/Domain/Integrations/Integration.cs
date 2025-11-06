@@ -52,6 +52,7 @@ public class Integration
             scope: scope
         );
     }
+
     public Integration Anonymize()
     {
         AccessToken = string.Empty;
