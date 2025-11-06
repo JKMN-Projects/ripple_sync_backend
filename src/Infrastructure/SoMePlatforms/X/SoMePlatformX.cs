@@ -1,17 +1,25 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Infrastructure.FakePlatform;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
+using RippleSync.Domain.Platforms;
 using RippleSync.Domain.Posts;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.X;
 
-internal class SoMePlatformX(ILogger<SoMePlatformX> logger, IOptions<XOptions> options, IEncryptionService encryptor) : ISoMePlatform
+internal class SoMePlatformX(
+    ILogger<SoMePlatformX> logger,
+    IOptions<XOptions> options,
+    IEncryptionService encryptor) : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
     {
@@ -44,19 +52,81 @@ internal class SoMePlatformX(ILogger<SoMePlatformX> logger, IOptions<XOptions> o
 
         // Basic Auth header
         var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{options.Value.ClientId}:{options.Value.ClientSecret}"));
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
 
         return request;
     }
 
-    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration)
+    public async Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration, IEnumerable<Post> publishedPostsOnPlatform)
     {
-        return Task.FromResult(new PlatformStats(
-            PostCount: 0,
+        if (integration.Platform != Platform.X)
+            throw new ArgumentException($"Integration is for another platform. Expected Platform 'X'. Found '{integration.Platform}'.", nameof(integration));
+
+        var authHeader = new AuthenticationHeaderValue(
+            integration.TokenType,
+            encryptor.Decrypt(integration.AccessToken)
+        );
+        using var httpClient = new HttpClient();
+        IEnumerable<string> postIds = publishedPostsOnPlatform
+            .Where(post => post.PostEvents.Any(pe => pe.UserPlatformIntegrationId == integration.Id))
+            .Select(post => post.PostEvents.First(pe => pe.UserPlatformIntegrationId == integration.Id))
+            .Where(postEvent => postEvent?.Status == PostStatus.Posted)
+            .Where(postEvent => !string.IsNullOrEmpty(postEvent?.PlatformPostIdentifier))
+            .Select(postEvent => postEvent?.PlatformPostIdentifier!);
+
+        List<string> includedFields = [
+                "public_metrics",
+                "organic_metrics",
+                "non_public_metrics"
+            ];
+        QueryString queries = new QueryString()
+            .Add("ids", string.Join(',', postIds))
+            .Add("tweet.fields", string.Join(',', includedFields));
+
+        int postCount = 0;
+        int likes = 0;
+        int engagements = 0;
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.x.com/2/tweets" + queries.ToUriComponent());
+        request.Headers.Authorization = authHeader;
+        var response = await httpClient.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            string responseContent = await response.Content.ReadAsStringAsync();
+            logger.LogWarning("Failed to retrieve insights for Integration ID {IntegrationId}. Response Status: {StatusCode} - {ResponseContent}", 
+                integration.Id, response.StatusCode, responseContent);
+            return response.StatusCode == HttpStatusCode.TooManyRequests
+                ? await PostStatGenerator.CalculateAsync(integration, publishedPostsOnPlatform)
+                : PlatformStats.Empty;
+        }
+        var jsonObject = await response.Content.ReadFromJsonAsync<JsonObject>();
+        if (jsonObject == null)
+        {
+            logger.LogWarning("Received null JSON response for Integration ID {IntegrationId}.", integration.Id);
+            return PlatformStats.Empty;
+        }
+        JsonArray? dataArray = jsonObject["data"]?.AsArray();
+        if (dataArray == null)
+        {
+            logger.LogWarning("No data found in JSON response for Integration ID {IntegrationId}.", integration.Id);
+            return PlatformStats.Empty;
+        }
+
+        foreach (JsonNode? data in dataArray)
+        {
+            JsonObject tweet = data!.AsObject();
+            likes += tweet["public_metrics"]?["like_count"]?.GetValue<int>() ?? 0;
+            engagements += tweet["non_public_metrics"]?["engagements"]?.GetValue<int>() ?? 0;
+            postCount++;
+        }
+
+        return new PlatformStats(
+            PostCount: postCount,
             Reach: 0,
-            Engagement: 0,
-            Likes: 0
-        ));
+            Engagement: engagements,
+            Likes: likes
+        );
     }
 
     public async Task<PostEvent> PublishPostAsync(Post post, Integration integration)
@@ -79,8 +149,7 @@ internal class SoMePlatformX(ILogger<SoMePlatformX> logger, IOptions<XOptions> o
                 Content = content
             };
 
-
-            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+            request.Headers.Authorization = new AuthenticationHeaderValue(
                 integration.TokenType,
                 encryptor.Decrypt(integration.AccessToken)
             );
@@ -92,8 +161,8 @@ internal class SoMePlatformX(ILogger<SoMePlatformX> logger, IOptions<XOptions> o
             if (response.IsSuccessStatusCode)
             {
                 //TODO: Save url for the post
-                var postResponse = JsonSerializer.Deserialize<PostResponse>(responseContent);
-                postEvent.PlatformPostIdentifier = postResponse?.Data?.Id;
+                var jsonObject = JsonSerializer.Deserialize<JsonObject>(responseContent);
+                postEvent.PlatformPostIdentifier = jsonObject?["data"]?["id"]?.GetValue<string>();
                 if (postEvent.PlatformPostIdentifier == null) logger.LogWarning("Platform Identification could not be found");
                 postEvent.Status = PostStatus.Posted;
             }

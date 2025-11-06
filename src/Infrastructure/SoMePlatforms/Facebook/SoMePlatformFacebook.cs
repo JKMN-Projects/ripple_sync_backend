@@ -40,7 +40,7 @@ internal class SoMePlatformFacebook(IOptions<FacebookOptions> options) : ISoMePl
         };
     }
 
-    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration)
+    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration, IEnumerable<Post> publishedPostsOnPlatform)
     {
         return Task.FromResult(new PlatformStats(
             PostCount: 0,

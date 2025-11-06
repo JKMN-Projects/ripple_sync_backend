@@ -40,7 +40,7 @@ internal class SoMePlatformThreads(IOptions<ThreadsOptions> options) : ISoMePlat
         };
     }
 
-    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration)
+    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration, IEnumerable<Post> publishedPostsOnPlatform)
     {
         return Task.FromResult(new PlatformStats(
             PostCount: 0,
