@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using RippleSync.Application.Feedback;
 using RippleSync.Application.Integrations;
 using RippleSync.Application.OAuth;
 using RippleSync.Application.Posts;
@@ -14,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<IntegrationManager>();
         services.AddScoped<PostManager>();
         services.AddScoped<OAuthManager>();
+        services.AddScoped<FeedbackManager>();
 
         return services;
     }

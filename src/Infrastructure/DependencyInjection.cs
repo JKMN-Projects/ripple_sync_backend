@@ -7,6 +7,7 @@ using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Platforms;
+using RippleSync.Infrastructure.FeedbackRepository;
 using RippleSync.Infrastructure.IntegrationRepository;
 using RippleSync.Infrastructure.PlatformRepository;
 using RippleSync.Infrastructure.PostRepository;
@@ -46,6 +47,8 @@ public static class DependencyInjection
         services.AddKeyedSingleton<ISoMePlatform, SoMePlatformFake>(Platform.FakePlatform);
 
         services.AddScoped<IUnitOfWork>(sp => new NpgsqlUnitOfWork(connectionString));
+
+        services.AddScoped<IFeedbackRepository, GptFeedbackRepository>();
 
         bool inMemory = false;
         if (inMemory)

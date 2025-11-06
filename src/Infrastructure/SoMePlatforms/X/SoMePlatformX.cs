@@ -1,13 +1,17 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using RippleSync.Application.Common.Responses;
+using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
 using System.Text;
+using System.Text.Json;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.X;
 
-internal class SoMePlatformX(IOptions<XOptions> options) : ISoMePlatform
+internal class SoMePlatformX(ILogger<SoMePlatformX> logger, IOptions<XOptions> options, IEncryptionService encryptor) : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
     {
@@ -54,5 +58,57 @@ internal class SoMePlatformX(IOptions<XOptions> options) : ISoMePlatform
             Likes: 0
         ));
     }
-    public Task<PostEvent> PublishPostAsync(Post post, Integration integration) => throw new NotImplementedException();
+
+    public async Task<PostEvent> PublishPostAsync(Post post, Integration integration)
+    {
+        var postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id)
+            ?? throw new InvalidOperationException("PostEvent not found for the given integration.");
+        try
+        {
+            var tweetPayload = new
+            {
+                text = post.MessageContent
+            };
+
+            var jsonContent = JsonSerializer.Serialize(tweetPayload);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.x.com/2/tweets")
+            {
+                Content = content
+            };
+
+
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+                integration.TokenType,
+                encryptor.Decrypt(integration.AccessToken)
+            );
+
+            using var httpClient = new HttpClient();
+            var response = await httpClient.SendAsync(request);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                //TODO: Save url for the post
+                var postResponse = JsonSerializer.Deserialize<PostResponse>(responseContent);
+                postEvent.PlatformPostIdentifier = postResponse?.Data?.Id;
+                if (postEvent.PlatformPostIdentifier == null) logger.LogWarning("Platform Identification could not be found");
+                postEvent.Status = PostStatus.Posted;
+            }
+            else
+            {
+                throw new InvalidOperationException($"Failed to publish post to X. Response: {responseContent}");
+            }
+        }
+        catch (Exception e)
+        {
+            postEvent.Status = PostStatus.Failed;
+            throw;
+        }
+        return postEvent;
+    }
+    private record PostResponse(PostResponseData Data);
+    private record PostResponseData(string Id);
 }
