@@ -3,6 +3,12 @@
 GET /api/integration/user
 
 ``` mermaid
+---
+
+config:
+    class:
+        hideEmptyMembersBox: true
+---
 classDiagram
     class GetUserIntegrationsRequest {
     }
@@ -24,8 +30,8 @@ classDiagram
         string detail
     }
 
-    GetIntegrationsResponse <|--|> UserIntegrationDto
-    GetIntegrationsRequest --> GetIntegrationsResponse : "200"
-    GetIntegrationsRequest --> ProblemDetails : "400"
-    GetIntegrationsRequest --> ProblemDetails : "401"
+    GetUserIntegrationsResponse <|--|> UserIntegrationDto
+    GetUserIntegrationsRequest --> GetUserIntegrationsResponse : "200"
+    GetUserIntegrationsRequest --> ProblemDetails : "400"
+    GetUserIntegrationsRequest --> ProblemDetails : "401"
 ```

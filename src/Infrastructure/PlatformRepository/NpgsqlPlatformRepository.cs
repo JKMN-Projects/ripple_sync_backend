@@ -10,6 +10,9 @@ namespace RippleSync.Infrastructure.PlatformRepository;
 
 internal class NpgsqlPlatformRepository(IUnitOfWork uow) : BaseRepository(uow), IPlatformQueries
 {
+    public Task<IEnumerable<PlatformResponse>> GetAllPlatformsAsync(CancellationToken cancellationToken = default) 
+        => throw new NotImplementedException();
+
     public async Task<IEnumerable<PlatformWithUserIntegrationResponse>> GetPlatformsWithUserIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var getPlatformsQuery =
