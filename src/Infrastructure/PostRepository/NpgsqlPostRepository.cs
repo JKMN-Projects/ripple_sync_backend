@@ -7,6 +7,7 @@ using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.PostRepository.Entities;
+using System.Linq;
 
 namespace RippleSync.Infrastructure.PostRepository;
 internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPostRepository, IPostQueries
@@ -26,9 +27,12 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
             SELECT
                 p.id,
                 p.message_content,
-                (SELECT ARRAY_AGG(pm.id) 
-                 FROM post_media AS pm 
-                 WHERE pm.post_id = p.id) AS media_ids,
+                COALESCE(
+                    (SELECT ARRAY_AGG(pm.id) 
+                     FROM post_media AS pm 
+                     WHERE pm.post_id = p.id),
+                    '{}'
+                ) AS media_ids,
                 pe_data.status_name,
                 pe_data.timestamp,
                 pe_data.platforms
@@ -123,7 +127,7 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
                 postEntity.UpdatedAt,
                 postEntity.ScheduledFor,
                 postMedias.Select(pme => PostMedia.Reconstitute(pme.Id, pme.ImageData)),
-                postEvents.Select(pee => PostEvent.Reconstitute(pee.PostId, pee.UserPlatformIntegrationId, (PostStatus)pee.PostStatusId, pee.PlatformPostIdentifier, pee.PlatformResponse))
+                postEvents.Select(pee => PostEvent.Reconstitute(pee.UserPlatformIntegrationId, (PostStatus)pee.PostStatusId, pee.PlatformPostIdentifier, pee.PlatformResponse))
             );
         }
         catch (Exception e)
@@ -145,8 +149,9 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
 		            ON pe.post_id = p.id
 	            LEFT JOIN post_status as ps 
 		            ON pe.post_status_id = ps.id
-            WHERE p.scheduled_for IS NOT null 
-	            AND ps.status = 'scheduled';";
+            WHERE p.scheduled_for IS NOT null
+	            AND ps.status = 'scheduled'
+                AND p.scheduled_for < now()";
 
         try
         {
@@ -204,8 +209,6 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
     public async Task UpdateAsync(Post post, CancellationToken cancellationToken = default)
     {
         var postEntity = new PostEntity(post.Id, post.UserId, post.MessageContent, post.SubmittedAt, post.UpdatedAt, post.ScheduledFor);
-        var postMediaEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
-        var postEventEntities = post.PostEvents.Select(pe => new PostEventEntity(pe.PostId, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
 
         try
         {
@@ -213,16 +216,16 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
 
             if (!post.PostMedias.NullOrEmpty())
             {
-                var postMediasEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
+                var postMediaEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
 
-                rowsAffected += await Connection.UpdateAsync(postMediaEntities, trans: Transaction, ct: cancellationToken);
+                rowsAffected += await Connection.SyncAsync(postMediaEntities, trans: Transaction, ct: cancellationToken);
             }
 
             if (!post.PostEvents.NullOrEmpty())
             {
-                var postEventsEntities = post.PostEvents.Select(pe => new PostEventEntity(post.Id, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
+                var postEventEntities = post.PostEvents.Select(pe => new PostEventEntity(post.Id, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
 
-                rowsAffected += await Connection.UpdateAsync(postEventEntities, trans: Transaction, ct: cancellationToken);
+                rowsAffected += await Connection.SyncAsync(postEventEntities, trans: Transaction, ct: cancellationToken);
             }
 
             if (rowsAffected <= 0)
@@ -251,9 +254,6 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
         }
     }
 
-    public Task UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
-
     private async Task<IEnumerable<Post>> GetMediaAndEventsForPosts(IEnumerable<PostEntity> postEntities, CancellationToken cancellationToken = default)
     {
         var postIdsParam = new { PostIds = postEntities.Select(p => p.Id).ToArray() };
@@ -279,7 +279,7 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
             pe.UpdatedAt,
             pe.ScheduledFor,
             mediaLookup.GetValueOrDefault(pe.Id, []).Select(pme => PostMedia.Reconstitute(pme.Id, pme.ImageData)),
-            eventLookup.GetValueOrDefault(pe.Id, []).Select(pee => PostEvent.Reconstitute(pee.PostId, pee.UserPlatformIntegrationId, (PostStatus)pee.PostStatusId, pee.PlatformPostIdentifier, pee.PlatformResponse))
+            eventLookup.GetValueOrDefault(pe.Id, []).Select(pee => PostEvent.Reconstitute(pee.UserPlatformIntegrationId, (PostStatus)pee.PostStatusId, pee.PlatformPostIdentifier, pee.PlatformResponse))
         ));
     }
 }

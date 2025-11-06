@@ -120,15 +120,10 @@ internal sealed class NpgsqlUserRepository(IUnitOfWork uow) : BaseRepository(uow
             {
                 var userTokenEntity = new UserTokenEntity(user.RefreshToken.Id, user.Id, (int)user.RefreshToken.Type, user.RefreshToken.Value, user.RefreshToken.CreatedAt, user.RefreshToken.ExpiresAt);
 
-                rowsAffected = await Connection.UpdateAsync(userTokenEntity, trans: Transaction, ct: cancellationToken);
+                rowsAffected = await Connection.SyncAsync(userTokenEntity, trans: Transaction, ct: cancellationToken);
 
                 if (rowsAffected <= 0)
-                {
-                    rowsAffected = await Connection.InsertAsync(userTokenEntity, trans: Transaction, ct: cancellationToken);
-
-                    if (rowsAffected <= 0)
-                        throw new RepositoryException("No rows were affected on Token insert");
-                }
+                    throw new RepositoryException("No rows were affected on Token insert");
             }
         }
         catch (Exception e)
@@ -140,7 +135,7 @@ internal sealed class NpgsqlUserRepository(IUnitOfWork uow) : BaseRepository(uow
 
     private async Task<User> GetUserWithRefreshToken(UserEntity userEntity, CancellationToken cancellationToken = default)
     {
-        var userTokenEntity = await Connection.SelectSingleOrDefaultAsync<UserTokenEntity>(whereClause: "user_account_id = @UserId AND token_type_id = @TokenType", param: new { UserId = userEntity.Id, TokenType = (int)UserTokenType.Refresh }, ct: cancellationToken);
+        var userTokenEntity = await Connection.SelectSingleOrDefaultAsync<UserTokenEntity>(whereClause: "user_account_id = @UserId AND token_type_id = @TokenType ORDER BY created_at ASC", param: new { UserId = userEntity.Id, TokenType = (int)UserTokenType.Refresh }, ct: cancellationToken);
 
         RefreshToken? refreshToken = null;
 

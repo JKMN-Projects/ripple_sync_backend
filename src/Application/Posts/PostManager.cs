@@ -176,7 +176,11 @@ public class PostManager(
         IEnumerable<Post> posts = await postRepository.GetPostsReadyToPublishAsync(cancellationToken);
 
         IEnumerable<Post> postsReadyToPost = posts.Where(p => p.IsReadyToPublish());
-        return posts;
+
+        if (postsReadyToPost.Any())
+            ;
+
+        return postsReadyToPost;
     }
 
     public async Task ProcessPostEventAsync(Post post, CancellationToken cancellationToken)
@@ -188,17 +192,18 @@ public class PostManager(
         foreach (var postEvent in post.PostEvents)
         {
             postEvent.Status = PostStatus.Processing;
-            unitOfWork.BeginTransaction();
-            try
-            {
-                await postRepository.UpdatePostEventStatusAsync(postEvent, cancellationToken);
-                unitOfWork.Save();
-            }
-            catch (Exception)
-            {
-                unitOfWork.Cancel();
-                throw;
-            }
+        }
+
+        unitOfWork.BeginTransaction();
+        try
+        {
+            await postRepository.UpdateAsync(post, cancellationToken);
+            unitOfWork.Save();
+        }
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
         }
 
         List<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId).ToList();
@@ -214,7 +219,7 @@ public class PostManager(
                     integration.Platform);
             ISoMePlatform platform = platformFactory.Create(integration.Platform);
 
-            PostEvent postEvent;
+            PostEvent? postEvent;
             try
             {
                 postEvent = await platform.PublishPostAsync(post, integration);
@@ -233,24 +238,32 @@ public class PostManager(
                     ex.Message
                 );
                 postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id);
-                postEvent!.Status = PostStatus.Failed;
+                if (postEvent != null)
+                {
+                    postEvent.Status = PostStatus.Failed;
+                }
             }
 
-            unitOfWork.BeginTransaction();
-            try
+            if (postEvent != null)
             {
-                await postRepository.UpdatePostEventStatusAsync(postEvent, cancellationToken);
-                unitOfWork.Save();
-            }
-            catch (Exception)
-            {
-                unitOfWork.Cancel();
-                throw;
+                post.PostEvents = [.. post.PostEvents.Select(pe => pe.UserPlatformIntegrationId == integration.Id ? postEvent : pe)];
             }
         }
+
+        unitOfWork.BeginTransaction();
+        try
+        {
+            await postRepository.UpdateAsync(post, cancellationToken);
+            unitOfWork.Save();
+        }
+        catch (Exception)
+        {
+            unitOfWork.Cancel();
+            throw;
+        }
+
         logger.LogInformation(
             "Post has been published: PostId={PostId}",
             post.Id);
-
     }
 }

@@ -10,7 +10,7 @@ internal class GetPostsByUserResponseEntity
 
 
     [SqlProperty(propName: "media_ids")]
-    public Guid[] MediaIds { get; set; }
+    public Guid[] MediaIds { get; set; } = [];
 
 
     [SqlProperty(propName: "status_name")]

@@ -381,6 +381,115 @@ public static partial class NpgsqlExtensions
         return rowsAffected;
     }
 
+    /// <summary>
+    /// Upserts a single record in the database table corresponding to Type T.
+    /// Inserts if the record doesn't exist, updates if it does based on properties marked with <see cref="UpdateAction.Where"/>.
+    /// </summary>
+    public static async Task<int> UpsertAsync<T>(
+        this NpgsqlConnection conn,
+        T data,
+        NpgsqlTransaction? trans = null,
+        string overwriteSchemaName = "",
+        string overwriteTableName = "",
+        CancellationToken ct = default)
+    {
+        IEnumerable<T> collection = [data];
+        return await conn.UpsertAsync(collection, trans, overwriteSchemaName, overwriteTableName, ct);
+    }
+
+    /// <summary>
+    /// Upserts multiple records in the database table corresponding to Type T.
+    /// Inserts if records don't exist, updates if they do based on properties marked with IsScopeIdentifier or IsRecordIdentifier.
+    /// Uses PostgreSQL's ON CONFLICT clause.
+    /// </summary>
+    public static async Task<int> UpsertAsync<T>(
+        this NpgsqlConnection conn,
+        IEnumerable<T> datas,
+        NpgsqlTransaction? trans = null,
+        string overwriteSchemaName = "",
+        string overwriteTableName = "",
+        CancellationToken ct = default)
+    {
+        if (datas.NullOrEmpty())
+            return 0;
+
+        var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
+        var (schemaName, tableName) = GetSchemaAndTableName<T>(overwriteSchemaName, overwriteTableName, sqlConstructor);
+
+        List<string> allFields = [];
+        List<string> updateFields = [];
+        List<string> conflictFields = [];
+
+        foreach (var property in typeof(T).GetProperties(_acquirePropFlags))
+        {
+            var attribute = property.GetCustomAttributes(false).OfType<SqlPropertyAttribute>().FirstOrDefault();
+
+            if (attribute?.Update == UpdateAction.Ignore)
+                continue;
+
+            string name = GetPropertyName(attribute, property);
+            allFields.Add($"\"{name}\"");
+
+            if (attribute?.Update == UpdateAction.Where)
+            { // Only use scope/record identifier for conflict resolution
+                if (attribute.IsRecordIdentifier)
+                {
+                    conflictFields.Add($"\"{name}\"");
+                }
+                else if (attribute.IsScopeIdentifier)
+                {
+                    conflictFields.Add($"\"{name}\"");
+                }
+            }
+            else
+            { // Other fields and WHERE fields can still be updated
+                updateFields.Add($"\"{name}\"");
+            }
+        }
+
+        if (conflictFields.Count == 0)
+            throw new InvalidOperationException($"Type {typeof(T).Name} must have at least one property marked with IsScopeIdentifier or IsRecordIdentifier for upsert logic");
+
+        List<List<string>> valueRows = [];
+        var parameters = new List<NpgsqlParameter>();
+        int paramIndex = 0;
+
+        foreach (var data in datas)
+        {
+            List<string> rowPlaceholders = [];
+
+            foreach (var property in data?.GetType().GetProperties(_acquirePropFlags) ?? Enumerable.Empty<PropertyInfo>())
+            {
+                var attribute = property.GetCustomAttributes(false).OfType<SqlPropertyAttribute>().FirstOrDefault();
+
+                if (attribute?.Update == UpdateAction.Ignore)
+                    continue;
+
+                var (propParams, placeholder) = CreatePropertyParameter(property, data, ref paramIndex);
+                parameters.AddRange(propParams);
+                rowPlaceholders.Add(placeholder);
+            }
+
+            valueRows.Add(rowPlaceholders);
+        }
+
+        string insert = $"INSERT INTO {schemaName}{tableName} ({string.Join(", ", allFields)})";
+        string values = $" VALUES ({string.Join("), (", valueRows.Select(row => string.Join(", ", row)))})";
+        string conflict = $" ON CONFLICT ({string.Join(", ", conflictFields)})";
+        string update = updateFields.Count > 0
+            ? $" DO UPDATE SET {string.Join(", ", updateFields.Select(f => $"{f} = EXCLUDED.{f}"))}"
+            : " DO NOTHING";
+
+        string query = insert + values + conflict + update;
+
+        using var cmd = new NpgsqlCommand(query, conn, trans);
+        cmd.Parameters.AddRange(parameters.ToArray());
+
+        int rowsAffected = await LoggedExecuteNonQueryAsync(cmd, ct);
+
+        return rowsAffected;
+    }
+
 
     /// <summary>
     /// Removes a record from the database table corresponding to Type T.
@@ -456,6 +565,259 @@ public static partial class NpgsqlExtensions
         cmd.Parameters.AddRange(parameters.ToArray());
 
         var rowsAffected = await LoggedExecuteNonQueryAsync(cmd, ct);
+
+        return rowsAffected;
+    }
+
+    /// <summary>
+    /// Synchronizes a single database record for a parent entity.
+    /// Removes records that share the same parent identifier(s) but whose record identifier doesn't match.
+    /// Then upserts the provided record.
+    /// Requires one property marked with IsRecordIdentifier = true and at least one other WHERE property as parent identifier.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="data"></param>
+    /// <param name="trans"></param>
+    /// <param name="overwriteSchemaName"></param>
+    /// <param name="overwriteTableName"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public static async Task<int> SyncAsync<T>(
+        this NpgsqlConnection conn,
+        T data,
+        NpgsqlTransaction? trans = null,
+        string overwriteSchemaName = "",
+        string overwriteTableName = "",
+        CancellationToken ct = default)
+    {
+        IEnumerable<T> collection = [data];
+        return await conn.SyncAsync(collection, trans, overwriteSchemaName, overwriteTableName, ct);
+    }
+
+    /// <summary>
+    /// Synchronizes database records for a single parent entity.
+    /// Removes records that share the same parent identifier(s) but whose record identifier is not in the collection.
+    /// Then updates all records in the collection.
+    /// Requires one property marked with IsRecordIdentifier = true and at least one other WHERE property as parent identifier.
+    /// All items in the collection must share the same parent identifier values.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="datas"></param>
+    /// <param name="trans"></param>
+    /// <param name="overwriteSchemaName"></param>
+    /// <param name="overwriteTableName"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public static async Task<int> SyncAsync<T>(
+        this NpgsqlConnection conn,
+        IEnumerable<T> datas,
+        NpgsqlTransaction? trans = null,
+        string overwriteSchemaName = "",
+        string overwriteTableName = "",
+        CancellationToken ct = default)
+    {
+        if (datas.NullOrEmpty())
+            return 0;
+
+        var dataList = datas.ToList();
+
+        // Validate all items share same parent identifier values
+        var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
+        var parentProperties = GetParentProperties<T>();
+
+        var firstParentValues = parentProperties.Select(p => p.Property.GetValue(dataList.First())).ToList();
+
+        foreach (var item in dataList.Skip(1))
+        {
+            var itemParentValues = parentProperties.Select(p => p.Property.GetValue(item)).ToList();
+            if (!firstParentValues.SequenceEqual(itemParentValues))
+                throw new InvalidOperationException($"All items in collection must share the same parent identifier values for SyncAsync. Use SyncMultipleAsync for differing parents objects.");
+        }
+
+        return await SyncInternalAsync(conn, dataList, trans, overwriteSchemaName, overwriteTableName, ct);
+    }
+
+    /// <summary>
+    /// Synchronizes database records for multiple parent entities.
+    /// Groups items by parent identifier(s), then for each group removes records whose record identifier is not in the collection.
+    /// Then updates all records in the collection.
+    /// Requires one property marked with IsRecordIdentifier = true and at least one other WHERE property as parent identifier.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="datas"></param>
+    /// <param name="trans"></param>
+    /// <param name="overwriteSchemaName"></param>
+    /// <param name="overwriteTableName"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public static async Task<int> SyncMultipleAsync<T>(
+        this NpgsqlConnection conn,
+        IEnumerable<T> datas,
+        NpgsqlTransaction? trans = null,
+        string overwriteSchemaName = "",
+        string overwriteTableName = "",
+        CancellationToken ct = default)
+    {
+        if (datas.NullOrEmpty())
+            return 0;
+
+        var dataList = datas.ToList();
+        var parentProperties = GetParentProperties<T>();
+
+        // Group by parent identifier values
+        // splits it, for parentIds with same value, it stays together, children related to same parent
+        //  if differs, it'll be split. children to different parents, need the different checks.
+        var groupedData = dataList.GroupBy(item =>
+        {
+            var parentValues = parentProperties.Select(p => p.Property.GetValue(item)).ToArray();
+            return string.Join("|", parentValues.Select(v => v?.ToString() ?? "null"));
+        });
+
+        int totalAffected = 0;
+
+        foreach (var group in groupedData)
+        {
+            totalAffected += await SyncInternalAsync(conn, group.ToList(), trans, overwriteSchemaName, overwriteTableName, ct);
+        }
+
+        return totalAffected;
+    }
+
+    private static List<(PropertyInfo Property, string Name)> GetParentProperties<T>()
+    {
+        var parentProperties = new List<(PropertyInfo Property, string Name)>();
+
+        foreach (var property in typeof(T).GetProperties(_acquirePropFlags))
+        {
+            var attribute = property.GetCustomAttributes(false).OfType<SqlPropertyAttribute>().FirstOrDefault();
+
+            if (attribute?.Update != UpdateAction.Where || attribute.IsRecordIdentifier)
+                continue;
+
+            var name = GetPropertyName(attribute, property);
+            parentProperties.Add((property, name));
+        }
+
+        return parentProperties;
+    }
+
+    private static async Task<int> SyncInternalAsync<T>(
+        NpgsqlConnection conn,
+        IEnumerable<T> dataList,
+        NpgsqlTransaction? trans,
+        string overwriteSchemaName,
+        string overwriteTableName,
+        CancellationToken ct)
+    {
+        var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
+        var (schemaName, tableName) = GetSchemaAndTableName<T>(overwriteSchemaName, overwriteTableName, sqlConstructor);
+
+
+        List<(PropertyInfo Property, string Name)> recordIdProperties = [];
+        List<(PropertyInfo Property, string Name)> parentProperties = [];
+
+        foreach (var property in typeof(T).GetProperties(_acquirePropFlags))
+        {
+            var attribute = property.GetCustomAttributes(false).OfType<SqlPropertyAttribute>().FirstOrDefault();
+
+            if (attribute?.Update != UpdateAction.Where)
+                continue;
+
+            var name = GetPropertyName(attribute, property);
+
+            if (attribute.IsRecordIdentifier)
+            {
+                recordIdProperties.Add((property, name));
+            }
+            else if (attribute.IsScopeIdentifier)
+            {
+                parentProperties.Add((property, name));
+            }
+            else
+            {
+                parentProperties.Add((property, name));
+            }
+        }
+
+        if (recordIdProperties.Count == 0)
+            throw new InvalidOperationException($"Type {typeof(T).Name} must have one property marked with IsRecordIdentifier = true for sync.");
+
+        if (parentProperties.Count == 0)
+            throw new InvalidOperationException($"Type {typeof(T).Name} must have at least one WHERE property as parent identifier for sync.");
+
+        // Build condition for current record IDs (composite key support)
+        var parameters = new List<NpgsqlParameter>();
+        int paramIndex = 0;
+
+        // Add parent conditions
+        var parentConditions = new List<string>();
+        var firstItem = dataList.First();
+        foreach (var (property, name) in parentProperties)
+        {
+            var (propParams, placeholder) = CreatePropertyParameter(property, firstItem, ref paramIndex);
+            parameters.AddRange(propParams);
+            parentConditions.Add($"\"{name}\" = {placeholder}");
+        }
+
+        // For composite keys, build: NOT ((id1, id2) = ANY(VALUES (...)))
+        // For single key, build: id <> ALL(ARRAY[...])
+
+        string recordIdCondition;
+
+        if (recordIdProperties.Count == 1)
+        {
+            // Single record identifier - build array approach
+            var (property, name) = recordIdProperties[0];
+            var currentIds = dataList.Select(d => property.GetValue(d)).ToArray();
+
+            var idsParamName = $"@p{paramIndex}";
+            var arrayDbType = NpgsqlDbType.Array | GetNpgsqlDbType(property.PropertyType);
+
+            parameters.Add(new NpgsqlParameter(idsParamName, currentIds)
+            {
+                NpgsqlDbType = arrayDbType
+            });
+
+            recordIdCondition = $"\"{name}\" <> ALL({idsParamName})";
+        }
+        else
+        {
+            // Composite key - build row values
+            var recordIdNames = string.Join(", ", recordIdProperties.Select(p => $"\"{p.Name}\""));
+            var valuesList = new List<string>();
+
+            foreach (var data in dataList)
+            {
+                var rowValues = new List<string>();
+                foreach (var (property, _) in recordIdProperties)
+                {
+                    var (propParams, placeholder) = CreatePropertyParameter(property, data, ref paramIndex);
+                    parameters.AddRange(propParams);
+                    rowValues.Add(placeholder);
+                }
+                valuesList.Add($"({string.Join(", ", rowValues)})");
+            }
+
+            recordIdCondition = $"({recordIdNames}) NOT IN ({string.Join(", ", valuesList)})";
+        }
+
+        var deleteQuery = $"DELETE FROM {schemaName}{tableName} " +
+                         $"WHERE {string.Join(" AND ", parentConditions)} " +
+                         $"AND {recordIdCondition}";
+
+        int rowsAffected = 0;
+
+        using (var deleteCmd = new NpgsqlCommand(deleteQuery, conn, trans))
+        {
+            deleteCmd.Parameters.AddRange(parameters.ToArray());
+            rowsAffected += await LoggedExecuteNonQueryAsync(deleteCmd, ct);
+        }
+
+        rowsAffected += await conn.UpsertAsync(dataList, trans, overwriteSchemaName, overwriteTableName, ct);
 
         return rowsAffected;
     }
@@ -734,6 +1096,27 @@ public static partial class NpgsqlExtensions
     private static NpgsqlDbType GetNpgsqlDbType(Type type, object? value = null)
     {
         var actualType = Nullable.GetUnderlyingType(type) ?? type;
+
+        // Handle arrays
+        if (actualType.IsArray)
+        {
+            var elementType = actualType.GetElementType()!;
+            return NpgsqlDbType.Array | GetNpgsqlDbType(elementType);
+        }
+
+        // Handle generic collections (List<T>, IEnumerable<T>, etc.)
+        if (actualType.IsGenericType)
+        {
+            var genericDef = actualType.GetGenericTypeDefinition();
+            if (genericDef == typeof(List<>) ||
+                genericDef == typeof(IEnumerable<>) ||
+                genericDef == typeof(ICollection<>) ||
+                genericDef == typeof(IList<>))
+            {
+                var elementType = actualType.GetGenericArguments()[0];
+                return NpgsqlDbType.Array | GetNpgsqlDbType(elementType);
+            }
+        }
 
 #pragma warning disable IDE0046 // Convert to conditional expression
         if (actualType == typeof(DateTime) && value is DateTime dt)

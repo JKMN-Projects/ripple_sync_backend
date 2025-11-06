@@ -10,5 +10,4 @@ public interface IPostRepository
     Task DeleteAsync(Post post, CancellationToken cancellationToken = default);
     Task<IEnumerable<Post>> GetAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<IEnumerable<Post>> GetPostsReadyToPublishAsync(CancellationToken cancellationToken = default);
-    Task UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken = default);
 }

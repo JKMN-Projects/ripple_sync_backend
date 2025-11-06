@@ -5,10 +5,10 @@ namespace RippleSync.Infrastructure.UserRepository.Entities;
 internal class UserTokenEntity
 {
 
-    [SqlProperty(update: UpdateAction.Where)]
+    [SqlProperty(update: UpdateAction.Where, isRecordIdentifier: true)]
     public Guid Id { get; }
 
-    [SqlProperty(propName: "user_account_id")]
+    [SqlProperty(update: UpdateAction.Where, propName: "user_account_id")]
     public Guid UserAccountId { get; }
 
     [SqlProperty(propName: "token_type_id")]

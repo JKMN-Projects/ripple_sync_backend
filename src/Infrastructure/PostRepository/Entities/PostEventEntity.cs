@@ -5,10 +5,10 @@ using RippleSync.Infrastructure.JukmanORM.Enums;
 namespace RippleSync.Infrastructure.PostRepository.Entities;
 internal class PostEventEntity
 {
-    [SqlProperty(update: UpdateAction.Where, propName: "post_id")]
+    [SqlProperty(update: UpdateAction.Where, propName: "post_id", isScopeIdentifier: true)]
     public Guid PostId { get; set; }
 
-    [SqlProperty(update: UpdateAction.Where, propName: "user_platform_integration_id")]
+    [SqlProperty(update: UpdateAction.Where, propName: "user_platform_integration_id", isRecordIdentifier: true)]
     public Guid UserPlatformIntegrationId { get; set; }
 
     [SqlProperty(propName: "post_status_id")]

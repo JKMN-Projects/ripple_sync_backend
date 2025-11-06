@@ -4,7 +4,7 @@ using RippleSync.Infrastructure.JukmanORM.Enums;
 namespace RippleSync.Infrastructure.PostRepository.Entities;
 internal class PostMediaEntity
 {
-    [SqlProperty(update: UpdateAction.Where)]
+    [SqlProperty(update: UpdateAction.Where, isRecordIdentifier: true)]
     public Guid Id { get; set; }
 
     [SqlProperty(update: UpdateAction.Where, propName: "post_id")]
