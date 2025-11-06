@@ -120,10 +120,17 @@ internal sealed class NpgsqlUserRepository(IUnitOfWork uow) : BaseRepository(uow
             {
                 var userTokenEntity = new UserTokenEntity(user.RefreshToken.Id, user.Id, (int)user.RefreshToken.Type, user.RefreshToken.Value, user.RefreshToken.CreatedAt, user.RefreshToken.ExpiresAt);
 
-                rowsAffected = await Connection.SyncAsync(userTokenEntity, trans: Transaction, ct: cancellationToken);
+                rowsAffected = await Connection.UpsertAsync(userTokenEntity, trans: Transaction, ct: cancellationToken);
 
                 if (rowsAffected <= 0)
-                    throw new RepositoryException("No rows were affected on Token insert");
+                    throw new RepositoryException("No rows were affected on Token upsert");
+            }
+            else
+            {
+                rowsAffected = await Connection.ExecuteAsync("DELETE FROM user_token WHERE user_account_id = @UserId", new { UserId = user.Id }, trans: Transaction, cancellationToken);
+
+                if (rowsAffected <= 0)
+                    throw new RepositoryException("No rows were affected on Token delete");
             }
         }
         catch (Exception e)

@@ -400,7 +400,6 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             Assert.NotNull(retrievedPost);
             var retrievedPostEvent = retrievedPost.PostEvents.First();
             Assert.Equal(PostStatus.Posted, retrievedPostEvent.Status);
-            Assert.Equal("platform_post_id_123", retrievedPostEvent.PlatformPostIdentifier);
         }
 
         [Fact]

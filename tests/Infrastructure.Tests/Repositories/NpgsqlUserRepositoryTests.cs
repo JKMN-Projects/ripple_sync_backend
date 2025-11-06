@@ -244,7 +244,6 @@ public class NpgsqlUserRepositoryTests : RepositoryTestBase
                 .WithRefreshToken(firstRefreshToken)
                 .Build();
             await _sut.CreateAsync(user);
-            RefreshToken secondRefreshToken = RefreshToken.Create("second_token", TimeProvider.System, TimeProvider.System.GetUtcNow().AddHours(1).UtcDateTime);
             user.RevokeRefreshToken();
 
             // Act
