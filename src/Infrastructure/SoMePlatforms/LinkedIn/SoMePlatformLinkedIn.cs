@@ -44,7 +44,7 @@ internal class SoMePlatformLinkedIn(IOptions<LinkedInOptions> options, IEncrypti
         };
     }
 
-    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration)
+    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration, IEnumerable<Post> publishedPostsOnPlatform)
     {
         return Task.FromResult(new PlatformStats(
             PostCount: 0,

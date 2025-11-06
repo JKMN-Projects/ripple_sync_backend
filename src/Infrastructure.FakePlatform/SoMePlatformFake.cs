@@ -32,7 +32,7 @@ public class SoMePlatformFake(IOptions<FakePlatformOptions> options) : ISoMePlat
         return request;
     }
 
-    public async Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration)
+    public async Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration, IEnumerable<Post> publishedPostsOnPlatform)
     {
         foreach (var post in FakePlatformInMemoryData.PostData)
         {

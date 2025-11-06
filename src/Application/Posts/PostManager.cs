@@ -21,7 +21,7 @@ public class PostManager(
 
     public async Task<TotalPostStatsResponse> GetPostStatForPeriodAsync(Guid userId, DateTime? from, CancellationToken cancellationToken = default)
     {
-        IEnumerable<GetPostsByUserResponse> posts = await postQueries.GetPostsByUserAsync(userId, null, cancellationToken);
+        IEnumerable<Post> posts = await postRepository.GetAllByUserIdAsync(userId, cancellationToken);
         IEnumerable<Integration> userIntegrations = await integrationRepository.GetByUserIdAsync(userId, cancellationToken);
 
         List<(string platformName, PlatformStats stats)> platformStats = [];
@@ -39,11 +39,11 @@ public class PostManager(
                 logger.LogWarning("Platform factory could not create platform for {Platform}. Skipping stats retrieval for this platform.", integration.Platform);
                 continue;
             }
-            PlatformStats stats = await platform.GetInsightsFromIntegrationAsync(integration);
+            PlatformStats stats = await platform.GetInsightsFromIntegrationAsync(integration, posts.Where(p => p.PostEvents.Any(pe => pe.UserPlatformIntegrationId == integration.Id)));
             platformStats.Add((platformName: integration.Platform.ToString(), stats));
         }
-        int publishedPosts = posts.Count(p => p.StatusName.Equals("Posted", StringComparison.OrdinalIgnoreCase));
-        int scheduledPosts = posts.Count(p => p.StatusName.Equals("Scheduled", StringComparison.OrdinalIgnoreCase));
+        int publishedPosts = posts.Count(p => p.GetPostMaxStatus() == PostStatus.Posted);
+        int scheduledPosts = posts.Count(p => p.GetPostMaxStatus() == PostStatus.Scheduled);
 
         return new TotalPostStatsResponse(
             PublishedPosts: publishedPosts,
