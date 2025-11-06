@@ -178,9 +178,6 @@ public class PostManager(
 
         IEnumerable<Post> postsReadyToPost = posts.Where(p => p.IsReadyToPublish());
 
-        if (postsReadyToPost.Any())
-            ;
-
         return postsReadyToPost;
     }
 
