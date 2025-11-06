@@ -6,7 +6,7 @@ using RippleSync.Application.Platforms;
 namespace RippleSync.API.Platforms;
 [Route("api/[controller]")]
 [ApiController]
-public class PlatformController(PlatformManager platformManager) : ControllerBase
+public class PlatformsController(PlatformManager platformManager) : ControllerBase
 {
     [HttpGet("")]
     [AllowAnonymous]
