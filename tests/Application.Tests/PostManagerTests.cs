@@ -1,9 +1,16 @@
 ﻿using Microsoft.Extensions.Logging;
+using RippleSync.Application.Common;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Platforms;
 using RippleSync.Application.Posts;
-using RippleSync.Tests.Shared.TestDoubles.Factories;
+using RippleSync.Domain.Integrations;
+using RippleSync.Domain.Platforms;
+using RippleSync.Domain.Posts;
+using RippleSync.Tests.Shared.Factories.Integrations;
+using RippleSync.Tests.Shared.Factories.Posts;
+using RippleSync.Tests.Shared.TestDoubles;
+using RippleSync.Tests.Shared.TestDoubles.Platforms;
 using RippleSync.Tests.Shared.TestDoubles.Logging;
 using RippleSync.Tests.Shared.TestDoubles.Queries;
 using RippleSync.Tests.Shared.TestDoubles.Repositories;
@@ -14,12 +21,14 @@ public abstract class PostManagerTests
 {
     protected PostManager GetSystemUnderTest(
         ILogger<PostManager>? logger = null,
+        IUnitOfWork? unitOfWork = null,
         IPostRepository? postRepository = null,
         IPostQueries? postQueries = null,
         IIntegrationRepository? integrationRepository = null,
         IPlatformFactory? platformFactory = null)
     {
         logger ??= new LoggerDoubles.Fakes.FakeLogger<PostManager>();
+        unitOfWork ??= new UnitOfWorkDoubles.Fakes.DoesNothing();
         postRepository ??= new PostRepositoryDoubles.Dummy();
         postQueries ??= new PostQueriesDoubles.Dummy();
         integrationRepository ??= new IntegrationRepositoryDoubles.Dummy();
@@ -27,6 +36,7 @@ public abstract class PostManagerTests
 
         return new PostManager(
             logger,
+            unitOfWork,
             postRepository,
             postQueries,
             integrationRepository,
@@ -36,6 +46,149 @@ public abstract class PostManagerTests
 
     public sealed class ProcessPostAsync : PostManagerTests
     {
+        [Fact]
+        public async Task Should_SetPostEventsToProcessingStatusAndSaveToRepository_WhenPostHasPostEvents()
+        {
+            // Arrange
+            Guid userId = Guid.NewGuid();
+            Integration xIntegration = new IntegrationBuilder(userId, Platform.X)
+                .Build();
+            Integration linkedInIntegration = new IntegrationBuilder(userId, Platform.LinkedIn)
+                .Build();
+            Post post = new PostBuilder(userId)
+                .ScheduledFor(DateTime.UtcNow.AddHours(1))
+                .PostedTo(xIntegration)
+                .PostedTo(linkedInIntegration)
+                .Build();
+            var noWorkUnitOfWork = new UnitOfWorkDoubles.Fakes.DoesNothing();
+            var unitOfWorkSpy = new UnitOfWorkDoubles.Spies.SaveSpy(noWorkUnitOfWork);
+            var updatePostRepositorySpy = new PostRepositoryDoubles.Spies.UpdateAsyncSpy(
+                new PostRepositoryDoubles.Stubs.UpdateAsync.DoesNothing());
+            var platformFactorySpy = new PlatformFactoryDoubles.Stubs.Create.ReturnsSpecifiedSoMePlatform(
+                new SoMePlatformDoubles.Stubs.PublishPostAsync.ReturnsPostEventForIntegration());
+            PostManager sut = GetSystemUnderTest(
+                unitOfWork: new UnitOfWorkDoubles.Composite(
+                    unitOfWorkSpy,
+                    noWorkUnitOfWork),
+                postRepository: updatePostRepositorySpy,
+                integrationRepository: new IntegrationRepositoryDoubles.Stubs.GetIntegrationsByIdsAsync.ReturnsSpecifiedIntegrations([xIntegration, linkedInIntegration]),
+                platformFactory: platformFactorySpy
+            );
 
+            // Act & Assert
+            updatePostRepositorySpy.OnInvokation = (updatedPost, spy) =>
+            {
+                // Assert that the first time UpdateAsync is called, all PostEvents are set to Processing
+                if (spy.InvocationCount == 1)
+                {
+                    Assert.All(updatedPost.PostEvents, postEvent =>
+                        Assert.Equal(PostStatus.Processing, postEvent.Status));
+                }
+            };
+            await sut.ProcessPostAsync(post);
+            Assert.True(updatePostRepositorySpy.InvocationCount > 0, "Expected PostRepository.UpdateAsync to be called at least once.");
+            Assert.True(unitOfWorkSpy.InvocationCount > 0, "Expected UnitOfWork.Save to be called at least once.");
+        }
+
+        [Fact]
+        public async Task Should_NotProcessPost_WhenPostHasNoPostEvents()
+        {
+            // Arrange
+            Guid userId = Guid.NewGuid();
+            Post post = new PostBuilder(userId)
+                .Build();
+
+            var soMePlatformSpy = new SoMePlatformDoubles.Spies.PublishPostAsyncSpy(
+                new SoMePlatformDoubles.Stubs.PublishPostAsync.ReturnsPostEventForIntegration());
+            PostManager sut = GetSystemUnderTest(
+                unitOfWork: new UnitOfWorkDoubles.Fakes.DoesNothing(),
+                postRepository: new PostRepositoryDoubles.Stubs.UpdateAsync.DoesNothing(),
+                platformFactory: new PlatformFactoryDoubles.Stubs.Create.ReturnsSpecifiedSoMePlatform(soMePlatformSpy)
+            );
+
+            // Act
+            await sut.ProcessPostAsync(post);
+
+            // Assert
+            Assert.Equal(0, soMePlatformSpy.InvocationCount);
+        }
+
+        [Fact]
+        public async Task Should_PublishPostToAllPlatforms_WhenPostHasMultiplePostEvents()
+        {
+            // Arrange
+            Guid userId = Guid.NewGuid();
+            Integration xIntegration = new IntegrationBuilder(userId, Platform.X)
+                .Build();
+            Integration linkedInIntegration = new IntegrationBuilder(userId, Platform.LinkedIn)
+                .Build();
+            Post post = new PostBuilder(userId)
+                .ScheduledFor(DateTime.UtcNow.AddHours(1))
+                .PostedTo(xIntegration)
+                .PostedTo(linkedInIntegration)
+                .Build();
+            var soMePlatformSpy = new SoMePlatformDoubles.Spies.PublishPostAsyncSpy(
+                new SoMePlatformDoubles.Stubs.PublishPostAsync.ReturnsPostEventForIntegration());
+            var platformFactoryStub = new PlatformFactoryDoubles.Stubs.Create.ReturnsSpecifiedSoMePlatform(soMePlatformSpy);
+            PostManager sut = GetSystemUnderTest(
+                unitOfWork: new UnitOfWorkDoubles.Fakes.DoesNothing(),
+                postRepository: new PostRepositoryDoubles.Stubs.UpdateAsync.DoesNothing(),
+                integrationRepository: new IntegrationRepositoryDoubles.Stubs.GetIntegrationsByIdsAsync.ReturnsSpecifiedIntegrations(xIntegration, linkedInIntegration),
+                platformFactory: platformFactoryStub
+            );
+
+            // Act
+            await sut.ProcessPostAsync(post);
+
+            // Assert
+            Assert.Equal(2, soMePlatformSpy.InvocationCount);
+            Assert.Contains(soMePlatformSpy.Posts, post => post.Id == post.Id);
+            Assert.Contains(soMePlatformSpy.Integrations, integration => integration.Id == xIntegration.Id);
+            Assert.Contains(soMePlatformSpy.Integrations, integration => integration.Id == linkedInIntegration.Id);
+            Assert.All(post.PostEvents, postEvent =>
+                Assert.Equal(PostStatus.Posted, postEvent.Status));
+        }
+
+        [Fact]
+        public async Task Should_SetPostEventToFailed_WhenPublishingFails()
+        {
+            // Arrange
+            Guid userId = Guid.NewGuid();
+            Integration xIntegration = new IntegrationBuilder(userId, Platform.X)
+                .Build();
+            Integration linkedInIntegration = new IntegrationBuilder(userId, Platform.LinkedIn)
+                .Build();
+            Post post = new PostBuilder(userId)
+                .ScheduledFor(DateTime.UtcNow.AddHours(1))
+                .PostedTo(xIntegration)
+                .PostedTo(linkedInIntegration)
+                .Build();
+
+            var failingSoMePlatformStub = new SoMePlatformDoubles.Stubs.PublishPostAsync.Throws();
+            var succedingSoMePlatformStub = new SoMePlatformDoubles.Stubs.PublishPostAsync.ReturnsPostEventForIntegration();
+            var platformFactoryStub = new PlatformFactoryDoubles.Stubs.Create.ReturnsDifferentSoMePlatformsBasedOnInput(new Dictionary<Platform, ISoMePlatform>()
+            {
+                 { Platform.X, failingSoMePlatformStub },
+                 { Platform.LinkedIn, succedingSoMePlatformStub },
+            });
+            var updatePostRepositorySpy = new PostRepositoryDoubles.Spies.UpdateAsyncSpy(
+                new PostRepositoryDoubles.Stubs.UpdateAsync.DoesNothing());
+            PostManager sut = GetSystemUnderTest(
+                unitOfWork: new UnitOfWorkDoubles.Fakes.DoesNothing(),
+                postRepository: updatePostRepositorySpy,
+                integrationRepository: new IntegrationRepositoryDoubles.Stubs.GetIntegrationsByIdsAsync.ReturnsSpecifiedIntegrations(xIntegration, linkedInIntegration),
+                platformFactory: platformFactoryStub
+            );
+
+            // Act
+            await sut.ProcessPostAsync(post);
+
+            // Assert
+            Assert.NotNull(updatePostRepositorySpy.LatestUpdated);
+            Assert.Contains(updatePostRepositorySpy.LatestUpdated.PostEvents, postEvent =>
+                postEvent.Status == PostStatus.Failed && postEvent.UserPlatformIntegrationId == xIntegration.Id);
+            Assert.Contains(updatePostRepositorySpy.LatestUpdated.PostEvents, postEvent =>
+                postEvent.Status == PostStatus.Posted && postEvent.UserPlatformIntegrationId == linkedInIntegration.Id);
+        }
     }
 }

@@ -184,8 +184,16 @@ public class PostManager(
         return postsReadyToPost;
     }
 
-    public async Task ProcessPostAsync(Post post, CancellationToken cancellationToken)
+    public async Task ProcessPostAsync(Post post, CancellationToken cancellationToken = default)
     {
+        if (!post.PostEvents.Any())
+        {
+            logger.LogInformation(
+                "Post has no post events to process: PostId={PostId}",
+                post.Id);
+            return;
+        }
+
         logger.LogInformation(
             "Processing post: PostId={PostId}",
             post.Id);

@@ -13,4 +13,22 @@ public static class IntegrationRepositoryDoubles
         public virtual Task<IEnumerable<Integration>> GetIntegrationsByIdsAsync(IEnumerable<Guid> integrationIds, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public virtual Task UpdateAsync(Integration integration, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }
+
+    public static class Stubs
+    {
+        public static class GetIntegrationsByIdsAsync
+        {
+            public class ReturnsSpecifiedIntegrations : Dummy
+            {
+                private readonly Integration[] _integrations;
+                public ReturnsSpecifiedIntegrations(params Integration[] integrations)
+                {
+                    _integrations = integrations;
+                }
+
+                public override Task<IEnumerable<Integration>> GetIntegrationsByIdsAsync(IEnumerable<Guid> integrationIds, CancellationToken cancellationToken = default)
+                    => Task.FromResult(_integrations.AsEnumerable());
+            }
+        }
+    }
 }
