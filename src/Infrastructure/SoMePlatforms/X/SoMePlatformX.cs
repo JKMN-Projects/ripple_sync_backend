@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
@@ -9,7 +11,7 @@ using System.Text.Json;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.X;
 
-internal class SoMePlatformX(IOptions<XOptions> options, IEncryptionService encryptor) : ISoMePlatform
+internal class SoMePlatformX(ILogger<SoMePlatformX> logger, IOptions<XOptions> options, IEncryptionService encryptor) : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
     {
@@ -90,6 +92,9 @@ internal class SoMePlatformX(IOptions<XOptions> options, IEncryptionService encr
             if (response.IsSuccessStatusCode)
             {
                 //TODO: Save url for the post
+                var postResponse = JsonSerializer.Deserialize<PostResponse>(responseContent);
+                postEvent.PlatformPostIdentifier = postResponse?.Data?.Id;
+                if (postEvent.PlatformPostIdentifier == null) logger.LogWarning("Platform Identification could not be found");
                 postEvent.Status = PostStatus.Posted;
             }
             else
@@ -104,4 +109,6 @@ internal class SoMePlatformX(IOptions<XOptions> options, IEncryptionService encr
         }
         return postEvent;
     }
+    private record PostResponse(PostResponseData Data);
+    private record PostResponseData(string Id);
 }
