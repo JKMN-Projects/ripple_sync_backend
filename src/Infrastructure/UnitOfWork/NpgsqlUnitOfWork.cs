@@ -11,8 +11,6 @@ internal class NpgsqlUnitOfWork : IDisposable, IUnitOfWork
 
     private bool _transactionManaged;
 
-    private bool _transactionFromBiggerScope;
-
     public NpgsqlUnitOfWork(string connectionString)
     {
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
@@ -39,31 +37,19 @@ internal class NpgsqlUnitOfWork : IDisposable, IUnitOfWork
 
     public IDbTransaction? Transaction { get; private set; }
 
-    public void BeginTransaction()
-    {
-        if (Transaction != null)
-        {
-            _transactionFromBiggerScope = true;
-        }
-        else
-        {
-            Transaction = Connection.BeginTransaction();
-        }
-    }
+    public void BeginTransaction() 
+        => Transaction = Connection.BeginTransaction();
 
     public void Save()
     {
         if (Transaction == null)
             throw new InvalidOperationException("No active transaction");
 
-        if(!_transactionFromBiggerScope)
-        {
-            Transaction.Commit();
-            _transactionManaged = true;
-            Transaction.Dispose();
+        Transaction.Commit();
+        _transactionManaged = true;
+        Transaction.Dispose();
 
-            Transaction = null;
-        }
+        Transaction = null;
     }
 
     public void Cancel()
