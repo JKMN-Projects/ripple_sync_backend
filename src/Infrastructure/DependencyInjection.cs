@@ -7,6 +7,7 @@ using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Platforms;
+using RippleSync.Infrastructure.FeedbackRepository;
 using RippleSync.Infrastructure.IntegrationRepository;
 using RippleSync.Infrastructure.PlatformRepository;
 using RippleSync.Infrastructure.PostRepository;
@@ -45,6 +46,8 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, InMemoryUserRepository>();
         services.AddScoped<IIntegrationRepository, InMemoryIntegrationRepository>();
         services.AddScoped<IPostRepository, InMemoryPostRepository>();
+
+        services.AddScoped<IFeedbackRepository, GptFeedbackRepository>();
 
         services.AddSingleton<IEncryptionService>(sp =>
         {

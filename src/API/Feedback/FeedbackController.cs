@@ -1,44 +1,24 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http.Headers;
+using RippleSync.Application.Feedback;
 using System.Text.Json;
 
 namespace RippleSync.API.Feedback;
 [Route("api/[controller]")]
 [Authorize]
 [ApiController]
-public class FeedbackController(IHttpClientFactory httpClientFactory, IConfiguration config) : ControllerBase
+public class FeedbackController(FeedbackManager feedbackManager) : ControllerBase
 {
-    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
-    private readonly IConfiguration _config = config;
-
     [HttpPost("conversation")]
     public async Task<IActionResult> PostConversation([FromBody] ChatRequest request)
     {
-        var apiKey = _config["Integrations:OpenAI:ApiKey"];
+        var response = await feedbackManager.PostConversationAsync(request);
 
-        var _httpClient = _httpClientFactory.CreateClient();
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-        var messages = new List<object>();
-
-        bool containsPost = request.Message?.Contains("http") == false && request.Message?.Length > 50;
-
-        if (containsPost || request.History.Count <= 2)
+        if (response == null)
         {
-            messages.Add(new { role = "system", content = "You are a helpful social media content coach that gives feedback on user posts and helps refine writing tone, clarity, and engagement." });
+            return BadRequest(new { error = "Response was null" });
         }
 
-        messages.AddRange(request.History.Select(h => new { role = h.Role, content = h.Content }));
-        messages.Add(new { role = "user", content = request.Message });
-
-        var body = new
-        {
-            model = "gpt-4o-mini",
-            messages = messages
-        };
-
-        var response = await _httpClient.PostAsJsonAsync("https://api.openai.com/v1/chat/completions", body);
         var responseBody = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -64,18 +44,5 @@ public class FeedbackController(IHttpClientFactory httpClientFactory, IConfigura
 
         return Ok(new { reply = feedback });
     }
-}
-
-public class ChatRequest
-{
-    public string Message { get; set; } = string.Empty;
-    public List<ChatHistoryItem> History { get; set; } = new();
-    public string? ApiKey { get; set; }
-}
-
-public class ChatHistoryItem
-{
-    public string Role { get; set; } = "user"; // 'user' or 'ai'
-    public string Content { get; set; } = string.Empty;
 }
 
