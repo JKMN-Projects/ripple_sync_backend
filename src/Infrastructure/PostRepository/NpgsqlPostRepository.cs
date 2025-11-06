@@ -1,15 +1,15 @@
-﻿using Npgsql;
+﻿using RippleSync.Application.Common;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Posts;
 using RippleSync.Domain.Posts;
+using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.PostRepository.Entities;
 
 namespace RippleSync.Infrastructure.PostRepository;
-internal class NpgsqlPostRepository(
-    NpgsqlConnection dbConnection) : IPostRepository, IPostQueries
+internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPostRepository, IPostQueries
 {
     public async Task<IEnumerable<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status, CancellationToken cancellationToken = default)
     {
@@ -26,9 +26,12 @@ internal class NpgsqlPostRepository(
             SELECT
                 p.id,
                 p.message_content,
-                (SELECT ARRAY_AGG(pm.id) 
-                 FROM post_media AS pm 
-                 WHERE pm.post_id = p.id) AS media_ids,
+                COALESCE(
+                    (SELECT ARRAY_AGG(pm.id) 
+                     FROM post_media AS pm 
+                     WHERE pm.post_id = p.id),
+                    '{}'
+                ) AS media_ids,
                 pe_data.status_name,
                 pe_data.timestamp,
                 pe_data.platforms
@@ -56,7 +59,7 @@ internal class NpgsqlPostRepository(
 
         try
         {
-            userPostEntities = await dbConnection.QueryAsync<GetPostsByUserResponseEntity>(getPostSummaryQuery, param: new { UserId = userId }, ct: cancellationToken);
+            userPostEntities = await Connection.QueryAsync<GetPostsByUserResponseEntity>(getPostSummaryQuery, param: new { UserId = userId }, trans: Transaction, ct: cancellationToken);
         }
         catch (Exception e)
         {
@@ -72,7 +75,7 @@ internal class NpgsqlPostRepository(
 
         try
         {
-            postMediaEntity = await dbConnection.SelectSingleOrDefaultAsync<PostMediaEntity>("id = @Id", param: new { Id = imageId }, ct: cancellationToken);
+            postMediaEntity = await Connection.SelectSingleOrDefaultAsync<PostMediaEntity>("id = @Id", param: new { Id = imageId }, ct: cancellationToken);
         }
         catch (Exception e)
         {
@@ -88,7 +91,7 @@ internal class NpgsqlPostRepository(
 
         try
         {
-            var postEntities = await dbConnection.SelectAsync<PostEntity>("user_account_id = @UserId", param: new { UserId = userId }, ct: cancellationToken);
+            var postEntities = await Connection.SelectAsync<PostEntity>("user_account_id = @UserId", param: new { UserId = userId }, ct: cancellationToken);
 
             if (!postEntities.Any()) return posts;
 
@@ -108,12 +111,12 @@ internal class NpgsqlPostRepository(
         {
             var postIdParam = new { PostId = postId };
 
-            var postEntity = await dbConnection.SelectSingleOrDefaultAsync<PostEntity>("id = @PostId", param: postIdParam, ct: cancellationToken);
+            var postEntity = await Connection.SelectSingleOrDefaultAsync<PostEntity>("id = @PostId", param: postIdParam, ct: cancellationToken);
 
             if (postEntity == null) return null;
 
-            var postMedias = await dbConnection.SelectAsync<PostMediaEntity>("post_id = @PostId", param: postIdParam, ct: cancellationToken);
-            var postEvents = await dbConnection.SelectAsync<PostEventEntity>("post_id = @PostId", param: postIdParam, ct: cancellationToken);
+            var postMedias = await Connection.SelectAsync<PostMediaEntity>("post_id = @PostId", param: postIdParam, ct: cancellationToken);
+            var postEvents = await Connection.SelectAsync<PostEventEntity>("post_id = @PostId", param: postIdParam, ct: cancellationToken);
 
             return Post.Reconstitute(
                 postEntity.Id,
@@ -123,8 +126,8 @@ internal class NpgsqlPostRepository(
                 postEntity.UpdatedAt,
                 postEntity.ScheduledFor,
                 postMedias.Select(pme => PostMedia.Reconstitute(pme.Id, pme.ImageData)),
-                postEvents.Select(pee => PostEvent.Reconstitute(pee.PostId, pee.UserPlatformIntegrationId, (PostStatus)pee.PostStatusId, pee.PlatformPostIdentifier, pee.PlatformResponse))
-                );
+                postEvents.Select(pee => PostEvent.Reconstitute(pee.UserPlatformIntegrationId, (PostStatus)pee.PostStatusId, pee.PlatformPostIdentifier, pee.PlatformResponse))
+            );
         }
         catch (Exception e)
         {
@@ -145,12 +148,13 @@ internal class NpgsqlPostRepository(
 		            ON pe.post_id = p.id
 	            LEFT JOIN post_status as ps 
 		            ON pe.post_status_id = ps.id
-            WHERE p.scheduled_for IS NOT null 
-	            AND ps.status = 'scheduled';";
+            WHERE p.scheduled_for IS NOT null
+	            AND ps.status = 'scheduled'
+                AND p.scheduled_for < now()";
 
         try
         {
-            var postEntities = await dbConnection.QueryAsync<PostEntity>(getPostsToPublish, ct: cancellationToken);
+            var postEntities = await Connection.QueryAsync<PostEntity>(getPostsToPublish, trans: Transaction, ct: cancellationToken);
 
             if (!postEntities.Any()) return posts;
 
@@ -170,19 +174,30 @@ internal class NpgsqlPostRepository(
 
         try
         {
-            int rowsAffected = await dbConnection.InsertAsync(postEntity, ct: cancellationToken);
+            int rowsAffected = await Connection.InsertAsync(postEntity, trans: Transaction, ct: cancellationToken);
 
             if (rowsAffected <= 0)
-                throw new RepositoryException("No rows were affected");
+                throw new RepositoryException("No rows were affected on post insert");
 
-            var postMediasEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
-            var postEventsEntities = post.PostEvents.Select(pe => new PostEventEntity(post.Id, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
+            if (!post.PostMedias.NullOrEmpty())
+            {
+                var postMediasEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
 
-            rowsAffected = await dbConnection.InsertAsync(postMediasEntities, ct: cancellationToken);
-            rowsAffected = await dbConnection.InsertAsync(postEventsEntities, ct: cancellationToken);
+                rowsAffected = await Connection.InsertAsync(postMediasEntities, trans: Transaction, ct: cancellationToken);
 
-            if (rowsAffected <= 0)
-                throw new RepositoryException("No rows were affected");
+                if (rowsAffected <= 0)
+                    throw new RepositoryException("No rows were affected on PostMedias insert");
+            }
+
+            if (!post.PostEvents.NullOrEmpty())
+            {
+                var postEventsEntities = post.PostEvents.Select(pe => new PostEventEntity(post.Id, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
+
+                rowsAffected = await Connection.InsertAsync(postEventsEntities, trans: Transaction, ct: cancellationToken);
+
+                if (rowsAffected <= 0)
+                    throw new RepositoryException("No rows were affected on PostEvent insert");
+            }
         }
         catch (Exception e)
         {
@@ -193,17 +208,27 @@ internal class NpgsqlPostRepository(
     public async Task UpdateAsync(Post post, CancellationToken cancellationToken = default)
     {
         var postEntity = new PostEntity(post.Id, post.UserId, post.MessageContent, post.SubmittedAt, post.UpdatedAt, post.ScheduledFor);
-        var postMediaEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
-        var postEventEntities = post.PostEvents.Select(pe => new PostEventEntity(pe.PostId, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
 
         try
         {
-            int rowsAffected = await dbConnection.UpdateAsync(postEntity, ct: cancellationToken);
-            rowsAffected += await dbConnection.UpdateAsync(postMediaEntities, ct: cancellationToken);
-            rowsAffected += await dbConnection.UpdateAsync(postEventEntities, ct: cancellationToken);
+            int rowsAffected = await Connection.UpdateAsync(postEntity, trans: Transaction, ct: cancellationToken);
+
+            if (!post.PostMedias.NullOrEmpty())
+            {
+                var postMediaEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
+
+                rowsAffected += await Connection.SyncAsync(postMediaEntities, trans: Transaction, ct: cancellationToken);
+            }
+
+            if (!post.PostEvents.NullOrEmpty())
+            {
+                var postEventEntities = post.PostEvents.Select(pe => new PostEventEntity(post.Id, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
+
+                rowsAffected += await Connection.SyncAsync(postEventEntities, trans: Transaction, ct: cancellationToken);
+            }
 
             if (rowsAffected <= 0)
-                throw new RepositoryException("No rows were affected");
+                throw new RepositoryException("No rows were affected on Post update");
         }
         catch (Exception e)
         {
@@ -217,10 +242,10 @@ internal class NpgsqlPostRepository(
 
         try
         {
-            int rowsAffected = await dbConnection.RemoveAsync(postEntity, ct: cancellationToken);
+            int rowsAffected = await Connection.RemoveAsync(postEntity, trans: Transaction, ct: cancellationToken);
 
             if (rowsAffected <= 0)
-                throw new RepositoryException("No rows were affected");
+                throw new RepositoryException("No rows were affected on Post remove");
         }
         catch (Exception e)
         {
@@ -228,19 +253,16 @@ internal class NpgsqlPostRepository(
         }
     }
 
-    public async Task<PostEvent> UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
-
     private async Task<IEnumerable<Post>> GetMediaAndEventsForPosts(IEnumerable<PostEntity> postEntities, CancellationToken cancellationToken = default)
     {
         var postIdsParam = new { PostIds = postEntities.Select(p => p.Id).ToArray() };
 
-        var postMedias = await dbConnection.SelectAsync<PostMediaEntity>(
+        var postMedias = await Connection.SelectAsync<PostMediaEntity>(
             "post_id = ANY(@PostIds)",
             param: postIdsParam,
             ct: cancellationToken);
 
-        var postEvents = await dbConnection.SelectAsync<PostEventEntity>(
+        var postEvents = await Connection.SelectAsync<PostEventEntity>(
             "post_id = ANY(@PostIds)",
             param: postIdsParam,
             ct: cancellationToken);
@@ -256,7 +278,7 @@ internal class NpgsqlPostRepository(
             pe.UpdatedAt,
             pe.ScheduledFor,
             mediaLookup.GetValueOrDefault(pe.Id, []).Select(pme => PostMedia.Reconstitute(pme.Id, pme.ImageData)),
-            eventLookup.GetValueOrDefault(pe.Id, []).Select(pee => PostEvent.Reconstitute(pee.PostId, pee.UserPlatformIntegrationId, (PostStatus)pee.PostStatusId, pee.PlatformPostIdentifier, pee.PlatformResponse))
+            eventLookup.GetValueOrDefault(pe.Id, []).Select(pee => PostEvent.Reconstitute(pee.UserPlatformIntegrationId, (PostStatus)pee.PostStatusId, pee.PlatformPostIdentifier, pee.PlatformResponse))
         ));
     }
 }

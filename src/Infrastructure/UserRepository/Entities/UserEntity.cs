@@ -14,12 +14,12 @@ internal class UserEntity
 
     public string Salt { get; }
 
-    [SqlProperty(propName: "created_At")]
+    [SqlProperty(propName: "created_at")]
     public DateTime CreatedAt { get; }
 
 
-    [SqlConstructor("ripple_sync", "user_account")]
-    internal UserEntity(Guid id, string email, string password_hash, string salt, DateTime created_at)
+    [SqlConstructor(tableName: "user_account")]
+    public UserEntity(Guid id, string email, string password_hash, string salt, DateTime created_at)
     {
         Id = id;
         Email = email;

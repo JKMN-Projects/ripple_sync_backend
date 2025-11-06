@@ -3,6 +3,12 @@
 GET /api/integration
 
 ``` mermaid
+---
+
+config:
+    class:
+        hideEmptyMembersBox: true
+---
 classDiagram
     class GetIntegrationsRequest {
     }

@@ -6,6 +6,10 @@ using RippleSync.Domain.Platforms;
 namespace RippleSync.Infrastructure.PlatformRepository;
 internal class InMemoryPlatformRepository : IPlatformQueries
 {
+    public Task<IEnumerable<PlatformResponse>> GetAllPlatformsAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(Enum.GetValues<Platform>()
+            .Select(p => new PlatformResponse(Name: p.ToString())));
+
     public Task<IEnumerable<PlatformWithUserIntegrationResponse>> GetPlatformsWithUserIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
         => Task.FromResult(Enum.GetValues<Platform>()
             .Select(p => new PlatformWithUserIntegrationResponse(

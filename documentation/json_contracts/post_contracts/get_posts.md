@@ -16,7 +16,7 @@ classDiagram
         string messageContent
         string statusName
         string[] mediaAttachment
-        int64 timestamp
+        int64 timestampUnix
         string[] platforms
     }
 

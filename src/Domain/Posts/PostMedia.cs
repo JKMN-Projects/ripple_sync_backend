@@ -12,7 +12,7 @@ public class PostMedia
         ImageData = imageData;
     }
 
-    public static PostMedia New(string imageData)
+    public static PostMedia Create(string imageData)
     {
         return new PostMedia(
             id: Guid.NewGuid(),

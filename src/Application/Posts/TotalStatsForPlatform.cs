@@ -6,4 +6,5 @@ public sealed record TotalStatsForPlatform(
     int Reach,
     int Engagement,
     int Likes,
-    double AverageEngagement);
+    double AverageEngagement,
+    bool IsSimulated = false);

@@ -40,18 +40,18 @@ internal class InMemoryData
     internal static readonly List<Post> Posts =
     [
         Post.Reconstitute(Guid.NewGuid(), _userId, "My first post", DateTime.UtcNow, null, DateTime.UtcNow.AddDays(2), [],
-            [PostEvent.Reconstitute(Guid.NewGuid(), Guid.NewGuid(), PostStatus.Posted, "123456", null)]),
+            [PostEvent.Reconstitute(Guid.NewGuid(), PostStatus.Posted, "123456", null)]),
 
         Post.Reconstitute(Guid.NewGuid(), _userId, "My Scheduled post", DateTime.UtcNow, null, DateTime.UtcNow.AddDays(5), [],
-            [PostEvent.Reconstitute(Guid.NewGuid(), Guid.NewGuid(), PostStatus.Scheduled, "654321", null)]),
+            [PostEvent.Reconstitute(Guid.NewGuid(), PostStatus.Scheduled, "654321", null)]),
 
         Post.Reconstitute(Guid.NewGuid(), _userId,"Stuck while processing", DateTime.UtcNow.AddDays(-2), null, DateTime.UtcNow.AddDays(-2), [],
-            [PostEvent.Reconstitute(Guid.NewGuid(), Guid.NewGuid(), PostStatus.Processing, "", null)]),
+            [PostEvent.Reconstitute(Guid.NewGuid(), PostStatus.Processing, "", null)]),
 
         Post.Reconstitute(Guid.NewGuid(), _userId,"My post will not upload", DateTime.UtcNow.AddDays(-2), null, DateTime.UtcNow.AddDays(-2), [],
-            [PostEvent.Reconstitute(Guid.NewGuid(), Guid.NewGuid(), PostStatus.Failed, "", "Error")]),
+            [PostEvent.Reconstitute(Guid.NewGuid(), PostStatus.Failed, "", "Error")]),
 
         Post.Reconstitute(Guid.NewGuid(), _userId,"Just created this post - NOT DONE", DateTime.UtcNow, null, null, [],
-            [PostEvent.Reconstitute(Guid.NewGuid(), Guid.NewGuid(), PostStatus.Draft, "", null)]),
+            [PostEvent.Reconstitute(Guid.NewGuid(), PostStatus.Draft, "", null)]),
     ];
 }
