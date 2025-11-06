@@ -162,9 +162,9 @@ public class PostManager(
             await UpdatePostEventAsync(postEvent);
         }
 
-        List<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId).ToList();
+        IEnumerable<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId);
 
-        List<Integration> integrations = integrationRepository.GetIntegrationsByIdsAsync(userPlatformIntegrations, cancellationToken).Result.ToList();
+        IEnumerable<Integration> integrations = await integrationRepository.GetIntegrationsByIdsAsync(userPlatformIntegrations, cancellationToken);
 
         //Request platform
         foreach (var integration in integrations)
