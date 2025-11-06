@@ -67,7 +67,7 @@ public class PostManager(
     public async Task<string?> GetImageByIdAsync(Guid userId)
         => new(await postQueries.GetImageByIdAsync(userId));
 
-    public async Task CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
+    public async Task CreatePostAsync(Guid userId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[]? integrationIds, CancellationToken cancellationToken = default)
     {
         DateTime? scheduledFor = timestamp.HasValue
             ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
@@ -77,9 +77,9 @@ public class PostManager(
             .Select(PostMedia.New)
             .ToList() ?? [];
 
-        var postEvents = integrationIds
+        var postEvents = integrationIds?
             .Select(id => PostEvent.Create(id, scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft, "", new { }))
-            .ToList();
+            .ToList() ?? [];
 
         var post = Post.Create(
             userId,
@@ -102,7 +102,7 @@ public class PostManager(
         }
     }
 
-    public async Task UpdatePostAsync(Guid userId, Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[] integrationIds, CancellationToken cancellationToken = default)
+    public async Task UpdatePostAsync(Guid userId, Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[]? integrationIds, CancellationToken cancellationToken = default)
     {
         Post? post = await postRepository.GetByIdAsync(postId, cancellationToken);
 
@@ -118,14 +118,15 @@ public class PostManager(
             ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
             : null;
 
-        if (mediaAttachments != null)
-        {
-            post.PostMedias = [.. mediaAttachments.Select(PostMedia.New)];
-        }
+        post.PostMedias = mediaAttachments?
+            .Select(PostMedia.New)
+            .ToList() ?? [];
 
-        if (integrationIds != null && integrationIds.Length > 0)
+        if (post.ScheduledFor.HasValue)
         {
-            post.PostEvents = [.. integrationIds.Select(id => PostEvent.Create(id, PostStatus.Scheduled, "", new { }))];
+            post.PostEvents = integrationIds?
+                .Select(id => PostEvent.Create(id, PostStatus.Scheduled , "", new { }))
+                .ToList() ?? [];
         }
 
         post.UpdatedAt = DateTime.UtcNow;

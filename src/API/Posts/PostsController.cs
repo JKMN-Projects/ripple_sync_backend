@@ -54,7 +54,7 @@ public partial class PostsController(PostManager postManager) : ControllerBase
                     request.MessageContent,
                     request.Timestamp,
                     mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
-                    request.IntegrationIds.ToArray()
+                    request.IntegrationIds != null && request.IntegrationIds.Count > 0 ? request.IntegrationIds.ToArray() : null
                 );
             return Created();
         }
@@ -104,7 +104,7 @@ public partial class PostsController(PostManager postManager) : ControllerBase
                 request.MessageContent,
                 request.Timestamp,
                 mediaAttachments.Count > 0 ? mediaAttachments.ToArray() : null,
-                request.IntegrationIds.ToArray(),
+                request.IntegrationIds != null && request.IntegrationIds.Count > 0 ? request.IntegrationIds.ToArray() : null,
                 cancellationToken: cancellationToken
             );
 
