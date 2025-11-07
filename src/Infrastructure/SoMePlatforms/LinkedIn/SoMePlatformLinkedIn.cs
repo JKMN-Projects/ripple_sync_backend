@@ -1,19 +1,16 @@
 ﻿using Infrastructure.FakePlatform;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
 using RippleSync.Infrastructure.SoMePlatforms.X;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
 
-internal class SoMePlatformLinkedIn(IOptions<LinkedInOptions> options, IEncryptionService encryptor) : ISoMePlatform
+internal partial class SoMePlatformLinkedIn(ILogger<SoMePlatformLinkedIn> logger, IOptions<LinkedInOptions> options, LinkedInHttpClient linkedInHttpClient, IEncryptionService encryptor) : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
     {
@@ -53,87 +50,62 @@ internal class SoMePlatformLinkedIn(IOptions<LinkedInOptions> options, IEncrypti
     {
         var postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id)
             ?? throw new InvalidOperationException("PostEvent not found for the given integration.");
-        var authorUrn = await GetLinkedInAuthorUrnAsync(integration);
 
-        var url = "https://api.linkedin.com/rest/posts";
-        var linkedInPayload = new
+        try
         {
-            author = authorUrn,
-            commentary = post.MessageContent,
-            visibility = "PUBLIC",
-            distribution = new
+            linkedInHttpClient.SetDefaultHeaders(integration.TokenType, encryptor.Decrypt(integration.AccessToken));
+
+            var authorUrn = await linkedInHttpClient.GetUserAuthorUrnAsync();
+            var imageUrns = await UploadPostImagesAsync(authorUrn, post.PostMedias);
+
+
+            var builder = new LinkedInPostBuilder()
+                .SetAuthor(authorUrn)
+                .SetCommentary(post.MessageContent)
+                .SetVisibility("PUBLIC")
+                .SetLifecycleState("PUBLISHED")
+                .SetReshareDisabled(false);
+
+
+            if (imageUrns.Any())
             {
-                feedDistribution = "MAIN_FEED",
-                targetEntities = new List<string>(),
-                thirdPartyDistributionChannels = new List<string>()
-            },
-            lifecycleState = "PUBLISHED",
-            isReshareDisabledByAuthor = false
-        };
-        var jsonContent = JsonSerializer.Serialize(linkedInPayload);
-        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                builder.AddImages(imageUrns);
+            }
+
+            var publishPayload = builder.Build();
 
 
-        var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = content
-        };
-        request.Headers.Add("X-Restli-Protocol-Version", "2.0.0");
-        request.Headers.Add("Linkedin-Version", "202510");
-        request.Headers.Authorization = new AuthenticationHeaderValue(
-            "Bearer",
-            encryptor.Decrypt(integration.AccessToken)
-        );
+            var postIdentifier = await linkedInHttpClient.PublishPost(publishPayload);
+            if (postIdentifier == string.Empty) logger.LogWarning("Could not get platformIdentifier on LinkedIn for post: {postId}",post.Id);
 
-        using var httpClient = new HttpClient();
-        var response = await httpClient.SendAsync(request);
-        var responseContent = await response.Content.ReadAsStringAsync();
-
-        if (response.IsSuccessStatusCode)
-        {
+            postEvent.PlatformPostIdentifier = postIdentifier;
             postEvent.Status = PostStatus.Posted;
         }
-        else
+        catch (Exception ex)
         {
             postEvent.Status = PostStatus.Failed;
+            logger.LogError(message: "An exception occurred while publishing post {postId} on Linkedin", post.Id);
+            throw;
         }
+
         return postEvent;
-
     }
-    private async Task<string> GetLinkedInAuthorUrnAsync(Integration integration)
+    private async Task<List<string>> UploadPostImagesAsync(string authorUrn,
+        IEnumerable<PostMedia> postMedias)
     {
-        var userInfoUrl = "https://api.linkedin.com/v2/userinfo";
+        var imageUrns = new List<string>();
 
-        var request = new HttpRequestMessage(HttpMethod.Get, userInfoUrl);
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
-            "Bearer",
-            encryptor.Decrypt(integration.AccessToken)
-        );
+        if (!postMedias.Any())
+            return imageUrns;
 
-        using var httpClient = new HttpClient();
-        var response = await httpClient.SendAsync(request);
-
-        if (!response.IsSuccessStatusCode)
+        foreach (var postMedia in postMedias)
         {
-            var errorContent = await response.Content.ReadAsStringAsync();
-            throw new Exception($"Failed to retrieve LinkedIn user info: {errorContent}");
+            var initResponse = await linkedInHttpClient.InitImageAsync(authorUrn);
+            await linkedInHttpClient.UploadImageAsync(postMedia.ImageData, initResponse.uploadUrl);
+            imageUrns.Add(initResponse.image);
         }
 
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var userInfo = JsonSerializer.Deserialize<LinkedInUserInfo>(responseContent);
-
-        return $"urn:li:person:{userInfo!.Sub}";
+        return imageUrns;
     }
 
-    public class LinkedInUserInfo
-    {
-        [JsonPropertyName("sub")]
-        public string Sub { get; set; }
-
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-
-        [JsonPropertyName("email")]
-        public string Email { get; set; }
-    }
 }
