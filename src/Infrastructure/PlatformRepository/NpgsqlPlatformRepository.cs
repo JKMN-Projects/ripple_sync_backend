@@ -1,5 +1,5 @@
-﻿using RippleSync.Application.Common;
-using RippleSync.Application.Common.Queries;
+﻿using RippleSync.Application.Common.Queries;
+using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Platforms;
 using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;

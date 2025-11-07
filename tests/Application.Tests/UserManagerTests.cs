@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
-using RippleSync.Application.Common;
 using RippleSync.Application.Common.Exceptions;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
+using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Users;
 using RippleSync.Application.Users.Exceptions;
 using RippleSync.Domain.Users;

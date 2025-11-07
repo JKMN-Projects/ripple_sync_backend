@@ -1,6 +1,6 @@
-﻿using RippleSync.Application.Common;
-using RippleSync.Application.Common.Queries;
+﻿using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
+using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Integrations;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;

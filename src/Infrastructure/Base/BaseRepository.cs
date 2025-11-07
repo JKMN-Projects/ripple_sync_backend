@@ -1,5 +1,5 @@
 ﻿using Npgsql;
-using RippleSync.Application.Common;
+using RippleSync.Application.Common.UnitOfWork;
 
 namespace RippleSync.Infrastructure.Base;
 internal class BaseRepository(IUnitOfWork unitOfWork)

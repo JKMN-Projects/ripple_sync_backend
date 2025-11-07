@@ -1,7 +1,7 @@
 ﻿using Npgsql;
 using Respawn;
 using Respawn.Graph;
-using RippleSync.Application.Common;
+using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Domain.Platforms;
 using RippleSync.Infrastructure.UnitOfWork;
 using System.Data;
