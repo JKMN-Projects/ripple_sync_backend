@@ -42,7 +42,7 @@ if (builder.Environment.IsDevelopment())
 }
 
 // Add services to the container.
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient(); // TODO: Remove this? Is probably not in use, and should be replaced with IHttpClientFactory where needed.
 builder.Services.AddControllersWithViews()
     .AddApplicationPart(FakeOAuthAssemblyReference.Assembly);
 

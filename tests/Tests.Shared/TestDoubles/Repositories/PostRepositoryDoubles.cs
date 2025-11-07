@@ -18,4 +18,53 @@ public static class PostRepositoryDoubles
         public virtual Task DeleteAsync(Post post, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }
+
+    public static class Stubs
+    {
+        public static class UpdateAsync
+        {
+            public class DoesNothing : Dummy
+            {
+                public override Task UpdateAsync(Post post, CancellationToken cancellationToken = default) 
+                    => Task.CompletedTask;
+            }
+        }
+    }
+
+    public static class Spies
+    {
+        public class UpdateAsyncSpy : Dummy
+        {
+            private readonly IPostRepository _spied;
+            private readonly List<Post> _updatedPosts = [];
+
+            public int InvocationCount { get; private set; }
+            public IReadOnlyList<Post> UpdatedPosts => _updatedPosts.AsReadOnly();
+            public Post? LatestUpdated => _updatedPosts.LastOrDefault();
+
+            public Action<Post, UpdateAsyncSpy>? OnInvokation { get; set; }
+
+            public UpdateAsyncSpy(IPostRepository spied)
+            {
+                _spied = spied;
+            }
+
+            public override async Task UpdateAsync(Post post, CancellationToken cancellationToken = default)
+            {
+                InvocationCount++;
+                _updatedPosts.Add(Post.Reconstitute(
+                    id: post.Id,
+                    userId: post.UserId,
+                    messageContent: post.MessageContent,
+                    submittedAt: post.SubmittedAt,
+                    updatedAt: post.UpdatedAt,
+                    scheduledFor: post.ScheduledFor,
+                    postMedias: post.PostMedias,
+                    postsEvents: post.PostEvents)
+                );
+                OnInvokation?.Invoke(post, this);
+                await _spied.UpdateAsync(post, cancellationToken);
+            }
+        }
+    }
 }

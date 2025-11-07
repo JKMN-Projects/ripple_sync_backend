@@ -46,8 +46,6 @@ public static class DependencyInjection
         services.AddKeyedSingleton<ISoMePlatform, SoMePlatformThreads>(Platform.Threads);
         services.AddKeyedSingleton<ISoMePlatform, SoMePlatformFake>(Platform.FakePlatform);
 
-        services.AddScoped<IUnitOfWork>(sp => new NpgsqlUnitOfWork(connectionString));
-
         services.AddScoped<IFeedbackRepository, GptFeedbackRepository>();
         services.AddHttpClient<LinkedInHttpClient>(httpClient =>
         {
@@ -58,6 +56,7 @@ public static class DependencyInjection
         bool inMemory = false;
         if (inMemory)
         {
+            services.AddScoped<IUnitOfWork, InMemoryUnitOfWork>();
             services.AddScoped<IPlatformQueries, InMemoryPlatformRepository>();
             services.AddScoped<IIntegrationQueries, InMemoryIntegrationRepository>();
             services.AddScoped<IPostQueries, InMemoryPostRepository>();
@@ -68,6 +67,7 @@ public static class DependencyInjection
         }
         else
         {
+            services.AddScoped<IUnitOfWork>(sp => new NpgsqlUnitOfWork(connectionString));
             services.AddScoped<IPlatformQueries, NpgsqlPlatformRepository>();
             services.AddScoped<IIntegrationQueries, NpgsqlIntegrationRepository>();
             services.AddScoped<IPostQueries, NpgsqlPostRepository>();
