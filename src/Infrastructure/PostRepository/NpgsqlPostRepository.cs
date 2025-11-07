@@ -7,6 +7,7 @@ using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.PostRepository.Entities;
+using System.Text;
 
 namespace RippleSync.Infrastructure.PostRepository;
 internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPostRepository, IPostQueries
@@ -52,14 +53,27 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
                      WHERE pe.post_id = p.id) AS platforms
                 WHERE EXISTS (SELECT 1 FROM post_event WHERE post_id = p.id)
             ) AS pe_data ON true
-            WHERE p.user_account_id = @UserId
-            ORDER BY p.submitted_at DESC;";
+            WHERE p.user_account_id = @UserId";
+
+        if (status != null)
+        {
+            if (status.Equals("draft", StringComparison.OrdinalIgnoreCase))
+            {
+                getPostSummaryQuery += " AND pe_data.status_name IS NULL";
+            }
+            else
+            {
+                getPostSummaryQuery += " AND pe_data.status_name = @Status";
+            }
+        }
+
+        getPostSummaryQuery += " ORDER BY p.submitted_at DESC";
 
         IEnumerable<GetPostsByUserResponseEntity> userPostEntities = [];
 
         try
         {
-            userPostEntities = await Connection.QueryAsync<GetPostsByUserResponseEntity>(getPostSummaryQuery, param: new { UserId = userId }, trans: Transaction, ct: cancellationToken);
+            userPostEntities = await Connection.QueryAsync<GetPostsByUserResponseEntity>(getPostSummaryQuery, param: new { UserId = userId, Status = status }, trans: Transaction, ct: cancellationToken);
         }
         catch (Exception e)
         {

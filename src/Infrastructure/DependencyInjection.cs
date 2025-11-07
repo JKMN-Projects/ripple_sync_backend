@@ -48,12 +48,14 @@ public static class DependencyInjection
         services.AddKeyedSingleton<ISoMePlatform, SoMePlatformFake>(Platform.FakePlatform);
 
         services.AddScoped<IFeedbackRepository, GptFeedbackRepository>();
+
         services.AddHttpClient<LinkedInHttpClient>(httpClient =>
         {
             httpClient.BaseAddress = new Uri("https://api.linkedin.com/");
             httpClient.DefaultRequestHeaders.Add("X-Restli-Protocol-Version", "2.0.0");
             httpClient.DefaultRequestHeaders.Add("Linkedin-Version", "202510");
         });
+
         bool inMemory = false;
         if (inMemory)
         {
