@@ -92,7 +92,7 @@ public class PostManager(
         );
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
-            await postRepository.UpdateAsync(post, cancellationToken));
+            await postRepository.CreateAsync(post, cancellationToken));
     }
 
     public async Task UpdatePostAsync(Guid userId, Guid postId, string messageContent, long? timestamp, string[]? mediaAttachments, Guid[]? integrationIds, CancellationToken cancellationToken = default)
@@ -172,14 +172,6 @@ public class PostManager(
         logger.LogInformation(
             "Processing post: PostId={PostId}",
             post.Id);
-
-        foreach (var postEvent in post.PostEvents)
-        {
-            postEvent.Status = PostStatus.Processing;
-        }
-
-        await unitOfWork.ExecuteInTransactionAsync(async () =>
-            await postRepository.UpdateAsync(post, cancellationToken));
 
         IEnumerable<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId);
 
