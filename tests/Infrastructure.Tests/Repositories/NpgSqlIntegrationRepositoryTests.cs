@@ -12,11 +12,11 @@ using RippleSync.Tests.Shared.TestDoubles.Security;
 
 namespace RippleSync.Infrastructure.Tests.Repositories;
 
-public class NpgSqlIntegrationRepository : RepositoryTestBase
+public class NpgSqlIntegrationRepositoryTests : RepositoryTestBase
 {
     private readonly NpgsqlIntegrationRepository _sut;
 
-    public NpgSqlIntegrationRepository(PostgresDatabaseFixture fixture) : base(fixture)
+    public NpgSqlIntegrationRepositoryTests(PostgresDatabaseFixture fixture) : base(fixture)
     {
         _sut = new NpgsqlIntegrationRepository(UnitOfWork);
     }
@@ -27,7 +27,7 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         await base.DisposeAsync();
     }
 
-    public sealed class GetByUserIdAsync : NpgSqlIntegrationRepository
+    public sealed class GetByUserIdAsync : NpgSqlIntegrationRepositoryTests
     {
         public GetByUserIdAsync(PostgresDatabaseFixture fixture) : base(fixture)
         {
@@ -81,7 +81,7 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         }
     }
 
-    public sealed class CreateAsync : NpgSqlIntegrationRepository
+    public sealed class CreateAsync : NpgSqlIntegrationRepositoryTests
     {
         public CreateAsync(PostgresDatabaseFixture fixture) : base(fixture)
         {
@@ -113,7 +113,7 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         }
     }
 
-    public sealed class UpdateAsync : NpgSqlIntegrationRepository
+    public sealed class UpdateAsync : NpgSqlIntegrationRepositoryTests
     {
         public UpdateAsync(PostgresDatabaseFixture fixture) : base(fixture)
         {
@@ -160,7 +160,7 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         }
     }
 
-    public sealed class DeleteAsync : NpgSqlIntegrationRepository
+    public sealed class DeleteAsync : NpgSqlIntegrationRepositoryTests
     {
         public DeleteAsync(PostgresDatabaseFixture fixture) : base(fixture)
         {
@@ -200,7 +200,7 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         }
     }
 
-    public sealed class GetIntegrationsByIdsAsync : NpgSqlIntegrationRepository
+    public sealed class GetIntegrationsByIdsAsync : NpgSqlIntegrationRepositoryTests
     {
         public GetIntegrationsByIdsAsync(PostgresDatabaseFixture fixture) : base(fixture)
         {
@@ -220,7 +220,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
                 .Build();
             await _sut.CreateAsync(integration1);
             await _sut.CreateAsync(integration2);
-            var integrationIds = new List<Guid> { integration1.Id, integration2.Id };
+            IEnumerable<Guid> integrationIds = [integration1.Id, integration2.Id];
+            integrationIds = integrationIds.Select(id => id); // Simulate IEnumerable<Guid>, test should work when input is not a materialized collection
 
             // Act
             var integrations = await _sut.GetIntegrationsByIdsAsync(integrationIds);
@@ -232,7 +233,7 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         }
     }
 
-    public sealed class GetConnectedIntegrationsAsync : NpgSqlIntegrationRepository
+    public sealed class GetConnectedIntegrationsAsync : NpgSqlIntegrationRepositoryTests
     {
         public GetConnectedIntegrationsAsync(PostgresDatabaseFixture fixture) : base(fixture)
         {
