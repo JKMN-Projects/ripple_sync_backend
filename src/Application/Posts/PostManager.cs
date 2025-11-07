@@ -1,6 +1,5 @@
 ﻿
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
@@ -8,7 +7,6 @@ using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
-using System.Text.Json.Serialization;
 
 namespace RippleSync.Application.Posts;
 
