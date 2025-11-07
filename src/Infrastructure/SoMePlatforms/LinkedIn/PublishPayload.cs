@@ -21,7 +21,7 @@ internal class PublishPayload()
     public Content Content { get; set; }
 
 }
-internal partial class Distribution
+internal class Distribution
 {
     [JsonPropertyName("feedDistribution")]
     public string FeedDistribution { get; set; } = "MAIN_FEED";
@@ -31,22 +31,22 @@ internal partial class Distribution
     public List<string> ThirdPartyDistributionChannels { get; set; } = new List<string>();
 }
 
-internal partial class Content
+internal class Content
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     [JsonPropertyName("multiImage")]
-    public MultiImage MultiImage { get; set; }
+    public MultiImage? MultiImage { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     [JsonPropertyName("media")]
-    public Media Media { get; set; }
+    public Media? Media { get; set; }
 }
 
-internal partial class MultiImage
+internal class MultiImage
 {
     [JsonPropertyName("images")]
     public List<Media> Images { get; set; }
 }
-internal partial class Media
+internal class Media
 {
     [JsonPropertyName("altText")]
     public string AltText { get; set; }

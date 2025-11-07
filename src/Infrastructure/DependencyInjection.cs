@@ -49,7 +49,12 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(sp => new NpgsqlUnitOfWork(connectionString));
 
         services.AddScoped<IFeedbackRepository, GptFeedbackRepository>();
-
+        services.AddHttpClient<LinkedInHttpClient>(httpClient =>
+        {
+            httpClient.BaseAddress = new Uri("https://api.linkedin.com/");
+            httpClient.DefaultRequestHeaders.Add("X-Restli-Protocol-Version", "2.0.0");
+            httpClient.DefaultRequestHeaders.Add("Linkedin-Version", "202510");
+        });
         bool inMemory = false;
         if (inMemory)
         {
