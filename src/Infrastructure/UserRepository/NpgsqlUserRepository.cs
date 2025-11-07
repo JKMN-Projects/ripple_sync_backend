@@ -1,5 +1,5 @@
-﻿using RippleSync.Application.Common;
-using RippleSync.Application.Common.Repositories;
+﻿using RippleSync.Application.Common.Repositories;
+using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;

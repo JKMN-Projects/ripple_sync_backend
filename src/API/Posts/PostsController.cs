@@ -111,6 +111,19 @@ public partial class PostsController(PostManager postManager) : ControllerBase
         return Ok();
     }
 
+    [HttpPatch("{postId:Guid}/retry")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RetryPost([FromRoute] Guid postId, CancellationToken cancellationToken = default)
+    {
+        Guid userId = User.GetUserId();
+        await postManager.RetryPublishAsync(userId, postId, cancellationToken);
+        return NoContent();
+    }
+
     private static async Task<List<string>> ExtractFilesToBase64(List<IFormFile>? formFiles)
     {
         var mediaAttachments = new List<string>();

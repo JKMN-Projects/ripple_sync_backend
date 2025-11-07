@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
-using RippleSync.Application.Common;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
 using RippleSync.Application.Common.Security;
+using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
