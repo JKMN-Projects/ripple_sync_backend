@@ -185,43 +185,28 @@ public class PostManager(
 
         IEnumerable<Integration> integrations = await integrationRepository.GetIntegrationsByIdsAsync(userPlatformIntegrations, cancellationToken);
 
-        //Request platform
-        foreach (var integration in integrations)
+        foreach (var postEvent in post.PostEvents)
         {
-            logger.LogInformation(
-                    "Started publish for post event: PostId={PostId}, Platform={Platform}",
-                    post.Id,
-                    integration.Platform);
-            ISoMePlatform platform = platformFactory.Create(integration.Platform);
+            postEvent.Status = PostStatus.Processing;
+            await unitOfWork.ExecuteInTransactionAsync(async () =>
+                await postRepository.UpdateAsync(post, cancellationToken));
 
-            PostEvent? postEvent;
             try
             {
-                postEvent = await platform.PublishPostAsync(post, integration);
+                var integration = integrations.FirstOrDefault(i => i.Id == postEvent.UserPlatformIntegrationId);
+                if (integration == null)
+                    throw new InvalidOperationException("No integration found. PostEvent: PostId={PostId}, UserPlatformIntegrationId={UserPlatformIntegrationId}");
 
-                //If still processing, mark as posted
-                if (postEvent.Status == PostStatus.Processing)
-                {
-                    postEvent.Status = PostStatus.Posted;
-                }
+                ISoMePlatform platform = platformFactory.Create(integration.Platform);
+                await platform.PublishPostAsync(post, integration);
+                postEvent.Status = PostStatus.Posted;
             }
             catch (Exception ex)
             {
-                logger.LogError("Failed to publish post for : PostId={PostId}, Platform={Platform}, Exception {Exception}",
+                logger.LogError(ex, "PostEvent ({PostId}) failed when attempting to publish to UserPlatformIntegrationId ({UserPlatformIntegrationId})",
                     post.Id,
-                    integration.Platform,
-                    ex.Message
-                );
-                postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id);
-                if (postEvent != null)
-                {
-                    postEvent.Status = PostStatus.Failed;
-                }
-            }
-
-            if (postEvent != null)
-            {
-                post.PostEvents = [.. post.PostEvents.Select(pe => pe.UserPlatformIntegrationId == integration.Id ? postEvent : pe)];
+                    postEvent.UserPlatformIntegrationId);
+                postEvent.Status = PostStatus.Failed;
             }
         }
 

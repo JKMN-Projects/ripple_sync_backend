@@ -48,7 +48,7 @@ public static class DependencyInjection
 
         services.AddScoped<IFeedbackRepository, GptFeedbackRepository>();
 
-        bool inMemory = false;
+        bool inMemory = true;
         if (inMemory)
         {
             services.AddScoped<IUnitOfWork, InMemoryUnitOfWork>();

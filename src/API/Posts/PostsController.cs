@@ -111,7 +111,7 @@ public partial class PostsController(PostManager postManager) : ControllerBase
         return Ok();
     }
 
-    [HttpPatch("{postId:Guid}/retry")]
+    [HttpPost("{postId:Guid}/retry")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
