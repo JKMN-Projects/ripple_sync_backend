@@ -4,21 +4,32 @@ using RippleSync.Infrastructure.JukmanORM.ClassAttributes;
 using RippleSync.Infrastructure.JukmanORM.Enums;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using System.Reflection;
+using System.Text;
 
 namespace RippleSync.Infrastructure.JukmanORM.Extensions;
 public static partial class NpgsqlExtensions
 {
-
-    /// <summary>
-    /// Flags for acquiring all instance properties (public and private) from a type and its base classes.
-    /// </summary>
-    private static readonly BindingFlags _acquirePropFlags = BindingFlags.FlattenHierarchy | BindingFlags.Default | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
-
     public enum WhereJoiner
     {
         OR,
         AND
     }
+
+    public enum SqlNamingConvention
+    {
+        SnakeCase,
+        CamelCase,
+    }
+
+    /// <summary>
+    /// ORM setting for the naming to be generated. Defined name in <see cref="SqlPropertyAttribute"/> is still prioritized unchanged.
+    /// </summary>
+    public static SqlNamingConvention NamingConvention { get; set; } = SqlNamingConvention.SnakeCase;
+
+    /// <summary>
+    /// Flags for acquiring all instance properties (public and private) from a type and its base classes.
+    /// </summary>
+    private static readonly BindingFlags _acquirePropFlags = BindingFlags.FlattenHierarchy | BindingFlags.Default | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
     /// <summary>
     /// Executes the query and returns the result as an enumerable of type T
@@ -54,6 +65,8 @@ public static partial class NpgsqlExtensions
                     dbValues.Add(row);
             }
         }
+        catch (ConstructorNameDoesNotExistException)
+        { throw; }
         catch (Exception e)
         { throw new QueryException("Querying to class error", query, e); }
 
@@ -254,6 +267,7 @@ public static partial class NpgsqlExtensions
                     continue;
 
                 var (propParams, placeholder) = CreatePropertyParameter(property, data, ref paramIndex);
+
                 parameters.AddRange(propParams);
                 rowPlaceholders.Add(placeholder);
             }
@@ -360,6 +374,7 @@ public static partial class NpgsqlExtensions
                     continue;
 
                 var (propParams, placeholder) = CreatePropertyParameter(property, data, ref paramIndex);
+
                 parameters.AddRange(propParams);
                 rowPlaceholders.Add(placeholder);
             }
@@ -865,21 +880,18 @@ public static partial class NpgsqlExtensions
             var parameterName = parameters[i].Name;
             if (string.IsNullOrWhiteSpace(parameterName)) continue;
 
-            var name = char.ToLower(parameterName[0], System.Globalization.CultureInfo.InvariantCulture).ToString();
-
-            if (parameterName.Length > 1)
-                name += parameterName[1..];
+            var name = ToSqlName(parameterName);
 
             try
             {
                 values[i] = reader[name] == DBNull.Value ? GetDefaultValue(parameters[i].ParameterType) : reader[name];
             }
-            catch (IndexOutOfRangeException)
+            catch (IndexOutOfRangeException e)
             {
                 switch (nameBehavior)
                 {
                     case ParameterNameBehavior.FailOnNotFound:
-                        throw;
+                        throw new ConstructorNameDoesNotExistException(name, e);
                     case ParameterNameBehavior.NullOnNotFound:
                         values[i] = null;
                         break;
@@ -966,13 +978,7 @@ public static partial class NpgsqlExtensions
 
         if (string.IsNullOrWhiteSpace(table))
         {
-            var name = typeof(T).Name;
-
-            if (name.Length > 0)
-                table = name[0].ToString().ToLowerInvariant();
-
-            if (name.Length > 1)
-                table += name[1..];
+            table = ToSqlName(typeof(T).Name);
         }
 
         if (!string.IsNullOrWhiteSpace(table) && !table.Trim().EndsWith("\"", StringComparison.InvariantCultureIgnoreCase))
@@ -1005,10 +1011,7 @@ public static partial class NpgsqlExtensions
         }
         else if (property != null && property.Name.Length > 0)
         {
-            name = property.Name[0].ToString().ToLower(System.Globalization.CultureInfo.InvariantCulture);
-
-            if (property.Name.Length > 1)
-                name += property.Name[1..];
+            name = ToSqlName(property.Name);
         }
 
         return name;
@@ -1144,6 +1147,53 @@ public static partial class NpgsqlExtensions
             var t when t == typeof(byte[]) => NpgsqlDbType.Bytea,
             _ => NpgsqlDbType.Unknown // Let Npgsql infer as fallback
         };
+    }
+
+    public static string ToSqlName(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return name;
+
+        return NamingConvention switch
+        {
+            SqlNamingConvention.CamelCase => ToCamelCase(name),
+            SqlNamingConvention.SnakeCase => ToSnakeCase(name),
+            _ => name
+        };
+    }
+
+    private static string ToCamelCase(string name)
+    {
+        if (name.Length == 0) return name;
+
+        var result = char.ToLowerInvariant(name[0]).ToString();
+
+        if (name.Length > 1)
+            result += name[1..];
+
+        return result;
+    }
+
+    private static string ToSnakeCase(string name)
+    {
+        if (name.Length == 0) return name;
+
+        var sb = new StringBuilder();
+        sb.Append(char.ToLowerInvariant(name[0]));
+
+        for (int i = 1; i < name.Length; i++)
+        {
+            if (char.IsUpper(name[i]))
+            {
+                sb.Append('_');
+                sb.Append(char.ToLowerInvariant(name[i]));
+            }
+            else
+            {
+                sb.Append(name[i]);
+            }
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>

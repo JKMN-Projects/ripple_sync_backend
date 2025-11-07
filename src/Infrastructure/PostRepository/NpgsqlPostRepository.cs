@@ -150,7 +150,9 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
 		            ON pe.post_status_id = ps.id
             WHERE p.scheduled_for IS NOT null
 	            AND ps.status = 'scheduled'
-                AND p.scheduled_for < now()";
+                AND p.scheduled_for < now()
+            ORDER BY p.scheduled_for ASC
+            LIMIT 1000";
 
         try
         {

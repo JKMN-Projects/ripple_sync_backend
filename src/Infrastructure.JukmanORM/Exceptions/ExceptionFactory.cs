@@ -23,7 +23,9 @@ public class ExceptionFactory
         if (string.IsNullOrWhiteSpace(query))
             queryMsg = "- No query provided";
 
-        throw new RepositoryException($"Exception encountered - {className}, {methodName} {queryMsg}", queryException, otherException);
+        Exception? innerException = queryException ?? otherException;
+
+        throw new RepositoryException($"Exception encountered - {className}, {methodName} {queryMsg}", innerException);
     }
 
     /// <summary>

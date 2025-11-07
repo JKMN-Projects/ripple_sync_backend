@@ -1,18 +1,10 @@
 ﻿using RippleSync.Infrastructure.JukmanORM.ClassAttributes;
 
 namespace RippleSync.Infrastructure.IntegrationRepository.Entities;
-internal class ConnectedIntegrationEntity
+
+[method: SqlConstructor()]
+internal class ConnectedIntegrationEntity(Guid id, string platform_name)
 {
-    public Guid Id { get; set; }
-
-    [SqlProperty(propName: "platform_name")]
-    public string Name { get; set; }
-
-
-    [SqlConstructor()]
-    public ConnectedIntegrationEntity(Guid id, string platform_name)
-    {
-        Id = id;
-        Name = platform_name;
-    }
+    public Guid Id { get; set; } = id;
+    public string Name { get; set; } = platform_name;
 }

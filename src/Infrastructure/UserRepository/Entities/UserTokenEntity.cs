@@ -2,36 +2,18 @@
 using RippleSync.Infrastructure.JukmanORM.Enums;
 
 namespace RippleSync.Infrastructure.UserRepository.Entities;
-internal class UserTokenEntity
+
+[method: SqlConstructor(tableName: "user_token")]
+internal class UserTokenEntity(Guid id, Guid userAccountId, int tokenTypeId, string tokenValue, DateTime createdAt, DateTime expiresAt)
 {
 
     [SqlProperty(update: UpdateAction.Where, isRecordIdentifier: true)]
-    public Guid Id { get; }
+    public Guid Id { get; } = id;
 
-    [SqlProperty(update: UpdateAction.Where, propName: "user_account_id")]
-    public Guid UserAccountId { get; }
-
-    [SqlProperty(propName: "token_type_id")]
-    public int TokenTypeId { get; }
-
-    [SqlProperty(propName: "token_value")]
-    public string TokenValue { get; }
-
-    [SqlProperty(propName: "created_at")]
-    public DateTime CreatedAt { get; }
-
-    [SqlProperty(propName: "expires_at")]
-    public DateTime ExpiresAt { get; }
-
-
-    [SqlConstructor(tableName: "user_token")]
-    public UserTokenEntity(Guid id, Guid user_account_id, int token_type_id, string token_value, DateTime created_at, DateTime expires_at)
-    {
-        Id = id;
-        UserAccountId = user_account_id;
-        TokenTypeId = token_type_id;
-        TokenValue = token_value;
-        CreatedAt = created_at;
-        ExpiresAt = expires_at;
-    }
+    [SqlProperty(update: UpdateAction.Where)]
+    public Guid UserAccountId { get; } = userAccountId;
+    public int TokenTypeId { get; } = tokenTypeId;
+    public string TokenValue { get; } = tokenValue;
+    public DateTime CreatedAt { get; } = createdAt;
+    public DateTime ExpiresAt { get; } = expiresAt;
 }
