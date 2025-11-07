@@ -10,7 +10,7 @@ using RippleSync.Infrastructure.SoMePlatforms.X;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
 
-internal partial class SoMePlatformLinkedIn(ILogger<SoMePlatformLinkedIn> logger, IOptions<LinkedInOptions> options, LinkedInHttpClient linkedInHttpClient, IEncryptionService encryptor) : ISoMePlatform
+internal class SoMePlatformLinkedIn(ILogger<SoMePlatformLinkedIn> logger, IOptions<LinkedInOptions> options, LinkedInHttpClient linkedInHttpClient, IEncryptionService encryptor) : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
     {
@@ -76,7 +76,7 @@ internal partial class SoMePlatformLinkedIn(ILogger<SoMePlatformLinkedIn> logger
 
 
             var postIdentifier = await linkedInHttpClient.PublishPost(publishPayload);
-            if (postIdentifier == string.Empty) logger.LogWarning("Could not get platformIdentifier on LinkedIn for post: {postId}",post.Id);
+            if (postIdentifier == string.Empty) logger.LogWarning("Could not get platformIdentifier on LinkedIn for post: {postId}", post.Id);
 
             postEvent.PlatformPostIdentifier = postIdentifier;
             postEvent.Status = PostStatus.Posted;
