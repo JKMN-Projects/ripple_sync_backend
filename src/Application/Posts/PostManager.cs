@@ -112,7 +112,7 @@ public class PostManager(
             ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
             : null;
 
-        post.PostMedias = mediaAttachments?
+        post.PostMedia = mediaAttachments?
             .Select(PostMedia.Create)
             .ToList() ?? [];
 

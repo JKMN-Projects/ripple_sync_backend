@@ -135,7 +135,7 @@ public static class PostRepositoryDoubles
                     submittedAt: post.SubmittedAt,
                     updatedAt: post.UpdatedAt,
                     scheduledFor: post.ScheduledFor,
-                    postMedias: post.PostMedias,
+                    postMedia: post.PostMedia,
                     postsEvents: post.PostEvents)
                 );
                 OnInvokation?.Invoke(post, this);

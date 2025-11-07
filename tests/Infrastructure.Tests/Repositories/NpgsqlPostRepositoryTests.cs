@@ -79,7 +79,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
                 .AddRandomMedia()
                 .Build();
             await _sut.CreateAsync(post);
-            var existingMediaId = post.PostMedias.First().Id;
+            var existingMediaId = post.PostMedia.First().Id;
 
             // Act
             var postMedia = await _sut.GetImageByIdAsync(existingMediaId);
@@ -201,7 +201,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             Assert.Equal(post.MessageContent, retrievedPost.MessageContent);
             Assert.Single(retrievedPost.PostEvents);
             Assert.Equal(integration.Id, retrievedPost.PostEvents.First().UserPlatformIntegrationId);
-            Assert.Single(retrievedPost.PostMedias);
+            Assert.Single(retrievedPost.PostMedia);
         }
     }
 
@@ -339,7 +339,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             Assert.NotNull(retrievedPosts);
             Assert.Equal(post.UserId, retrievedPosts.UserId);
             Assert.Equal(post.MessageContent, retrievedPosts.MessageContent);
-            Assert.Equal(2, retrievedPosts.PostMedias.Count());
+            Assert.Equal(2, retrievedPosts.PostMedia.Count());
         }
     }
 
@@ -485,17 +485,17 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
                 .AddRandomMedia()
                 .Build();
             await _sut.CreateAsync(post);
-            var mediaToRemoveId = post.PostMedias.First().Id;
+            var mediaToRemoveId = post.PostMedia.First().Id;
 
             // Act
-            post.PostMedias = post.PostMedias.Where(pm => pm.Id != mediaToRemoveId);
+            post.PostMedias = post.PostMedia.Where(pm => pm.Id != mediaToRemoveId);
             await _sut.UpdateAsync(post);
 
             // Assert
             Post? retrievedPost = await _sut.GetByIdAsync(post.Id);
             Assert.NotNull(retrievedPost);
-            Assert.Single(retrievedPost.PostMedias);
-            Assert.DoesNotContain(retrievedPost.PostMedias, pm => pm.Id == mediaToRemoveId);
+            Assert.Single(retrievedPost.PostMedia);
+            Assert.DoesNotContain(retrievedPost.PostMedia, pm => pm.Id == mediaToRemoveId);
         }
     }
 

@@ -38,7 +38,7 @@ public class SoMePlatformFake(
 
     public async Task<PostEvent> PublishPostAsync(Post post, Integration integration)
     {
-        int mediaCount = post.PostMedias?.Count() ?? 0;
+        int mediaCount = post.PostMedia?.Count() ?? 0;
         int delay = mediaCount > 0
             ? Random.Shared.Next(800 * mediaCount, 1500 * mediaCount)
             : Random.Shared.Next(400, 900);
@@ -47,7 +47,7 @@ public class SoMePlatformFake(
             Id: post.Id,
             PostedOn: DateTime.UtcNow,
             Content: post.MessageContent,
-            Media: post.PostMedias?.Select(pm => new PostDataMedia(pm.Id)) ?? []
+            Media: post.PostMedia?.Select(pm => new PostDataMedia(pm.Id)) ?? []
         ));
 
         return post.PostEvents.First(pe => pe.UserPlatformIntegrationId == integration.Id);

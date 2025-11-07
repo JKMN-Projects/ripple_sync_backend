@@ -56,7 +56,7 @@ internal class SoMePlatformLinkedIn(ILogger<SoMePlatformLinkedIn> logger, IOptio
             linkedInHttpClient.SetDefaultHeaders(integration.TokenType, encryptor.Decrypt(integration.AccessToken));
 
             var authorUrn = await linkedInHttpClient.GetUserAuthorUrnAsync();
-            var imageUrns = await UploadPostImagesAsync(authorUrn, post.PostMedias);
+            var imageUrns = await UploadPostImagesAsync(authorUrn, post.PostMedia);
 
 
             var builder = new LinkedInPostBuilder()
