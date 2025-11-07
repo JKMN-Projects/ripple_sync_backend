@@ -585,77 +585,6 @@ public static partial class NpgsqlExtensions
     }
 
     /// <summary>
-    /// Synchronizes a single database record for a parent entity.
-    /// Removes records that share the same parent identifier(s) but whose record identifier doesn't match.
-    /// Then upserts the provided record.
-    /// Requires one property marked with IsRecordIdentifier = true and at least one other WHERE property as parent identifier.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="conn"></param>
-    /// <param name="data"></param>
-    /// <param name="trans"></param>
-    /// <param name="overwriteSchemaName"></param>
-    /// <param name="overwriteTableName"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    public static async Task<int> SyncAsync<T>(
-        this NpgsqlConnection conn,
-        T data,
-        NpgsqlTransaction? trans = null,
-        string overwriteSchemaName = "",
-        string overwriteTableName = "",
-        CancellationToken ct = default)
-    {
-        IEnumerable<T> collection = [data];
-        return await conn.SyncAsync(collection, trans, overwriteSchemaName, overwriteTableName, ct);
-    }
-
-    /// <summary>
-    /// Synchronizes database records for a single parent entity.
-    /// Removes records that share the same parent identifier(s) but whose record identifier is not in the collection.
-    /// Then updates all records in the collection.
-    /// Requires one property marked with IsRecordIdentifier = true and at least one other WHERE property as parent identifier.
-    /// All items in the collection must share the same parent identifier values.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="conn"></param>
-    /// <param name="datas"></param>
-    /// <param name="trans"></param>
-    /// <param name="overwriteSchemaName"></param>
-    /// <param name="overwriteTableName"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public static async Task<int> SyncAsync<T>(
-        this NpgsqlConnection conn,
-        IEnumerable<T> datas,
-        NpgsqlTransaction? trans = null,
-        string overwriteSchemaName = "",
-        string overwriteTableName = "",
-        CancellationToken ct = default)
-    {
-        if (datas.NullOrEmpty())
-            return 0;
-
-        var dataList = datas.ToList();
-
-        // Validate all items share same parent identifier values
-        var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
-        var parentProperties = GetParentProperties<T>();
-
-        var firstParentValues = parentProperties.Select(p => p.Property.GetValue(dataList.First())).ToList();
-
-        foreach (var item in dataList.Skip(1))
-        {
-            var itemParentValues = parentProperties.Select(p => p.Property.GetValue(item)).ToList();
-            if (!firstParentValues.SequenceEqual(itemParentValues))
-                throw new InvalidOperationException($"All items in collection must share the same parent identifier values for SyncAsync. Use SyncMultipleAsync for differing parents objects.");
-        }
-
-        return await SyncInternalAsync(conn, dataList, trans, overwriteSchemaName, overwriteTableName, ct);
-    }
-
-    /// <summary>
     /// Synchronizes database records for multiple parent entities.
     /// Groups items by parent identifier(s), then for each group removes records whose record identifier is not in the collection.
     /// Then updates all records in the collection.
@@ -696,10 +625,109 @@ public static partial class NpgsqlExtensions
 
         foreach (var group in groupedData)
         {
-            totalAffected += await SyncInternalAsync(conn, group.ToList(), trans, overwriteSchemaName, overwriteTableName, ct);
+            totalAffected += await SyncAsync(conn, group.ToList(), trans, overwriteSchemaName, overwriteTableName, ct);
         }
 
         return totalAffected;
+    }
+
+    /// <summary>
+    /// Synchronizes a single database record for a parent entity.
+    /// Removes records that share the same parent identifier(s) but whose record identifier doesn't match.
+    /// Then upserts the provided record.
+    /// Requires one property marked with IsRecordIdentifier = true and at least one other WHERE property as parent identifier.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="data"></param>
+    /// <param name="trans"></param>
+    /// <param name="overwriteSchemaName"></param>
+    /// <param name="overwriteTableName"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public static async Task<int> SyncAsync<T>(
+        this NpgsqlConnection conn,
+        T data,
+        object? parentIdentifiers = null,
+        NpgsqlTransaction? trans = null,
+        string overwriteSchemaName = "",
+        string overwriteTableName = "",
+        CancellationToken ct = default)
+    {
+        IEnumerable<T> collection = [data];
+        return await conn.SyncAsync(collection, parentIdentifiers, trans, overwriteSchemaName, overwriteTableName, ct);
+    }
+
+    /// <summary>
+    /// Synchronizes database records for a single parent entity.
+    /// Removes records that share the same parent identifier(s) but whose record identifier is not in the collection.
+    /// Then updates all records in the collection.
+    /// Requires one property marked with IsRecordIdentifier = true and at least one other WHERE property as parent identifier.
+    /// All items in the collection must share the same parent identifier values.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="datas"></param>
+    /// <param name="trans"></param>
+    /// <param name="overwriteSchemaName"></param>
+    /// <param name="overwriteTableName"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public static async Task<int> SyncAsync<T>(
+        this NpgsqlConnection conn,
+        IEnumerable<T> datas,
+        object? parentIdentifiers = null,
+        NpgsqlTransaction? trans = null,
+        string overwriteSchemaName = "",
+        string overwriteTableName = "",
+        CancellationToken ct = default)
+    {
+        var dataList = datas?.ToList() ?? new List<T>();
+
+        var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
+        var parentProperties = GetParentProperties<T>();
+
+        if (dataList.Count == 0)
+        {
+            if (parentIdentifiers == null)
+                return 0;
+
+            // Delete all children for the given parent
+            var (schemaName, tableName) = GetSchemaAndTableName<T>(overwriteSchemaName, overwriteTableName, sqlConstructor);
+
+            var conditions = new List<string>();
+            var parameters = new List<NpgsqlParameter>();
+            int paramIndex = 0;
+
+            var parentIdType = parentIdentifiers.GetType();
+
+            foreach (var (property, name) in parentProperties)
+            {
+                var value = parentIdType.GetProperty(property.Name)?.GetValue(parentIdentifiers);
+                var paramName = $"@p{paramIndex++}";
+                conditions.Add($"\"{name}\" = {paramName}");
+                parameters.Add(new NpgsqlParameter(paramName, value ?? DBNull.Value));
+            }
+
+            string deleteQuery = $"DELETE FROM {schemaName}{tableName} WHERE {string.Join(" AND ", conditions)}";
+
+            using var cmd = new NpgsqlCommand(deleteQuery, conn, trans);
+            cmd.Parameters.AddRange(parameters.ToArray());
+            return await LoggedExecuteNonQueryAsync(cmd, ct);
+        }
+
+        // Validate all items share same parent identifier values
+        var firstParentValues = parentProperties.Select(p => p.Property.GetValue(dataList.First())).ToList();
+
+        foreach (var item in dataList.Skip(1))
+        {
+            var itemParentValues = parentProperties.Select(p => p.Property.GetValue(item)).ToList();
+            if (!firstParentValues.SequenceEqual(itemParentValues))
+                throw new InvalidOperationException($"All items in collection must share the same parent identifier values for SyncAsync. Use SyncMultipleAsync for differing parents objects.");
+        }
+
+        return await SyncInternalAsync(conn, dataList, trans, overwriteSchemaName, overwriteTableName, ct);
     }
 
     private static List<(PropertyInfo Property, string Name)> GetParentProperties<T>()
@@ -835,6 +863,50 @@ public static partial class NpgsqlExtensions
         rowsAffected += await conn.UpsertAsync(dataList, trans, overwriteSchemaName, overwriteTableName, ct);
 
         return rowsAffected;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conn"></param>
+    /// <param name="parentIdentifiers"></param>
+    /// <param name="trans"></param>
+    /// <param name="overwriteSchemaName"></param>
+    /// <param name="overwriteTableName"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public static async Task<int> DeleteAllChildrenAsync<T>(
+        this NpgsqlConnection conn,
+        object parentIdentifiers,
+        NpgsqlTransaction? trans = null,
+        string overwriteSchemaName = "",
+        string overwriteTableName = "",
+        CancellationToken ct = default)
+    {
+        var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
+        var (schemaName, tableName) = GetSchemaAndTableName<T>(overwriteSchemaName, overwriteTableName, sqlConstructor);
+        var parentProperties = GetParentProperties<T>();
+
+        var conditions = new List<string>();
+        var parameters = new List<NpgsqlParameter>();
+        int paramIndex = 0;
+
+        var parentIdType = parentIdentifiers.GetType();
+
+        foreach (var (property, name) in parentProperties)
+        {
+            var value = parentIdType.GetProperty(property.Name)?.GetValue(parentIdentifiers);
+            var paramName = $"@p{paramIndex++}";
+            conditions.Add($"\"{name}\" = {paramName}");
+            parameters.Add(new NpgsqlParameter(paramName, value ?? DBNull.Value));
+        }
+
+        string deleteQuery = $"DELETE FROM {schemaName}{tableName} WHERE {string.Join(" AND ", conditions)}";
+
+        using var cmd = new NpgsqlCommand(deleteQuery, conn, trans);
+        cmd.Parameters.AddRange(parameters.ToArray());
+        return await LoggedExecuteNonQueryAsync(cmd, ct);
     }
 
     /// <summary>

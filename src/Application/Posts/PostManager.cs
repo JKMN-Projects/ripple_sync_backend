@@ -121,6 +121,10 @@ public class PostManager(
                 .Select(id => PostEvent.Create(id, PostStatus.Scheduled, "", new { }))
                 .ToList() ?? [];
         }
+        else
+        {
+            post.PostEvents = [];
+        }
 
         post.UpdatedAt = DateTime.UtcNow;
 
@@ -146,7 +150,7 @@ public class PostManager(
 
         // Then delete
 
-        await unitOfWork.ExecuteInTransactionAsync(async () => 
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
             await postRepository.DeleteAsync(post, cancellationToken));
     }
 
