@@ -1,4 +1,4 @@
-﻿using RippleSync.Application.Common;
+﻿using RippleSync.Application.Common.UnitOfWork;
 using System.Data;
 
 namespace RippleSync.Infrastructure.UnitOfWork;

@@ -1,10 +1,10 @@
 ﻿using Infrastructure.FakePlatform;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RippleSync.Application.Common;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
+using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Platforms;
 using RippleSync.Infrastructure.FeedbackRepository;
@@ -48,7 +48,7 @@ public static class DependencyInjection
 
         services.AddScoped<IFeedbackRepository, GptFeedbackRepository>();
 
-        bool inMemory = false;
+        bool inMemory = true;
         if (inMemory)
         {
             services.AddScoped<IUnitOfWork, InMemoryUnitOfWork>();
