@@ -21,14 +21,14 @@ internal class NpgsqlUnitOfWork : IDisposable, IUnitOfWork
     {
         get
         {
-            if (Transaction == null || _connection == null)
+            if (_connection == null)
             {
                 _connection = _dataSource.OpenConnection();
             }
-
-            if (_connection.State != ConnectionState.Open)
+            else if (_connection.State is ConnectionState.Closed or ConnectionState.Broken)
             {
-                _connection.Open();
+                _connection.Dispose();
+                _connection = _dataSource.OpenConnection();
             }
 
             return _connection;
