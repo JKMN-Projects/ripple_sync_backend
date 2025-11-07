@@ -1,12 +1,13 @@
-﻿using Npgsql;
+﻿using RippleSync.Application.Common;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Domain.Users;
+using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.UserRepository.Entities;
 
 namespace RippleSync.Infrastructure.UserRepository;
-internal sealed class NpgsqlUserRepository(NpgsqlConnection dbConnection) : IUserRepository
+internal sealed class NpgsqlUserRepository(IUnitOfWork uow) : BaseRepository(uow), IUserRepository
 {
     public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
@@ -14,7 +15,7 @@ internal sealed class NpgsqlUserRepository(NpgsqlConnection dbConnection) : IUse
 
         try
         {
-            var userEntity = await dbConnection.SelectSingleOrDefaultAsync<UserEntity>(whereClause: "email = @Email", param: new { Email = email }, ct: cancellationToken);
+            var userEntity = await Connection.SelectSingleOrDefaultAsync<UserEntity>(whereClause: "email = @Email", param: new { Email = email }, ct: cancellationToken);
 
             if (userEntity != null)
             {
@@ -35,7 +36,7 @@ internal sealed class NpgsqlUserRepository(NpgsqlConnection dbConnection) : IUse
 
         try
         {
-            var userEntity = await dbConnection.SelectSingleOrDefaultAsync<UserEntity>(whereClause: "id = @Id", param: new { Id = userId }, ct: cancellationToken);
+            var userEntity = await Connection.SelectSingleOrDefaultAsync<UserEntity>(whereClause: "id = @Id", param: new { Id = userId }, ct: cancellationToken);
 
             if (userEntity != null)
             {
@@ -62,7 +63,7 @@ internal sealed class NpgsqlUserRepository(NpgsqlConnection dbConnection) : IUse
 
         try
         {
-            var userEntity = await dbConnection.QuerySingleOrDefaultAsync<UserEntity>(getUserFromTokenValue, param: new { TokenValue = refreshTokenValue }, ct: cancellationToken);
+            var userEntity = await Connection.QuerySingleOrDefaultAsync<UserEntity>(getUserFromTokenValue, param: new { TokenValue = refreshTokenValue }, trans: Transaction, ct: cancellationToken);
 
             if (userEntity != null)
             {
@@ -83,19 +84,19 @@ internal sealed class NpgsqlUserRepository(NpgsqlConnection dbConnection) : IUse
 
         try
         {
-            int rowsAffected = await dbConnection.InsertAsync(userEntity, ct: cancellationToken);
+            int rowsAffected = await Connection.InsertAsync(userEntity, trans: Transaction, ct: cancellationToken);
 
             if (rowsAffected <= 0)
-                throw new RepositoryException("No rows were affected");
+                throw new RepositoryException("No rows were affected on User insert");
 
             if (user.RefreshToken != null)
             {
                 var userTokenEntity = new UserTokenEntity(user.RefreshToken.Id, user.Id, (int)user.RefreshToken.Type, user.RefreshToken.Value, user.RefreshToken.CreatedAt, user.RefreshToken.ExpiresAt);
 
-                rowsAffected = await dbConnection.InsertAsync(userTokenEntity, ct: cancellationToken);
+                rowsAffected = await Connection.InsertAsync(userTokenEntity, trans: Transaction, ct: cancellationToken);
 
                 if (rowsAffected <= 0)
-                    throw new RepositoryException("No rows were affected");
+                    throw new RepositoryException("No rows were affected on Token insert");
             }
         }
         catch (Exception e)
@@ -110,19 +111,26 @@ internal sealed class NpgsqlUserRepository(NpgsqlConnection dbConnection) : IUse
 
         try
         {
-            int rowsAffected = await dbConnection.UpdateAsync(userEntity, ct: cancellationToken);
+            int rowsAffected = await Connection.UpdateAsync(userEntity, trans: Transaction, ct: cancellationToken);
 
             if (rowsAffected <= 0)
-                throw new RepositoryException("No rows were affected");
+                throw new RepositoryException("No rows were affected on User update");
 
             if (user.RefreshToken != null)
             {
                 var userTokenEntity = new UserTokenEntity(user.RefreshToken.Id, user.Id, (int)user.RefreshToken.Type, user.RefreshToken.Value, user.RefreshToken.CreatedAt, user.RefreshToken.ExpiresAt);
 
-                rowsAffected = await dbConnection.UpdateAsync(userTokenEntity, ct: cancellationToken);
+                rowsAffected = await Connection.UpsertAsync(userTokenEntity, trans: Transaction, ct: cancellationToken);
 
                 if (rowsAffected <= 0)
-                    throw new RepositoryException("No rows were affected");
+                    throw new RepositoryException("No rows were affected on Token upsert");
+            }
+            else
+            {
+                rowsAffected = await Connection.ExecuteAsync("DELETE FROM user_token WHERE user_account_id = @UserId", new { UserId = user.Id }, trans: Transaction, cancellationToken);
+
+                if (rowsAffected <= 0)
+                    throw new RepositoryException("No rows were affected on Token delete");
             }
         }
         catch (Exception e)
@@ -134,7 +142,7 @@ internal sealed class NpgsqlUserRepository(NpgsqlConnection dbConnection) : IUse
 
     private async Task<User> GetUserWithRefreshToken(UserEntity userEntity, CancellationToken cancellationToken = default)
     {
-        var userTokenEntity = await dbConnection.SelectSingleOrDefaultAsync<UserTokenEntity>(whereClause: "user_account_id = @UserId AND token_type_id = @TokenType", param: new { UserId = userEntity.Id, TokenType = (int)UserTokenType.Refresh }, ct: cancellationToken);
+        var userTokenEntity = await Connection.SelectSingleOrDefaultAsync<UserTokenEntity>(whereClause: "user_account_id = @UserId AND token_type_id = @TokenType ORDER BY created_at ASC", param: new { UserId = userEntity.Id, TokenType = (int)UserTokenType.Refresh }, ct: cancellationToken);
 
         RefreshToken? refreshToken = null;
 

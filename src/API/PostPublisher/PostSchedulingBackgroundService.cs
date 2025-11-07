@@ -36,7 +36,6 @@ public class PostSchedulingBackgroundService(ILogger<PostSchedulingBackgroundSer
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in Background service");
-                throw;
             }
             await Task.Delay(TimeSpan.FromSeconds(_intervalSeconds), stoppingToken);
         }

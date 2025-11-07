@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Infrastructure.FakePlatform;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
@@ -46,15 +47,9 @@ internal partial class SoMePlatformLinkedIn(IOptions<LinkedInOptions> options, I
         };
     }
 
-    public Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration)
-    {
-        return Task.FromResult(new PlatformStats(
-            PostCount: 0,
-            Reach: 0,
-            Engagement: 0,
-            Likes: 0
-        ));
-    }
+    public async Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration, IEnumerable<Post> publishedPostsOnPlatform)
+        => await PostStatGenerator.CalculateAsync(integration, publishedPostsOnPlatform);
+
     public async Task<PostEvent> PublishPostAsync(Post post, Integration integration)
     {
         var postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id)

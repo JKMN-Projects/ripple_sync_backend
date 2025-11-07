@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
+using RippleSync.Application.Common;
 using RippleSync.Application.Common.Exceptions;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
@@ -7,6 +8,7 @@ using RippleSync.Application.Users;
 using RippleSync.Application.Users.Exceptions;
 using RippleSync.Domain.Users;
 using RippleSync.Tests.Shared.Factories.Users;
+using RippleSync.Tests.Shared.TestDoubles;
 using RippleSync.Tests.Shared.TestDoubles.Logging;
 using RippleSync.Tests.Shared.TestDoubles.Repositories;
 using RippleSync.Tests.Shared.TestDoubles.Security;
@@ -31,8 +33,9 @@ public abstract class UserManagerTests
         postRepository ??= new PostRepositoryDoubles.Dummy();
         passwordHasher ??= new PasswordHasherDoubles.Dummy();
         authenticationTokenProvider ??= new AuthenticationTokenProviderDoubles.Dummy();
+        IUnitOfWork ouw = new UnitOfWorkDoubles.Fakes.DoesNothing();
 
-        return new UserManager(logger, timeProvider, userRepository, integrationRepository, postRepository, passwordHasher, authenticationTokenProvider);
+        return new UserManager(logger, timeProvider, ouw, userRepository, integrationRepository, postRepository, passwordHasher, authenticationTokenProvider);
     }
 
     public sealed class GetAuthenticationTokenAsync : UserManagerTests

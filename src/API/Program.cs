@@ -42,7 +42,7 @@ if (builder.Environment.IsDevelopment())
 }
 
 // Add services to the container.
-
+builder.Services.AddHttpClient();
 builder.Services.AddControllersWithViews()
     .AddApplicationPart(FakeOAuthAssemblyReference.Assembly);
 

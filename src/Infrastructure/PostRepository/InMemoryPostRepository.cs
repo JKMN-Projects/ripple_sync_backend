@@ -44,7 +44,7 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
     public Task<Post?> GetByIdAsync(Guid postId, CancellationToken cancellationToken = default)
     {
         var postEntity = InMemoryData.Posts.SingleOrDefault(p => p.Id == postId);
-        return Task.FromResult<Post>(postEntity);
+        return Task.FromResult(postEntity);
     }
 
     public Task<string?> GetImageByIdAsync(Guid imageId, CancellationToken cancellationToken = default)
@@ -75,13 +75,10 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         return Task.FromResult(posts);
     }
 
-    public async Task<IEnumerable<Post>> GetPostsReadyToPublishAsync(CancellationToken cancellationToken = default)
+    public Task<IEnumerable<Post>> GetPostsReadyToPublishAsync(CancellationToken cancellationToken = default)
     {
         var posts = InMemoryData.Posts.Where(p => p.IsReadyToPublish());
-        return posts;
+        return Task.FromResult(posts);
     }
-
-    public async Task<PostEvent> UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken)
-        => postEvent;
 }
 
