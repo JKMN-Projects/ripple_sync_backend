@@ -625,7 +625,19 @@ public static partial class NpgsqlExtensions
 
         foreach (var group in groupedData)
         {
-            totalAffected += await SyncAsync(conn, group.ToList(), trans, overwriteSchemaName, overwriteTableName, ct);
+            var firstItem = group.First();
+            var parentIdProperties = parentProperties.ToDictionary(
+                p => p.Property.Name,
+                p => p.Property.GetValue(firstItem)
+            );
+
+            var parentRunTimeObject = new System.Dynamic.ExpandoObject() as IDictionary<string, object?>;
+            foreach (var kvp in parentIdProperties)
+            {
+                parentRunTimeObject[kvp.Key] = kvp.Value;
+            }
+
+            totalAffected += await SyncAsync(conn, group.ToList(), parentIdentifiers: parentRunTimeObject, trans, overwriteSchemaName, overwriteTableName, ct);
         }
 
         return totalAffected;
@@ -668,6 +680,7 @@ public static partial class NpgsqlExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="conn"></param>
     /// <param name="datas"></param>
+    /// <param name="parentIdentifiers">Should be supplied, incase children objects are null or empty</param>
     /// <param name="trans"></param>
     /// <param name="overwriteSchemaName"></param>
     /// <param name="overwriteTableName"></param>
@@ -683,7 +696,7 @@ public static partial class NpgsqlExtensions
         string overwriteTableName = "",
         CancellationToken ct = default)
     {
-        var dataList = datas?.ToList() ?? new List<T>();
+        var dataList = datas?.ToList() ?? [];
 
         var sqlConstructor = GetConstructorOfTypeSqlConstructor<T>();
         var parentProperties = GetParentProperties<T>();
@@ -1139,6 +1152,9 @@ public static partial class NpgsqlExtensions
         var underlyingType = Nullable.GetUnderlyingType(type);
         var dataValue = property.GetValue(data);
 
+        // Materialize IEnumerable<T> to array for Npgsql compatibility
+        dataValue = MaterializeIfNeeded(dataValue, type);
+
         // Handle all other types 
         var paramValue = underlyingType != null && dataValue == null
             ? DBNull.Value
@@ -1219,6 +1235,28 @@ public static partial class NpgsqlExtensions
             var t when t == typeof(byte[]) => NpgsqlDbType.Bytea,
             _ => NpgsqlDbType.Unknown // Let Npgsql infer as fallback
         };
+    }
+
+    /// <summary>
+    /// Converts IEnumerable<T> to T[] for Npgsql array parameter compatibility
+    /// </summary>
+    private static object? MaterializeIfNeeded(object? dataValue, Type type)
+    {
+        if (dataValue == null) return null;
+
+        // Skip if already array or implements IList (Npgsql compatible)
+        if (type.IsArray || dataValue is System.Collections.IList)
+            return dataValue;
+
+        // Materialize pure IEnumerable<T> to preserve element type
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+        {
+            var elementType = type.GetGenericArguments()[0];
+            var toArrayMethod = typeof(Enumerable).GetMethod("ToArray")!.MakeGenericMethod(elementType);
+            return toArrayMethod.Invoke(null, [dataValue]);
+        }
+
+        return dataValue;
     }
 
     public static string ToSqlName(string name)

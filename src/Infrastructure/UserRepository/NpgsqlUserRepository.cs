@@ -1,9 +1,11 @@
 ﻿using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.UnitOfWork;
+using RippleSync.Domain.Posts;
 using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
+using RippleSync.Infrastructure.PostRepository.Entities;
 using RippleSync.Infrastructure.UserRepository.Entities;
 
 namespace RippleSync.Infrastructure.UserRepository;
@@ -116,22 +118,9 @@ internal sealed class NpgsqlUserRepository(IUnitOfWork uow) : BaseRepository(uow
             if (rowsAffected <= 0)
                 throw new RepositoryException("No rows were affected on User update");
 
-            if (user.RefreshToken != null)
-            {
-                var userTokenEntity = new UserTokenEntity(user.RefreshToken.Id, user.Id, (int)user.RefreshToken.Type, user.RefreshToken.Value, user.RefreshToken.CreatedAt, user.RefreshToken.ExpiresAt);
+            var userTokenEntity = user.RefreshToken == null ? null : new UserTokenEntity(user.RefreshToken.Id, user.Id, (int)user.RefreshToken.Type, user.RefreshToken.Value, user.RefreshToken.CreatedAt, user.RefreshToken.ExpiresAt);
 
-                rowsAffected = await Connection.UpsertAsync(userTokenEntity, trans: Transaction, ct: cancellationToken);
-
-                if (rowsAffected <= 0)
-                    throw new RepositoryException("No rows were affected on Token upsert");
-            }
-            else
-            {
-                rowsAffected = await Connection.ExecuteAsync("DELETE FROM user_token WHERE user_account_id = @UserId", new { UserId = user.Id }, trans: Transaction, cancellationToken);
-
-                if (rowsAffected <= 0)
-                    throw new RepositoryException("No rows were affected on Token delete");
-            }
+            rowsAffected += await Connection.SyncAsync(userTokenEntity, parentIdentifiers: new { UserAccountId = user.Id }, trans: Transaction, ct: cancellationToken);
         }
         catch (Exception e)
         {
