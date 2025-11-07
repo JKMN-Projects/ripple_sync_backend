@@ -1,28 +1,13 @@
 ﻿using RippleSync.Infrastructure.JukmanORM.ClassAttributes;
 
 namespace RippleSync.Infrastructure.PlatformRepository.Entities;
-internal class PlatformIntegrationResponseEntity
+
+[method: SqlConstructor()]
+internal class PlatformIntegrationResponseEntity(int id, string platformName, string platformDescription, bool connected, string imageData)
 {
-    public int Id { get; set; }
-
-    [SqlProperty(propName: "platform_name")]
-    public string Name { get; set; }
-
-    [SqlProperty(propName: "platform_description")]
-    public string Description { get; set; }
-    public bool Connected { get; set; }
-
-    [SqlProperty(propName: "image_data")]
-    public string ImageData { get; set; }
-
-
-    [SqlConstructor()]
-    public PlatformIntegrationResponseEntity(int id, string platform_name, string platform_description, bool connected, string image_data)
-    {
-        Id = id;
-        Name = platform_name;
-        Description = platform_description;
-        Connected = connected;
-        ImageData = image_data;
-    }
+    public int Id { get; set; } = id;
+    public string Name { get; set; } = platformName;
+    public string Description { get; set; } = platformDescription;
+    public bool Connected { get; set; } = connected;
+    public string ImageData { get; set; } = imageData;
 }

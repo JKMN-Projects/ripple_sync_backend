@@ -9,11 +9,11 @@ public class PostChannel
 
     public PostChannel()
     {
-        _channel = Channel.CreateUnbounded<Post>(new UnboundedChannelOptions()
+        _channel = Channel.CreateBounded<Post>(new BoundedChannelOptions(1000)
         {
             SingleWriter = true,
             SingleReader = false,
-            AllowSynchronousContinuations = false
+            FullMode = BoundedChannelFullMode.Wait // Backpressure: scheduler blocks if full
         });
     }
     public async Task PublishAsync(Post message) => await _channel.Writer.WriteAsync(message);

@@ -9,6 +9,7 @@ using RippleSync.Application.Platforms;
 using RippleSync.Domain.Platforms;
 using RippleSync.Infrastructure.FeedbackRepository;
 using RippleSync.Infrastructure.IntegrationRepository;
+using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.PlatformRepository;
 using RippleSync.Infrastructure.PostRepository;
 using RippleSync.Infrastructure.Security;

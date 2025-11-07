@@ -2,29 +2,14 @@
 using RippleSync.Infrastructure.JukmanORM.Enums;
 
 namespace RippleSync.Infrastructure.UserRepository.Entities;
-internal class UserEntity
+
+[method: SqlConstructor(tableName: "user_account")]
+internal class UserEntity(Guid id, string email, string passwordHash, string salt, DateTime createdAt)
 {
     [SqlProperty(update: UpdateAction.Where)]
-    public Guid Id { get; }
-
-    public string Email { get; }
-
-    [SqlProperty(propName: "password_hash")]
-    public string PasswordHash { get; }
-
-    public string Salt { get; }
-
-    [SqlProperty(propName: "created_at")]
-    public DateTime CreatedAt { get; }
-
-
-    [SqlConstructor(tableName: "user_account")]
-    public UserEntity(Guid id, string email, string password_hash, string salt, DateTime created_at)
-    {
-        Id = id;
-        Email = email;
-        PasswordHash = password_hash;
-        Salt = salt;
-        CreatedAt = created_at;
-    }
+    public Guid Id { get; } = id;
+    public string Email { get; } = email;
+    public string PasswordHash { get; } = passwordHash;
+    public string Salt { get; } = salt;
+    public DateTime CreatedAt { get; } = createdAt;
 }

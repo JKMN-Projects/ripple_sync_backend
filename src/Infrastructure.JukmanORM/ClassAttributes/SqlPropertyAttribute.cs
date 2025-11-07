@@ -1,5 +1,6 @@
 ﻿using NpgsqlTypes;
 using RippleSync.Infrastructure.JukmanORM.Enums;
+using RippleSync.Infrastructure.JukmanORM.Extensions;
 using System.Runtime.CompilerServices;
 
 namespace RippleSync.Infrastructure.JukmanORM.ClassAttributes;
@@ -13,15 +14,12 @@ public class SqlPropertyAttribute : Attribute
     public bool IsRecordIdentifier { get; }
     public bool IsScopeIdentifier { get; }
 
-    public SqlPropertyAttribute(QueryAction action = default, UpdateAction update = default, NpgsqlDbType dbType = NpgsqlDbType.Unknown, bool isRecordIdentifier = false, bool isScopeIdentifier = false, [CallerMemberName] string propName = "")
+    public SqlPropertyAttribute(QueryAction action = default, UpdateAction update = default, NpgsqlDbType dbType = NpgsqlDbType.Unknown, bool isRecordIdentifier = false, bool isScopeIdentifier = false, string propName = "")
     {
         Name = null;
 
         if (propName.Length > 0)
-            Name = propName[0].ToString().ToLowerInvariant();
-
-        if (propName.Length > 1)
-            Name += propName[1..];
+            Name = propName;
 
         Action = action;
         Update = update;

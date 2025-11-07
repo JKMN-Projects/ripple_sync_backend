@@ -42,10 +42,9 @@ public abstract class RepositoryTestBase : IAsyncLifetime, IClassFixture<Postgre
             TablesToIgnore = [
                 new Table("token_type"),
                 new Table("post_status"),
-                //new Table("platform"),
+                new Table("platform"),
             ]
         });
-        await new DataSeeder.Platforms(DbConnection).SeedPlatformsAsync(Enum.GetValues<Platform>());
     }
     public virtual Task DisposeAsync() => Task.CompletedTask;
 }
