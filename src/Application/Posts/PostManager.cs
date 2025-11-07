@@ -7,6 +7,7 @@ using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
+using System.Collections.Generic;
 
 namespace RippleSync.Application.Posts;
 
@@ -146,7 +147,7 @@ public class PostManager(
 
         // Then delete
 
-        await unitOfWork.ExecuteInTransactionAsync(async () => 
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
             await postRepository.DeleteAsync(post, cancellationToken));
     }
 
@@ -174,8 +175,20 @@ public class PostManager(
             post.Id);
 
         IEnumerable<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId);
-
-        IEnumerable<Integration> integrations = await integrationRepository.GetIntegrationsByIdsAsync(userPlatformIntegrations, cancellationToken);
+        IEnumerable<Integration> integrations;
+        try
+        {
+            integrations = await integrationRepository.GetIntegrationsByIdsAsync(userPlatformIntegrations, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to retrieve integrations for post: PostId={PostId}", post.Id);
+            foreach (var postEvent in post.PostEvents)
+            {
+                postEvent.Status = PostStatus.Failed;
+            }
+            throw;
+        }
 
         foreach (var postEvent in post.PostEvents)
         {
