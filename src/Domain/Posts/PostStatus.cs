@@ -5,7 +5,7 @@ public enum PostStatus
 {
     Draft = 0,
     Scheduled,
-    Posted,
     Processing,
+    Posted,
     Failed
 }

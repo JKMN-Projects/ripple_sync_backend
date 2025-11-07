@@ -429,7 +429,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
                 platformPostIdentifier: string.Empty,
                 platformResponse: null
             );
-            post.PostEvents = post.PostEvents.Append(newPostEvent);
+            post.PostEvents.Add(newPostEvent);
             await _sut.UpdateAsync(post);
 
             // Assert
@@ -462,7 +462,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             await _sut.CreateAsync(post);
 
             // Act
-            post.PostEvents = post.PostEvents.Where(pe => pe.UserPlatformIntegrationId != integration2.Id);
+            post.PostEvents.RemoveAll(pe => pe.UserPlatformIntegrationId == integration2.Id);
             await _sut.UpdateAsync(post);
 
             // Assert
@@ -488,7 +488,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             var mediaToRemoveId = post.PostMedia.First().Id;
 
             // Act
-            post.PostMedias = post.PostMedia.Where(pm => pm.Id != mediaToRemoveId);
+            post.PostMedia.RemoveAll(pm => pm.Id == mediaToRemoveId);
             await _sut.UpdateAsync(post);
 
             // Assert
