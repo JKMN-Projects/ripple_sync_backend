@@ -12,7 +12,7 @@ internal class LinkedInHttpClient(HttpClient httpClient)
     {
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             tokenType ?? "Bearer",
-            tokenType);
+            accessToken);
     }
     internal async Task<string> PublishPost(PublishPayload publishPayload)
     {
