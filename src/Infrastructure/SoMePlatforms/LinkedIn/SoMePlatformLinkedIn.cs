@@ -2,15 +2,16 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
-using RippleSync.Infrastructure.SoMePlatforms.X;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
 
-internal class SoMePlatformLinkedIn(ILogger<SoMePlatformLinkedIn> logger, IOptions<LinkedInOptions> options, LinkedInHttpClient linkedInHttpClient, IEncryptionService encryptor) : ISoMePlatform
+internal class SoMePlatformLinkedIn(
+    ILogger<SoMePlatformLinkedIn> logger,
+    IOptions<LinkedInOptions> options,
+    LinkedInHttpClient linkedInHttpClient) : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
     {
@@ -53,7 +54,7 @@ internal class SoMePlatformLinkedIn(ILogger<SoMePlatformLinkedIn> logger, IOptio
 
         try
         {
-            linkedInHttpClient.SetDefaultHeaders(integration.TokenType, encryptor.Decrypt(integration.AccessToken));
+            linkedInHttpClient.SetDefaultHeaders(integration.TokenType, integration.AccessToken);
 
             var authorUrn = await linkedInHttpClient.GetUserAuthorUrnAsync();
             var imageUrns = await UploadPostImagesAsync(authorUrn, post.PostMedias);

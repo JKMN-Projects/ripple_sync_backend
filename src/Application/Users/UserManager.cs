@@ -109,17 +109,8 @@ public sealed class UserManager(
             Convert.ToBase64String(userSalt)
         );
 
-        unitOfWork.BeginTransaction();
-        try
-        {
-            await userRepository.CreateAsync(newUser, cancellationToken);
-            unitOfWork.Save();
-        }
-        catch (Exception)
-        {
-            unitOfWork.Cancel();
-            throw;
-        }
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
+            await userRepository.CreateAsync(newUser, cancellationToken));
 
         logger.LogInformation("User with email {Email} registered successfully", email);
     }
@@ -136,14 +127,14 @@ public sealed class UserManager(
         CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Deleting user with ID {UserId}", userId);
+
         User? user = await userRepository.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             throw EntityNotFoundException.ForEntity<User>(userId);
         }
 
-        unitOfWork.BeginTransaction();
-        try
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             // Anonymize user data
             user.Anonymize();
@@ -161,14 +152,7 @@ public sealed class UserManager(
                 post.Anonymize();
                 await postRepository.UpdateAsync(post, cancellationToken);
             }
-
-            unitOfWork.Save();
-        }
-        catch (Exception)
-        {
-            unitOfWork.Cancel();
-            throw;
-        }
+        });
 
         logger.LogInformation("User with ID {UserId} deleted successfully", userId);
     }
@@ -193,8 +177,10 @@ public sealed class UserManager(
             throw EntityNotFoundException.ForEntity<User>(refreshToken, nameof(User.RefreshToken));
         }
 
-        unitOfWork.BeginTransaction();
-        try
+        AuthenticationToken? token = null;
+        RefreshToken? newRefreshToken = null;
+
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             if (!user.VerifyRefreshToken(refreshToken, timeProvider))
             {
@@ -203,15 +189,19 @@ public sealed class UserManager(
                 throw new ArgumentException("Invalid or expired refresh token.", nameof(refreshToken));
             }
 
-            AuthenticationToken token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
-            RefreshToken newRefreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
+            token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
+            newRefreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
             user.AddRefreshToken(newRefreshToken);
 
             await userRepository.UpdateAsync(user, cancellationToken);
+        });
 
-            unitOfWork.Save();
+        if (token == null)
+            throw new InvalidOperationException("Failed to generate new token");
+        if (newRefreshToken == null)
+            throw new InvalidOperationException("Failed to generate new refresh tokens");
 
-            return new AuthenticationTokenResponse(
+        return new AuthenticationTokenResponse(
                 token.AccessToken,
                 token.TokenType,
                 token.ExpiresInMilliSeconds,
@@ -219,12 +209,6 @@ public sealed class UserManager(
                 ((DateTimeOffset)newRefreshToken.ExpiresAt).ToUnixTimeMilliseconds(),
                 token.Claims
             );
-        }
-        catch (Exception)
-        {
-            unitOfWork.Cancel();
-            throw;
-        }
     }
 }
 

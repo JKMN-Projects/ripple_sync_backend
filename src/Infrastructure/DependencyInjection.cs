@@ -1,6 +1,7 @@
 ﻿using Infrastructure.FakePlatform;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using RippleSync.Application.Common.Notifiers;
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Security;
@@ -10,6 +11,7 @@ using RippleSync.Domain.Platforms;
 using RippleSync.Infrastructure.FeedbackRepository;
 using RippleSync.Infrastructure.IntegrationRepository;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
+using RippleSync.Infrastructure.NotifierRepository;
 using RippleSync.Infrastructure.PlatformRepository;
 using RippleSync.Infrastructure.PostRepository;
 using RippleSync.Infrastructure.Security;
@@ -32,13 +34,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IOAuthSecurer, OAuthSecurer>();
 
-        services.AddSingleton<IEncryptionService>(sp =>
-        {
-            var config = sp.GetRequiredService<IConfiguration>();
-            string key = config["Encryption:Key"]
-                ?? throw new ArgumentException("EncryptionKey empty");
-            return new AesGcmEncryptionService(key);
-        });
+        services.AddSingleton<IEncryptionService, AesGcmEncryptionService>();
 
         services.AddKeyedSingleton<ISoMePlatform, SoMePlatformLinkedIn>(Platform.LinkedIn);
         services.AddKeyedSingleton<ISoMePlatform, SoMePlatformX>(Platform.X);
@@ -67,6 +63,9 @@ public static class DependencyInjection
             services.AddScoped<IUserRepository, InMemoryUserRepository>();
             services.AddScoped<IIntegrationRepository, InMemoryIntegrationRepository>();
             services.AddScoped<IPostRepository, InMemoryPostRepository>();
+
+
+            services.AddSingleton<IPostNotificationListener, InMemoryNotificationListener>();
         }
         else
         {
@@ -78,6 +77,9 @@ public static class DependencyInjection
             services.AddScoped<IUserRepository, NpgsqlUserRepository>();
             services.AddScoped<IIntegrationRepository, NpgsqlIntegrationRepository>();
             services.AddScoped<IPostRepository, NpgsqlPostRepository>();
+
+
+            services.AddSingleton<IPostNotificationListener, NpgsqlNotificationListener>();
         }
 
         return services;

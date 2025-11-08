@@ -1,20 +1,24 @@
 ﻿using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
+using RippleSync.Application.Common.Security;
 using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Integrations;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
+using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.IntegrationRepository.Entities;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 
 namespace RippleSync.Infrastructure.IntegrationRepository;
-internal class NpgsqlIntegrationRepository(IUnitOfWork uow) : BaseRepository(uow), IIntegrationRepository, IIntegrationQueries
+internal class NpgsqlIntegrationRepository(
+    IUnitOfWork uow,
+    IEncryptionService encryptor) : BaseRepository(uow), IIntegrationRepository, IIntegrationQueries
 {
     public async Task<IEnumerable<ConnectedIntegrationsResponse>> GetConnectedIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var getConnectedIntegrationsQuery =
+        const string getConnectedIntegrationsQuery =
             @"SELECT 
                 upi.id,
                 p.platform_name
@@ -51,7 +55,9 @@ internal class NpgsqlIntegrationRepository(IUnitOfWork uow) : BaseRepository(uow
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
 
-        return integrations.Select(i => Integration.Reconstitute(i.Id, i.UserAccountId, (Platform)i.PlatformId, i.AccessToken, i.RefreshToken, i.Expiration, i.TokenType, i.Scope));
+        return integrations.Select(i =>
+            Integration.Reconstitute(i.Id, i.UserAccountId, (Platform)i.PlatformId, DecryptAccessToken(i.AccessToken), DecryptRefreshToken(i.RefreshToken), i.Expiration, i.TokenType, i.Scope)
+        );
     }
 
 
@@ -68,11 +74,13 @@ internal class NpgsqlIntegrationRepository(IUnitOfWork uow) : BaseRepository(uow
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
 
-        return integrations.Select(i => Integration.Reconstitute(i.Id, i.UserAccountId, (Platform)i.PlatformId, i.AccessToken, i.RefreshToken, i.Expiration, i.TokenType, i.Scope));
+        return integrations.Select(i =>
+            Integration.Reconstitute(i.Id, i.UserAccountId, (Platform)i.PlatformId, DecryptAccessToken(i.AccessToken), DecryptRefreshToken(i.RefreshToken), i.Expiration, i.TokenType, i.Scope)
+        );
     }
     public async Task CreateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        var userPlatformIntegration = new UserPlatformIntegrationEntity(integration.Id, integration.UserId, (int)integration.Platform, integration.AccessToken, integration.RefreshToken, integration.ExpiresAt, integration.TokenType, integration.Scope);
+        var userPlatformIntegration = new UserPlatformIntegrationEntity(integration.Id, integration.UserId, (int)integration.Platform, EncryptAccessToken(integration.AccessToken), EncryptRefreshToken(integration.RefreshToken), integration.ExpiresAt, integration.TokenType, integration.Scope);
 
         try
         {
@@ -89,7 +97,7 @@ internal class NpgsqlIntegrationRepository(IUnitOfWork uow) : BaseRepository(uow
 
     public async Task UpdateAsync(Integration integration, CancellationToken cancellationToken = default)
     {
-        var userPlatformIntegration = new UserPlatformIntegrationEntity(integration.Id, integration.UserId, (int)integration.Platform, integration.AccessToken, integration.RefreshToken, integration.ExpiresAt, integration.TokenType, integration.Scope);
+        var userPlatformIntegration = new UserPlatformIntegrationEntity(integration.Id, integration.UserId, (int)integration.Platform, EncryptAccessToken(integration.AccessToken), EncryptRefreshToken(integration.RefreshToken), integration.ExpiresAt, integration.TokenType, integration.Scope);
 
         try
         {
@@ -120,4 +128,24 @@ internal class NpgsqlIntegrationRepository(IUnitOfWork uow) : BaseRepository(uow
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
     }
+
+    private string EncryptAccessToken(string accessToken)
+        => !string.IsNullOrWhiteSpace(accessToken)
+            ? encryptor.Encrypt(EncryptionTask.IntegrationAccessToken, accessToken)
+            : string.Empty;
+
+    private string DecryptAccessToken(string accessToken)
+        => !string.IsNullOrWhiteSpace(accessToken)
+            ? encryptor.Decrypt(EncryptionTask.IntegrationAccessToken, accessToken)
+            : string.Empty;
+
+    private string? EncryptRefreshToken(string? refreshToken)
+        => !string.IsNullOrWhiteSpace(refreshToken)
+            ? encryptor.Encrypt(EncryptionTask.IntegrationRefreshToken, refreshToken)
+            : null;
+
+    private string? DecryptRefreshToken(string? refreshToken)
+       => !string.IsNullOrWhiteSpace(refreshToken)
+            ? encryptor.Decrypt(EncryptionTask.IntegrationRefreshToken, refreshToken)
+            : null;
 }

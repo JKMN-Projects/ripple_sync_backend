@@ -1,5 +1,6 @@
 ﻿using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
+using RippleSync.Application.Common.Security;
 using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Posts;
 using RippleSync.Domain.Posts;
@@ -7,10 +8,11 @@ using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.PostRepository.Entities;
-using System.Text;
 
 namespace RippleSync.Infrastructure.PostRepository;
-internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPostRepository, IPostQueries
+internal class NpgsqlPostRepository(
+    IUnitOfWork uow,
+    IEncryptionService encryptor) : BaseRepository(uow), IPostRepository, IPostQueries
 {
     public async Task<IEnumerable<GetPostsByUserResponse>> GetPostsByUserAsync(Guid userId, string? status, CancellationToken cancellationToken = default)
     {
@@ -80,7 +82,7 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
 
-        return userPostEntities.Any() ? userPostEntities.Select(up => new GetPostsByUserResponse(up.Id, up.MessageContent, up.MediaIds, string.IsNullOrWhiteSpace(up.StatusName) ? PostStatus.Draft.ToString() : up.StatusName, up.Timestamp, up.Platforms)) : [];
+        return userPostEntities.Any() ? userPostEntities.Select(up => new GetPostsByUserResponse(up.Id, DecryptPostMessage(up.MessageContent), up.MediaIds, string.IsNullOrWhiteSpace(up.StatusName) ? PostStatus.Draft.ToString() : up.StatusName, up.Timestamp, up.Platforms)) : [];
     }
 
     public async Task<string?> GetImageByIdAsync(Guid imageId, CancellationToken cancellationToken = default)
@@ -135,7 +137,7 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
             return Post.Reconstitute(
                 postEntity.Id,
                 postEntity.UserAccountId,
-                postEntity.MessageContent,
+                DecryptPostMessage(postEntity.MessageContent),
                 postEntity.SubmittedAt,
                 postEntity.UpdatedAt,
                 postEntity.ScheduledFor,
@@ -155,22 +157,38 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
     {
         IEnumerable<Post> posts = [];
 
-        string getPostsToPublish = @"
-            SELECT p.* 
-	            FROM post AS p 
-	            LEFT JOIN post_event AS pe 
-		            ON pe.post_id = p.id
-	            LEFT JOIN post_status as ps 
-		            ON pe.post_status_id = ps.id
-            WHERE p.scheduled_for IS NOT null
-	            AND ps.status = 'scheduled'
-                AND p.scheduled_for < now()
-            ORDER BY p.scheduled_for ASC
-            LIMIT 1000";
+        //FOR UPDATE OF pe SKIP LOCKED skips rows currently locked in another transaction, potentially another consumer.
+        const string getReadyToPostAndClaimPostsSql = @"
+            WITH claimed_posts AS (
+                SELECT pe.post_id
+                FROM post AS p
+                INNER JOIN post_event AS pe ON pe.post_id = p.id
+                INNER JOIN post_status AS ps ON pe.post_status_id = ps.id
+                WHERE p.scheduled_for IS NOT NULL
+                    AND ps.status = 'scheduled'
+                    AND p.scheduled_for < NOW()
+                ORDER BY p.scheduled_for ASC
+                LIMIT 1000
+                FOR UPDATE OF pe SKIP LOCKED 
+            )
+            UPDATE post_event AS pe
+            SET post_status_id = (SELECT id FROM post_status WHERE status = 'processing')
+            FROM claimed_posts
+            WHERE pe.post_id = claimed_posts.post_id
+            RETURNING pe.post_id";
 
         try
         {
-            var postEntities = await Connection.QueryAsync<PostEntity>(getPostsToPublish, trans: Transaction, ct: cancellationToken);
+            var postIds = await Connection.QueryAsync<Guid>(
+                    getReadyToPostAndClaimPostsSql,
+                    trans: Transaction,
+                    ct: cancellationToken
+                );
+
+            if (!postIds.Any())
+                return [];
+
+            var postEntities = await Connection.SelectAsync<PostEntity>("id = ANY(@PostIds)", param: new { PostIds = postIds }, ct: cancellationToken);
 
             if (!postEntities.Any()) return posts;
 
@@ -186,7 +204,7 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
 
     public async Task CreateAsync(Post post, CancellationToken cancellationToken = default)
     {
-        var postEntity = new PostEntity(post.Id, post.UserId, post.MessageContent, post.SubmittedAt, post.UpdatedAt, post.ScheduledFor);
+        var postEntity = new PostEntity(post.Id, post.UserId, EncryptPostMessage(post.MessageContent), post.SubmittedAt, post.UpdatedAt, post.ScheduledFor);
 
         try
         {
@@ -197,7 +215,7 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
 
             if (!post.PostMedias.NullOrEmpty())
             {
-                var postMediasEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
+                var postMediasEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, EncryptPostMedia(pm.ImageData)));
 
                 rowsAffected = await Connection.InsertAsync(postMediasEntities, trans: Transaction, ct: cancellationToken);
 
@@ -223,13 +241,15 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
 
     public async Task UpdateAsync(Post post, CancellationToken cancellationToken = default)
     {
-        var postEntity = new PostEntity(post.Id, post.UserId, post.MessageContent, post.SubmittedAt, post.UpdatedAt, post.ScheduledFor);
+
+
+        var postEntity = new PostEntity(post.Id, post.UserId, EncryptPostMessage(post.MessageContent), post.SubmittedAt, post.UpdatedAt, post.ScheduledFor);
 
         try
         {
             int rowsAffected = await Connection.UpdateAsync(postEntity, trans: Transaction, ct: cancellationToken);
 
-            var postMediaEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
+            var postMediaEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, EncryptPostMedia(pm.ImageData)));
             var postEventEntities = post.PostEvents.Select(pe => new PostEventEntity(post.Id, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
 
             rowsAffected += await Connection.SyncAsync(postMediaEntities, parentIdentifiers: new { PostId = post.Id }, trans: Transaction, ct: cancellationToken);
@@ -281,12 +301,25 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
         return postEntities.Select(pe => Post.Reconstitute(
             pe.Id,
             pe.UserAccountId,
-            pe.MessageContent,
+            DecryptPostMessage(pe.MessageContent),
             pe.SubmittedAt,
             pe.UpdatedAt,
             pe.ScheduledFor,
-            mediaLookup.GetValueOrDefault(pe.Id, []).Select(pme => PostMedia.Reconstitute(pme.Id, pme.ImageData)),
+            mediaLookup.GetValueOrDefault(pe.Id, []).Select(pme => PostMedia.Reconstitute(pme.Id, DecryptPostMedia(pme.ImageData))),
             eventLookup.GetValueOrDefault(pe.Id, []).Select(pee => PostEvent.Reconstitute(pee.UserPlatformIntegrationId, (PostStatus)pee.PostStatusId, pee.PlatformPostIdentifier, pee.PlatformResponse))
         ));
     }
+
+    private string EncryptPostMessage(string messageContent)
+        => encryptor.Encrypt(EncryptionTask.PostMessageContent, messageContent);
+
+    private string DecryptPostMessage(string messageContent)
+       => encryptor.Decrypt(EncryptionTask.PostMessageContent, messageContent);
+
+
+    private string EncryptPostMedia(string mediaContent)
+        => encryptor.Encrypt(EncryptionTask.PostMediaContent, mediaContent);
+
+    private string DecryptPostMedia(string mediaContent)
+       => encryptor.Decrypt(EncryptionTask.PostMediaContent, mediaContent);
 }

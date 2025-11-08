@@ -44,7 +44,7 @@ internal class NpgsqlUnitOfWork : IDisposable, IUnitOfWork
 
     public IDbTransaction? Transaction { get; private set; }
 
-    public void BeginTransaction() 
+    public void BeginTransaction()
         => Transaction = Connection.BeginTransaction();
 
     public void Save()
