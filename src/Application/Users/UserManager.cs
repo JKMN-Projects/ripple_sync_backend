@@ -59,7 +59,10 @@ public sealed class UserManager(
 
         RefreshToken refreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
         user.AddRefreshToken(refreshToken);
-        await userRepository.UpdateAsync(user, cancellationToken);
+
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
+            await userRepository.UpdateAsync(user, cancellationToken));
+
         return new AuthenticationTokenResponse(
             token.AccessToken,
             token.TokenType,
