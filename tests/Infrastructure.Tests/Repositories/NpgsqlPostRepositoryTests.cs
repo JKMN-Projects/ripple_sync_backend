@@ -46,6 +46,59 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             // Assert
             Assert.Empty(posts);
         }
+
+        [Fact]
+        public async Task Should_ReturnAllUsersPosts_WhenUserHasPosts()
+        {
+            // Arrange
+            var userRepository = new NpgsqlUserRepository(UnitOfWork);
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .Build();
+            await userRepository.CreateAsync(user);
+            Post post1 = new PostBuilder(user.Id)
+                .Build();
+            Post post2 = new PostBuilder(user.Id)
+                .Build();
+            await _sut.CreateAsync(post1);
+            await _sut.CreateAsync(post2);
+
+            // Act
+            var posts = await _sut.GetPostsByUserAsync(user.Id, null);
+
+            // Assert
+            Assert.Equal(2, posts.Count());
+            Assert.Contains(posts, p => p.PostId == post1.Id);
+            Assert.Contains(posts, p => p.PostId == post2.Id);
+        }
+
+        [Fact]
+        public async Task Should_ReturnOnlyScheduledPosts_WhenQueryingForScheduledPosts()
+        {
+            // Arrange
+            var userRepository = new NpgsqlUserRepository(UnitOfWork);
+            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork);
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .Build();
+            await userRepository.CreateAsync(user);
+            Integration xIntegration = new IntegrationBuilder(user.Id, Platform.X)
+                .Build();
+            await integrationRepository.CreateAsync(xIntegration);
+            Post draftPost = new PostBuilder(user.Id)
+                .Build();
+            Post scheduledPost = new PostBuilder(user.Id)
+                .ScheduledFor(DateTime.UtcNow.AddHours(1))
+                .PostedTo(xIntegration)
+                .Build();
+            await _sut.CreateAsync(draftPost);
+            await _sut.CreateAsync(scheduledPost);
+
+            // Act
+            var posts = await _sut.GetPostsByUserAsync(user.Id, PostStatus.Scheduled.ToString().ToLowerInvariant());
+
+            // Assert
+            Assert.Single(posts);
+            Assert.Equal(scheduledPost.Id, posts.First().PostId);
+        }
     }
 
     public sealed class GetImageByIdAsync : NpgsqlPostRepositoryTests

@@ -52,14 +52,27 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
                      WHERE pe.post_id = p.id) AS platforms
                 WHERE EXISTS (SELECT 1 FROM post_event WHERE post_id = p.id)
             ) AS pe_data ON true
-            WHERE p.user_account_id = @UserId
-            ORDER BY p.submitted_at DESC;";
+            WHERE p.user_account_id = @UserId";
+
+        if (status != null)
+        {
+            if (status.Equals("draft", StringComparison.OrdinalIgnoreCase))
+            {
+                getPostSummaryQuery += " AND pe_data.status_name IS NULL";
+            }
+            else
+            {
+                getPostSummaryQuery += " AND pe_data.status_name = @Status";
+            }
+        }
+
+        getPostSummaryQuery += " ORDER BY p.submitted_at DESC";
 
         IEnumerable<GetPostsByUserResponseEntity> userPostEntities = [];
 
         try
         {
-            userPostEntities = await Connection.QueryAsync<GetPostsByUserResponseEntity>(getPostSummaryQuery, param: new { UserId = userId }, trans: Transaction, ct: cancellationToken);
+            userPostEntities = await Connection.QueryAsync<GetPostsByUserResponseEntity>(getPostSummaryQuery, param: new { UserId = userId, Status = status }, trans: Transaction, ct: cancellationToken);
         }
         catch (Exception e)
         {
@@ -150,7 +163,9 @@ internal class NpgsqlPostRepository(IUnitOfWork uow) : BaseRepository(uow), IPos
 		            ON pe.post_status_id = ps.id
             WHERE p.scheduled_for IS NOT null
 	            AND ps.status = 'scheduled'
-                AND p.scheduled_for < now()";
+                AND p.scheduled_for < now()
+            ORDER BY p.scheduled_for ASC
+            LIMIT 1000";
 
         try
         {
