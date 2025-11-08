@@ -18,7 +18,7 @@ internal class SoMePlatformInstagram(IOptions<InstagramOptions> options) : ISoMe
             .Add("code_challenge", authConfig.CodeChallenge)
             .Add("code_challenge_method", "S256");
 
-        return new Uri("https://api.instagram.com/oauth/authorize" + queries.ToUriComponent()).ToString();
+        return new Uri("https://www.facebook.com/dialog/oauth" + queries.ToUriComponent()).ToString();
     }
 
     public HttpRequestMessage GetTokenRequest(TokenAccessConfiguration tokenConfigs)
@@ -33,7 +33,7 @@ internal class SoMePlatformInstagram(IOptions<InstagramOptions> options) : ISoMe
             ["code_verifier"] = tokenConfigs.CodeVerifier
         };
 
-        return new HttpRequestMessage(HttpMethod.Post, "https://api.instagram.com/oauth/access_token")
+        return new HttpRequestMessage(HttpMethod.Post, "https://graph.facebook.com/oauth/access_token")
         {
             Content = new FormUrlEncodedContent(formData)
         };

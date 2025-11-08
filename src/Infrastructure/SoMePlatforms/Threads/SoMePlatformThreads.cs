@@ -33,7 +33,7 @@ internal class SoMePlatformThreads(IOptions<ThreadsOptions> options) : ISoMePlat
             ["code_verifier"] = tokenConfigs.CodeVerifier
         };
 
-        return new HttpRequestMessage(HttpMethod.Post, "https://graph.threads.net/oauth/access_token")
+        return new HttpRequestMessage(HttpMethod.Post, "https://graph.facebook.com/oauth/access_token")
         {
             Content = new FormUrlEncodedContent(formData)
         };
