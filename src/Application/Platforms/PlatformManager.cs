@@ -1,11 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using RippleSync.Application.Common.Queries;
+﻿using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Responses;
-using RippleSync.Application.Posts;
 
 namespace RippleSync.Application.Platforms;
-public class PlatformManager(ILogger<PostManager> logger,
-    IPlatformQueries platformQueries)
+public class PlatformManager(IPlatformQueries platformQueries)
 {
     public async Task<ListResponse<PlatformResponse>> GetPlatformsAsync(CancellationToken cancellationToken = default)
     {

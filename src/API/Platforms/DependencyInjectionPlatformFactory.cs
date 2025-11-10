@@ -9,11 +9,9 @@ public class DependencyInjectionPlatformFactory(
     public ISoMePlatform Create(Platform platform)
     {
         ISoMePlatform? searchedPlatform = serviceProvider.GetKeyedService<ISoMePlatform>(platform);
-        if (searchedPlatform == null)
-        {
-            throw new ArgumentException($"No platform found for {platform}", nameof(platform));
-        }
-        return searchedPlatform;
+
+        return searchedPlatform
+            ?? throw new ArgumentException($"No platform found for {platform}", nameof(platform));
     }
 
 }

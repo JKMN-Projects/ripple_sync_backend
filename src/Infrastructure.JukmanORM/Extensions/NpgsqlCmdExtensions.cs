@@ -1,11 +1,6 @@
 ﻿using Npgsql;
 using NpgsqlTypes;
 using RippleSync.Infrastructure.JukmanORM.ClassAttributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RippleSync.Infrastructure.JukmanORM.Extensions;
 internal static partial class NpgsqlCmdExtensions

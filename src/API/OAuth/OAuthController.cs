@@ -39,7 +39,7 @@ public partial class OAuthController(
         }
         catch (InvalidOperationException ex)
         {
-            logger.LogWarning(ex, ex.Message);
+            logger.LogWarning(ex, "Error on initiate");
             return Problem(
                 statusCode: StatusCodes.Status400BadRequest,
                     title: "Error on initiate",
@@ -66,7 +66,7 @@ public partial class OAuthController(
         }
         catch (InvalidOperationException ex)
         {
-            logger.LogWarning(ex, ex.Message);
+            logger.LogWarning(ex, "Error on Callback");
             return Problem(
                 statusCode: StatusCodes.Status400BadRequest,
                     title: "Error on Callback",

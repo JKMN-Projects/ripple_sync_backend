@@ -7,7 +7,7 @@ public abstract class UserToken
     public string Value { get; protected set; }
     public DateTime CreatedAt { get; protected set; }
     public DateTime ExpiresAt { get; protected set; }
-    
+
     protected UserToken(Guid id, UserTokenType type, string value, DateTime createdAt, DateTime expiresAt)
     {
         Id = id;

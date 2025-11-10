@@ -8,19 +8,19 @@ using RippleSync.Application.Posts;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
 using RippleSync.Domain.Posts;
-using RippleSync.Tests.Shared.Factories.Integrations;
-using RippleSync.Tests.Shared.Factories.Posts;
-using RippleSync.Tests.Shared.TestDoubles;
-using RippleSync.Tests.Shared.TestDoubles.Logging;
-using RippleSync.Tests.Shared.TestDoubles.Platforms;
-using RippleSync.Tests.Shared.TestDoubles.Queries;
-using RippleSync.Tests.Shared.TestDoubles.Repositories;
+using RippleSync.Tests.Common.Factories.Integrations;
+using RippleSync.Tests.Common.Factories.Posts;
+using RippleSync.Tests.Common.TestDoubles;
+using RippleSync.Tests.Common.TestDoubles.Logging;
+using RippleSync.Tests.Common.TestDoubles.Platforms;
+using RippleSync.Tests.Common.TestDoubles.Queries;
+using RippleSync.Tests.Common.TestDoubles.Repositories;
 
 namespace RippleSync.Application.Tests;
 
 public abstract class PostManagerTests
 {
-    protected PostManager GetSystemUnderTest(
+    protected static PostManager GetSystemUnderTest(
         ILogger<PostManager>? logger = null,
         IUnitOfWork? unitOfWork = null,
         IPostRepository? postRepository = null,
@@ -244,10 +244,9 @@ public abstract class PostManagerTests
                 .Build();
             foreach (var item in post.PostEvents)
             {
-                if (item.UserPlatformIntegrationId == xIntegration.Id)
-                    item.Status = PostStatus.Failed;
-                else
-                    item.Status = PostStatus.Posted;
+                item.Status = item.UserPlatformIntegrationId == xIntegration.Id
+                    ? PostStatus.Failed
+                    : PostStatus.Posted;
             }
             var updatePostRepositorySpy = new PostRepositoryDoubles.Spies.UpdateAsyncSpy(
                 new PostRepositoryDoubles.Stubs.UpdateAsync.DoesNothing());

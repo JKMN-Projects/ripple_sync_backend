@@ -9,7 +9,7 @@ namespace Infrastructure.FakePlatform;
 public class FakePlatformOptions
 {
     [Required]
-    public string UrlBase { get; set; }
+    public required string UrlBase { get; init; }
 }
 
 
@@ -33,7 +33,7 @@ public class SoMePlatformFake(
         return request;
     }
 
-    public async Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration, IEnumerable<Post> publishedPostsOnPlatform) 
+    public async Task<PlatformStats> GetInsightsFromIntegrationAsync(Integration integration, IEnumerable<Post> publishedPostsOnPlatform)
         => await PostStatGenerator.CalculateAsync(integration, publishedPostsOnPlatform);
 
     public async Task<PostEvent> PublishPostAsync(Post post, Integration integration)

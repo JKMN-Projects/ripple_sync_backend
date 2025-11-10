@@ -7,11 +7,11 @@ using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Users;
 using RippleSync.Application.Users.Exceptions;
 using RippleSync.Domain.Users;
-using RippleSync.Tests.Shared.Factories.Users;
-using RippleSync.Tests.Shared.TestDoubles;
-using RippleSync.Tests.Shared.TestDoubles.Logging;
-using RippleSync.Tests.Shared.TestDoubles.Repositories;
-using RippleSync.Tests.Shared.TestDoubles.Security;
+using RippleSync.Tests.Common.Factories.Users;
+using RippleSync.Tests.Common.TestDoubles;
+using RippleSync.Tests.Common.TestDoubles.Logging;
+using RippleSync.Tests.Common.TestDoubles.Repositories;
+using RippleSync.Tests.Common.TestDoubles.Security;
 using System.Text;
 
 namespace RippleSync.Application.Tests;

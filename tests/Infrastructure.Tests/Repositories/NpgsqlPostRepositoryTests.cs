@@ -8,11 +8,11 @@ using RippleSync.Infrastructure.PostRepository;
 using RippleSync.Infrastructure.Security;
 using RippleSync.Infrastructure.Tests.Configuration;
 using RippleSync.Infrastructure.UserRepository;
-using RippleSync.Tests.Shared;
-using RippleSync.Tests.Shared.Factories.Integrations;
-using RippleSync.Tests.Shared.Factories.Posts;
-using RippleSync.Tests.Shared.Factories.Users;
-using RippleSync.Tests.Shared.TestDoubles.Security;
+using RippleSync.Tests.Common;
+using RippleSync.Tests.Common.Factories.Integrations;
+using RippleSync.Tests.Common.Factories.Posts;
+using RippleSync.Tests.Common.Factories.Users;
+using RippleSync.Tests.Common.TestDoubles.Security;
 
 namespace RippleSync.Infrastructure.Tests.Repositories;
 

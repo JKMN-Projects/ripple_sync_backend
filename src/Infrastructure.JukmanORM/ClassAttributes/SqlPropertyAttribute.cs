@@ -1,7 +1,5 @@
 ﻿using NpgsqlTypes;
 using RippleSync.Infrastructure.JukmanORM.Enums;
-using RippleSync.Infrastructure.JukmanORM.Extensions;
-using System.Runtime.CompilerServices;
 
 namespace RippleSync.Infrastructure.JukmanORM.ClassAttributes;
 [AttributeUsage(AttributeTargets.Property)]

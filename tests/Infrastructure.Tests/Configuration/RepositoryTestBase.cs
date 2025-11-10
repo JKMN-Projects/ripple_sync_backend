@@ -2,7 +2,6 @@
 using Respawn;
 using Respawn.Graph;
 using RippleSync.Application.Common.UnitOfWork;
-using RippleSync.Domain.Platforms;
 using RippleSync.Infrastructure.UnitOfWork;
 using System.Data;
 
@@ -24,9 +23,7 @@ public abstract class RepositoryTestBase : IAsyncLifetime, IClassFixture<Postgre
     }
 
     protected async Task ResetDatabaseAsync()
-    {
-        await _respawner.ResetAsync(DbConnection);
-    }
+        => await _respawner.ResetAsync(DbConnection);
 
     public virtual async Task InitializeAsync()
     {

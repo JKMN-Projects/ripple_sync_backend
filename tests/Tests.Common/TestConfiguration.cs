@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 
-namespace RippleSync.Tests.Shared;
+namespace RippleSync.Tests.Common;
 public static class TestConfiguration
 {
     public static IConfiguration Configuration

@@ -38,12 +38,8 @@ public sealed class UserManager(
         ArgumentException.ThrowIfNullOrWhiteSpace(email, nameof(email));
         ArgumentException.ThrowIfNullOrWhiteSpace(password, nameof(password));
 
-        User? user = await userRepository.GetByEmailAsync(email, cancellationToken);
-
-        if (user is null)
-        {
-            throw EntityNotFoundException.ForEntity<User>(email, nameof(User.Email));
-        }
+        User? user = await userRepository.GetByEmailAsync(email, cancellationToken)
+            ?? throw EntityNotFoundException.ForEntity<User>(email, nameof(User.Email));
 
         byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
         byte[] salt = Convert.FromBase64String(user.Salt);
@@ -131,11 +127,8 @@ public sealed class UserManager(
     {
         logger.LogInformation("Deleting user with ID {UserId}", userId);
 
-        User? user = await userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user is null)
-        {
-            throw EntityNotFoundException.ForEntity<User>(userId);
-        }
+        User? user = await userRepository.GetByIdAsync(userId, cancellationToken)
+            ?? throw EntityNotFoundException.ForEntity<User>(userId);
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
@@ -173,12 +166,8 @@ public sealed class UserManager(
         CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Refreshing authentication token for user with ID {RefreshToken}", refreshToken);
-        User? user = await userRepository.GetByRefreshTokenAsync(refreshToken, cancellationToken);
-
-        if (user is null)
-        {
-            throw EntityNotFoundException.ForEntity<User>(refreshToken, nameof(User.RefreshToken));
-        }
+        User? user = await userRepository.GetByRefreshTokenAsync(refreshToken, cancellationToken)
+            ?? throw EntityNotFoundException.ForEntity<User>(refreshToken, nameof(User.RefreshToken));
 
         AuthenticationToken? token = null;
         RefreshToken? newRefreshToken = null;
@@ -199,19 +188,18 @@ public sealed class UserManager(
             await userRepository.UpdateAsync(user, cancellationToken);
         });
 
-        if (token == null)
-            throw new InvalidOperationException("Failed to generate new token");
-        if (newRefreshToken == null)
-            throw new InvalidOperationException("Failed to generate new refresh tokens");
-
-        return new AuthenticationTokenResponse(
-                token.AccessToken,
-                token.TokenType,
-                token.ExpiresInMilliSeconds,
-                newRefreshToken.Value,
-                ((DateTimeOffset)newRefreshToken.ExpiresAt).ToUnixTimeMilliseconds(),
-                token.Claims
-            );
+        return token == null
+            ? throw new InvalidOperationException("Failed to generate new token")
+            : newRefreshToken == null
+                ? throw new InvalidOperationException("Failed to generate new refresh tokens")
+                : new AuthenticationTokenResponse(
+                    token.AccessToken,
+                    token.TokenType,
+                    token.ExpiresInMilliSeconds,
+                    newRefreshToken.Value,
+                    ((DateTimeOffset)newRefreshToken.ExpiresAt).ToUnixTimeMilliseconds(),
+                    token.Claims
+                );
     }
 }
 

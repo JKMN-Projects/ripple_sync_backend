@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using RippleSync.Application.Common.Notifiers;
-using RippleSync.Domain.Posts;
 
 namespace RippleSync.Infrastructure.NotifierRepository;
 internal class InMemoryNotificationListener(ILogger<InMemoryNotificationListener> logger) : IPostNotificationListener

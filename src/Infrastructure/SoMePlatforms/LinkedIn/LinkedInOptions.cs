@@ -5,8 +5,8 @@ namespace RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
 public class LinkedInOptions
 {
     [Required]
-    public string ClientId { get; init; }
+    public required string ClientId { get; init; }
 
     [Required]
-    public string ClientSecret { get; init; }
+    public required string ClientSecret { get; init; }
 }

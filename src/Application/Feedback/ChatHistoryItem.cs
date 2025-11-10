@@ -1,4 +1,4 @@
-﻿namespace RippleSync.API.Feedback;
+﻿namespace RippleSync.Application.Feedback;
 
 public class ChatHistoryItem
 {

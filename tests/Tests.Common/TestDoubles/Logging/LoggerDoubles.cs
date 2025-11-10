@@ -1,7 +1,7 @@
 ﻿
 using Microsoft.Extensions.Logging;
 
-namespace RippleSync.Tests.Shared.TestDoubles.Logging;
+namespace RippleSync.Tests.Common.TestDoubles.Logging;
 public static class LoggerDoubles
 {
     public static class Fakes

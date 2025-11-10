@@ -1,5 +1,4 @@
-﻿using RippleSync.API.Feedback;
-using RippleSync.Application.Common.Repositories;
+﻿using RippleSync.Application.Common.Repositories;
 
 namespace RippleSync.Application.Feedback;
 public sealed class FeedbackManager(IFeedbackRepository feedbackRepository)

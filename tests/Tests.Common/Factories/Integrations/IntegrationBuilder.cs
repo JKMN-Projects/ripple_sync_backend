@@ -1,12 +1,12 @@
 ﻿using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
 
-namespace RippleSync.Tests.Shared.Factories.Integrations;
+namespace RippleSync.Tests.Common.Factories.Integrations;
 
 public class IntegrationBuilder
 {
-    private Guid _userId;
-    private Platform _platform;
+    private readonly Guid _userId;
+    private readonly Platform _platform;
     private string _accessToken = Guid.NewGuid().ToString();
     private string? _refreshToken = null;
     private DateTime? _expiresAt = null;

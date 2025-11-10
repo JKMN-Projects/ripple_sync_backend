@@ -1,7 +1,7 @@
 ﻿using RippleSync.Application.Platforms;
 using RippleSync.Domain.Platforms;
 
-namespace RippleSync.Tests.Shared.TestDoubles.Platforms;
+namespace RippleSync.Tests.Common.TestDoubles.Platforms;
 
 public static class PlatformFactoryDoubles
 {
@@ -23,9 +23,7 @@ public static class PlatformFactoryDoubles
                 }
 
                 public override ISoMePlatform Create(Platform platform)
-                {
-                    return _platform;
-                }
+                    => _platform;
             }
 
             public class ReturnsDifferentSoMePlatformsBasedOnInput : Dummy
@@ -40,15 +38,10 @@ public static class PlatformFactoryDoubles
 
                 public override ISoMePlatform Create(Platform platform)
                 {
-                    if (_platformsMap.TryGetValue(platform, out var soMePlatform))
-                    {
-                        return soMePlatform;
-                    }
-                    if (_defaultPlatform != null)
-                    {
-                        return _defaultPlatform;
-                    }
-                    throw new ArgumentException($"No SoMePlatform stub defined for platform: {platform}");
+                    return _platformsMap.TryGetValue(platform, out var soMePlatform)
+                        ? soMePlatform
+                        : _defaultPlatform
+                            ?? throw new ArgumentException($"No SoMePlatform stub defined for platform: {platform}");
                 }
             }
         }

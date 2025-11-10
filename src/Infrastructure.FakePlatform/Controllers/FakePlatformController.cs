@@ -10,18 +10,16 @@ public class FakePlatformController(
     PostManager postManager) : Controller
 {
     [HttpGet]
-    public IActionResult Index()
-    {
+    public IActionResult Index() =>
         // Pass the in-memory post data to the view
-        return View(FakePlatformInMemoryData.PostData);
-    }
+        View(FakePlatformInMemoryData.PostData);
 
 
     [HttpGet("image/{id}")]
     public async Task<IActionResult> GetImage(Guid id)
     {
         // Retrieve the base64 string from your database/service
-        string base64Image = await postManager.GetImageByIdAsync(id);
+        string? base64Image = await postManager.GetImageByIdAsync(id);
 
         if (string.IsNullOrEmpty(base64Image))
         {

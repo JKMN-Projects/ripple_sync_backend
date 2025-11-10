@@ -20,7 +20,7 @@ public class PostChannel
 
     public IAsyncEnumerable<Post> ReadAllAsync() => _channel.Reader.ReadAllAsync();
 
-    public bool TryRead(out Post message) => _channel.Reader.TryRead(out message);
+    public bool TryRead(out Post? message) => _channel.Reader.TryRead(out message);
 
     public ChannelReader<Post> Reader => _channel.Reader;
 }

@@ -26,7 +26,7 @@ public sealed class AuthenticationController(
         try
         {
             AuthenticationTokenResponse tokenResponse = await userManager.GetAuthenticationTokenAsync(request.Email, request.Password, cancellationToken);
-            SetAccessTokenCookie(tokenResponse.Token, tokenResponse.ExpiresAt);
+            SetAccessTokenCookie(tokenResponse.Token);
             AuthenticationResponse response = new AuthenticationResponse(
                 tokenResponse.RefreshToken,
                 request.Email,
@@ -124,7 +124,7 @@ public sealed class AuthenticationController(
         try
         {
             AuthenticationTokenResponse tokenResponse = await userManager.RefreshAuthenticationTokenAsync(request.RefreshToken);
-            SetAccessTokenCookie(tokenResponse.Token, tokenResponse.ExpiresAt);
+            SetAccessTokenCookie(tokenResponse.Token);
             string userEmail = tokenResponse.Claims.FindEmail()
                 ?? throw new InvalidOperationException("Email claim not found.");
             AuthenticationResponse response = new AuthenticationResponse(
@@ -168,7 +168,7 @@ public sealed class AuthenticationController(
         return NoContent();
     }
 
-    private void SetAccessTokenCookie(string token, long expiresAt)
+    private void SetAccessTokenCookie(string token)
     {
         HttpContext.Response.Cookies.Append("AccessToken", token, new CookieOptions
         {

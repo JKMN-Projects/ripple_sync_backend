@@ -1,7 +1,7 @@
 ﻿using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Posts;
 
-namespace RippleSync.Tests.Shared.TestDoubles.Queries;
+namespace RippleSync.Tests.Common.TestDoubles.Queries;
 
 public static class PostQueriesDoubles
 {

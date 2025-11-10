@@ -368,7 +368,7 @@ internal class OrmHelper
             || type == typeof(DateTimeOffset)
             || type == typeof(TimeSpan)
             || type == typeof(Guid)
-            || Nullable.GetUnderlyingType(type) != null && IsPrimitiveOrSimpleType(Nullable.GetUnderlyingType(type)!);
+            || (Nullable.GetUnderlyingType(type) != null && IsPrimitiveOrSimpleType(Nullable.GetUnderlyingType(type)!));
     }
 
     /// <summary>
@@ -400,14 +400,14 @@ internal class OrmHelper
     /// <returns></returns>
     internal static string ToSqlName(string name)
     {
-        if (string.IsNullOrEmpty(name)) return name;
-
-        return NamingConvention switch
-        {
-            SqlNamingConvention.CamelCase => ToCamelCase(name),
-            SqlNamingConvention.SnakeCase => ToSnakeCase(name),
-            _ => name
-        };
+        return string.IsNullOrEmpty(name)
+            ? name
+            : NamingConvention switch
+            {
+                SqlNamingConvention.CamelCase => ToCamelCase(name),
+                SqlNamingConvention.SnakeCase => ToSnakeCase(name),
+                _ => name
+            };
     }
 
     /// <summary>
