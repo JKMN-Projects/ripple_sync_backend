@@ -2,7 +2,7 @@
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
 
-namespace RippleSync.Tests.Shared.TestDoubles.Repositories;
+namespace RippleSync.Tests.Common.TestDoubles.Repositories;
 public static class IntegrationRepositoryDoubles
 {
     public class Dummy : IIntegrationRepository

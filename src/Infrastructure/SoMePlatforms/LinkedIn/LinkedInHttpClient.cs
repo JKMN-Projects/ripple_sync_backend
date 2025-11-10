@@ -1,7 +1,7 @@
-﻿using System.Net.Http.Headers;
+﻿using RippleSync.Infrastructure.SoMePlatforms.LinkedIn.Models;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
 
@@ -28,22 +28,11 @@ internal class LinkedInHttpClient(HttpClient httpClient)
         var response = await httpClient.SendAsync(request);
         var responseContent = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new HttpRequestException(
-                $"Failed to publish post to LinkedIn. Status: {response.StatusCode}, Response: {responseContent}");
-        }
-        else
-        {
-            if (response.Headers.TryGetValues("x-restli-id", out var values))
-            {
-                return values.First();
-            }
-            else
-            {
-                return "";
-            }
-        }
+        return !response.IsSuccessStatusCode
+            ? throw new HttpRequestException($"Failed to publish post to LinkedIn. Status: {response.StatusCode}, Response: {responseContent}")
+            : response.Headers.TryGetValues("x-restli-id", out var values)
+                ? values.First()
+                : "";
     }
     internal async Task<string> GetUserAuthorUrnAsync()
     {
@@ -94,7 +83,7 @@ internal class LinkedInHttpClient(HttpClient httpClient)
         }
 
         var mediaResponse = JsonSerializer.Deserialize<InitMedia>(responseContent);
-        return mediaResponse!.value;
+        return mediaResponse!.Value;
     }
     internal async Task UploadImageAsync(string base64Img, string uploadUrl)
     {
@@ -117,17 +106,4 @@ internal class LinkedInHttpClient(HttpClient httpClient)
                 $"Failed to upload image. Status: {response.StatusCode}, Response: {responseBody}");
         }
     }
-}
-internal record InitMedia(LinkedInMediaInitResponse value);
-internal record LinkedInMediaInitResponse(string uploadUrl, string image);
-internal class LinkedInUserInfo
-{
-    [JsonPropertyName("sub")]
-    public string Sub { get; set; }
-
-    [JsonPropertyName("name")]
-    public string Name { get; set; }
-
-    [JsonPropertyName("email")]
-    public string Email { get; set; }
 }

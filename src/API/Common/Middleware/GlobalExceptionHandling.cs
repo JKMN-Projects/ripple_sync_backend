@@ -48,6 +48,8 @@ internal sealed class GlobalExceptionHandling : IExceptionHandler
                 }
                 errorMessage = unEx.Message;
                 break;
+            default:
+                break;
         }
 
 

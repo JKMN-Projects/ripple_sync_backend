@@ -1,7 +1,7 @@
 ﻿using RippleSync.Application.Common.UnitOfWork;
 using System.Data;
 
-namespace RippleSync.Tests.Shared.TestDoubles;
+namespace RippleSync.Tests.Common.TestDoubles;
 
 public static class UnitOfWorkDoubles
 {

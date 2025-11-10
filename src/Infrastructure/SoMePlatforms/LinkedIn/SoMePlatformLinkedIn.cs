@@ -77,7 +77,9 @@ internal class SoMePlatformLinkedIn(
 
 
             var postIdentifier = await linkedInHttpClient.PublishPost(publishPayload);
-            if (postIdentifier == string.Empty) logger.LogWarning("Could not get platformIdentifier on LinkedIn for post: {postId}", post.Id);
+
+            if (postIdentifier == string.Empty)
+                logger.LogWarning("Could not get platformIdentifier on LinkedIn for post: {PostId}", post.Id);
 
             postEvent.PlatformPostIdentifier = postIdentifier;
             postEvent.Status = PostStatus.Posted;
@@ -85,7 +87,7 @@ internal class SoMePlatformLinkedIn(
         catch (Exception ex)
         {
             postEvent.Status = PostStatus.Failed;
-            logger.LogError(message: "An exception occurred while publishing post {postId} on Linkedin", post.Id);
+            logger.LogError(ex, "An exception occurred while publishing post {PostId} on Linkedin", post.Id);
             throw;
         }
 
@@ -102,8 +104,8 @@ internal class SoMePlatformLinkedIn(
         foreach (var postMedia in postMedias)
         {
             var initResponse = await linkedInHttpClient.InitImageAsync(authorUrn);
-            await linkedInHttpClient.UploadImageAsync(postMedia.ImageData, initResponse.uploadUrl);
-            imageUrns.Add(initResponse.image);
+            await linkedInHttpClient.UploadImageAsync(postMedia.ImageData, initResponse.UploadUrl);
+            imageUrns.Add(initResponse.Image);
         }
 
         return imageUrns;

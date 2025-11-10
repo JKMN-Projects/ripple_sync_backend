@@ -7,10 +7,10 @@ using RippleSync.Infrastructure.PlatformRepository;
 using RippleSync.Infrastructure.Security;
 using RippleSync.Infrastructure.Tests.Configuration;
 using RippleSync.Infrastructure.UserRepository;
-using RippleSync.Tests.Shared;
-using RippleSync.Tests.Shared.Factories.Integrations;
-using RippleSync.Tests.Shared.Factories.Users;
-using RippleSync.Tests.Shared.TestDoubles.Security;
+using RippleSync.Tests.Common;
+using RippleSync.Tests.Common.Factories.Integrations;
+using RippleSync.Tests.Common.Factories.Users;
+using RippleSync.Tests.Common.TestDoubles.Security;
 
 namespace RippleSync.Infrastructure.Tests.Repositories;
 public class NpgsqlPlatformRepositoryTests : RepositoryTestBase

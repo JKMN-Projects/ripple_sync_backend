@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
-namespace RippleSync.Tests.Shared.TestDoubles.Security;
+namespace RippleSync.Tests.Common.TestDoubles.Security;
 public static class AuthenticationTokenProviderDoubles
 {
     public class Dummy : IAuthenticationTokenProvider

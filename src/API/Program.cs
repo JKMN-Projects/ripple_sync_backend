@@ -6,7 +6,6 @@ using RippleSync.API.Common.Middleware;
 using RippleSync.API.Platforms;
 using RippleSync.API.PostPublisher;
 using RippleSync.Application;
-using RippleSync.Application.Common.Notifiers;
 using RippleSync.Application.Platforms;
 using RippleSync.Infrastructure;
 using RippleSync.Infrastructure.Security;

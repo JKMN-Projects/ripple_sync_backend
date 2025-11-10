@@ -22,7 +22,5 @@ internal class OAuthSecurer : IOAuthSecurer
     }
 
     public Task EncryptToken(string token)
-    {
-        return Task.CompletedTask;
-    }
+        => Task.CompletedTask;
 }

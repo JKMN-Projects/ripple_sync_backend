@@ -7,7 +7,6 @@ using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
-using System.Collections.Generic;
 
 namespace RippleSync.Application.Posts;
 
@@ -178,7 +177,7 @@ public class PostManager(
 
     public async Task ProcessPostAsync(Post post, CancellationToken cancellationToken = default)
     {
-        if (!post.PostEvents.Any())
+        if (post.PostEvents.Count == 0)
         {
             logger.LogInformation(
                 "Post has no post events to process: PostId={PostId}",
@@ -213,9 +212,8 @@ public class PostManager(
         {
             try
             {
-                var integration = integrations.FirstOrDefault(i => i.Id == postEvent.UserPlatformIntegrationId);
-                if (integration == null)
-                    throw new InvalidOperationException("No integration found. PostEvent: PostId={PostId}, UserPlatformIntegrationId={UserPlatformIntegrationId}");
+                var integration = integrations.FirstOrDefault(i => i.Id == postEvent.UserPlatformIntegrationId)
+                    ?? throw new InvalidOperationException("No integration found. PostEvent: PostId={PostId}, UserPlatformIntegrationId={UserPlatformIntegrationId}");
 
                 ISoMePlatform platform = platformFactory.Create(integration.Platform);
                 await platform.PublishPostAsync(post, integration);
@@ -244,14 +242,13 @@ public class PostManager(
             "Retrying publish for post: PostId={PostId}",
             postId);
 
-        Post? post = await postRepository.GetByIdAsync(postId, cancellationToken);
-        if (post == null)
-            throw EntityNotFoundException.ForEntity<Post>(postId, nameof(Post.Id));
+        Post? post = await postRepository.GetByIdAsync(postId, cancellationToken)
+            ?? throw EntityNotFoundException.ForEntity<Post>(postId, nameof(Post.Id));
 
         if (post.UserId != userId)
             throw new UnauthorizedException("Post does not belong to the user.");
 
-        if (!post.PostEvents.Any())
+        if (post.PostEvents.Count == 0)
             throw new InvalidOperationException("Post has no post events to retry.");
 
         var failedPosts = post.PostEvents.Where(pe => pe.Status == PostStatus.Failed).ToList();

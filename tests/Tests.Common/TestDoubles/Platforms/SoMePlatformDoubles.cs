@@ -2,7 +2,7 @@
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
 
-namespace RippleSync.Tests.Shared.TestDoubles.Platforms;
+namespace RippleSync.Tests.Common.TestDoubles.Platforms;
 
 public static class SoMePlatformDoubles
 {
@@ -27,7 +27,7 @@ public static class SoMePlatformDoubles
             public class Throws : Dummy
             {
                 public override Task<PostEvent> PublishPostAsync(Post post, Integration integration)
-                    => throw new Exception("Simulated exception in PublishPostAsync");
+                    => throw new InvalidOperationException("Simulated exception in PublishPostAsync");
             }
         }
     }

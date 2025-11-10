@@ -1,7 +1,7 @@
 ﻿
 using Microsoft.Extensions.Options;
 
-namespace RippleSync.Tests.Shared.TestDoubles.Options;
+namespace RippleSync.Tests.Common.TestDoubles.Options;
 public static class OptionsMonitorDoubles
 {
 
@@ -15,7 +15,9 @@ public static class OptionsMonitorDoubles
             }
 
             public TOptions CurrentValue { get; }
-            public TOptions Get(string name) => CurrentValue;
+            public TOptions Get(string? name)
+                => CurrentValue;
+
             public IDisposable OnChange(Action<TOptions, string> listener) => NullDisposable.Instance;
             private class NullDisposable : IDisposable
             {

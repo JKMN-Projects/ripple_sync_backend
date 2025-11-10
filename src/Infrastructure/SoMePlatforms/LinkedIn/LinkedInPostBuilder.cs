@@ -1,13 +1,15 @@
-﻿namespace RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
+﻿using RippleSync.Infrastructure.SoMePlatforms.LinkedIn.Models;
+
+namespace RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
 internal class LinkedInPostBuilder
 {
-    private string _author;
-    private string _commentary;
+    private string _author = string.Empty;
+    private string _commentary = string.Empty;
     private string _visibility = "PUBLIC";
     private string _lifecycleState = "PUBLISHED";
     private bool _isReshareDisabledByAuthor = false;
     private readonly List<Media> _mediaItems = new();
-    private Distribution _distribution = new Distribution();
+    private Distribution _distribution = new();
 
     public LinkedInPostBuilder SetAuthor(string authorUrn)
     {

@@ -5,8 +5,8 @@ namespace RippleSync.Infrastructure.SoMePlatforms.Facebook;
 public class FacebookOptions
 {
     [Required]
-    public string AppId { get; init; }
+    public required string AppId { get; init; }
 
     [Required]
-    public string AppSecret { get; init; }
+    public required string AppSecret { get; init; }
 }

@@ -3,26 +3,20 @@ using RippleSync.Application.Common.Security;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace RippleSync.Tests.Shared.TestDoubles.Security;
+namespace RippleSync.Tests.Common.TestDoubles.Security;
 
 public static partial class PasswordHasherDoubles
 {
     public class Dummy : IPasswordHasher
     {
         public virtual byte[] GenerateSalt()
-        {
-            throw new NotImplementedException();
-        }
+            => throw new NotImplementedException();
 
         public virtual byte[] Hash(byte[] passwordBytes, byte[] salt)
-        {
-            throw new NotImplementedException();
-        }
+            => throw new NotImplementedException();
 
         public virtual bool Verify(byte[] passwordBytes, byte[] salt, byte[] hash)
-        {
-            throw new NotImplementedException();
-        }
+            => throw new NotImplementedException();
     }
 
     public static class Stubs
@@ -32,18 +26,14 @@ public static partial class PasswordHasherDoubles
             public class AlwaysValid : Dummy
             {
                 public override bool Verify(byte[] passwordBytes, byte[] salt, byte[] hash)
-                {
-                    return true;
-                }
+                    => true;
             }
 
             public class AlwaysInvalid : Dummy
-        {
-            public override bool Verify(byte[] passwordBytes, byte[] salt, byte[] hash)
             {
-                return false;
+                public override bool Verify(byte[] passwordBytes, byte[] salt, byte[] hash)
+                    => false;
             }
-        }
         }
     }
 
@@ -88,9 +78,7 @@ public static partial class PasswordHasherDoubles
             }
 
             public byte[] Hash(byte[] passwordBytes, byte[] salt)
-            {
-                return Encoding.UTF8.GetBytes(Convert.ToBase64String(passwordBytes) + Convert.ToBase64String(salt));
-            }
+                => Encoding.UTF8.GetBytes(Convert.ToBase64String(passwordBytes) + Convert.ToBase64String(salt));
 
             public bool Verify(byte[] passwordBytes, byte[] salt, byte[] hash)
             {

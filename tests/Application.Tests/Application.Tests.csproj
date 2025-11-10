@@ -19,19 +19,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Application\Application.csproj" />
-    <ProjectReference Include="..\Tests.Shared\Tests.Shared.csproj" />
+    <ProjectReference Include="..\Tests.Common\Tests.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EditorConfigFiles Remove="C:\Users\JacobNielsen-RavnIT\source\repos\Other\ripple_sync_backend\tests\Application.Tests\.editorconfig" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="C:\Users\JacobNielsen-RavnIT\source\repos\Other\ripple_sync_backend\tests\Application.Tests\.editorconfig" />
   </ItemGroup>
 
 </Project>

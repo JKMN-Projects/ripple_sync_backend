@@ -61,7 +61,7 @@ internal class SoMePlatformX(
             throw new ArgumentException($"Integration is for another platform. Expected Platform 'X'. Found '{integration.Platform}'.", nameof(integration));
 
         var authHeader = new AuthenticationHeaderValue(
-            integration.TokenType,
+            integration.TokenType ?? "Bearer",
             integration.AccessToken
         );
         using var httpClient = new HttpClient();
@@ -92,7 +92,7 @@ internal class SoMePlatformX(
         if (!response.IsSuccessStatusCode)
         {
             string responseContent = await response.Content.ReadAsStringAsync();
-            logger.LogWarning("Failed to retrieve insights for Integration ID {IntegrationId}. Response Status: {StatusCode} - {ResponseContent}", 
+            logger.LogWarning("Failed to retrieve insights for Integration ID {IntegrationId}. Response Status: {StatusCode} - {ResponseContent}",
                 integration.Id, response.StatusCode, responseContent);
             return response.StatusCode == HttpStatusCode.TooManyRequests
                 ? await PostStatGenerator.CalculateAsync(integration, publishedPostsOnPlatform)
@@ -131,6 +131,7 @@ internal class SoMePlatformX(
     {
         var postEvent = post.PostEvents.FirstOrDefault(pe => pe.UserPlatformIntegrationId == integration.Id)
             ?? throw new InvalidOperationException("PostEvent not found for the given integration.");
+
         try
         {
             var tweetPayload = new
@@ -148,7 +149,7 @@ internal class SoMePlatformX(
             };
 
             request.Headers.Authorization = new AuthenticationHeaderValue(
-                integration.TokenType,
+                integration.TokenType ?? "Bearer",
                 integration.AccessToken
             );
 
@@ -160,7 +161,10 @@ internal class SoMePlatformX(
             {
                 var postResponse = JsonSerializer.Deserialize<PostResponse>(responseContent);
                 postEvent.PlatformPostIdentifier = postResponse?.Data?.Id;
-                if (postEvent.PlatformPostIdentifier == null) logger.LogWarning("Platform Identification could not be found");
+
+                if (postEvent.PlatformPostIdentifier == null)
+                    logger.LogWarning("Platform Identification could not be found");
+
                 postEvent.Status = PostStatus.Posted;
             }
             else
@@ -168,14 +172,15 @@ internal class SoMePlatformX(
                 throw new InvalidOperationException($"Failed to publish post to X. Response: {responseContent}");
             }
         }
-        catch (Exception e)
+        catch (Exception)
         {
             postEvent.Status = PostStatus.Failed;
             throw;
         }
+
         return postEvent;
     }
     private record PostResponse(PostResponseData Data);
     private record PostResponseData(string Id);
-   
+
 }

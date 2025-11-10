@@ -204,23 +204,22 @@ public class AesGcmEncryptionService : IEncryptionService
     }
 
 
-    private byte[] GenerateDeterministicNonce(string plaintext)
+    private static byte[] GenerateDeterministicNonce(string plaintext)
     {
-        using var sha256 = SHA256.Create();
-        byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(plaintext));
+        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(plaintext));
         byte[] nonce = new byte[_nonceSize];
         Array.Copy(hash, nonce, _nonceSize);
         return nonce;
     }
 
-    private byte[] GenerateNonce()
+    private static byte[] GenerateNonce()
     {
         byte[] nonce = new byte[_nonceSize];
         RandomNumberGenerator.Fill(nonce);
         return nonce;
     }
 
-    private byte[] CombineEncryptedData(byte[] nonce, byte[] tag, byte[] ciphertext)
+    private static byte[] CombineEncryptedData(byte[] nonce, byte[] tag, byte[] ciphertext)
     {
         byte[] result = new byte[nonce.Length + tag.Length + ciphertext.Length];
 
@@ -231,7 +230,7 @@ public class AesGcmEncryptionService : IEncryptionService
         return result;
     }
 
-    private (byte[] nonce, byte[] tag, byte[] ciphertext) SplitEncryptedData(byte[] encryptedData)
+    private static (byte[] nonce, byte[] tag, byte[] ciphertext) SplitEncryptedData(byte[] encryptedData)
     {
         byte[] nonce = new byte[_nonceSize];
         byte[] tag = new byte[_tagSize];

@@ -1,5 +1,5 @@
 ﻿using RippleSync.Infrastructure.Security;
-using RippleSync.Tests.Shared.TestDoubles.Options;
+using RippleSync.Tests.Common.TestDoubles.Options;
 using System.Security.Cryptography;
 using System.Text;
 

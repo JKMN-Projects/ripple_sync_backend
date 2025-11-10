@@ -80,6 +80,6 @@ public class DatabaseMigrator
     private static bool IsLocalEnvironment()
     {
         string? env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-        return env == "Development" || env == "Local";
+        return env is "Development" or "Local";
     }
 }

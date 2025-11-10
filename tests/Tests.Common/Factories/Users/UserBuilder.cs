@@ -3,11 +3,11 @@ using RippleSync.Application.Common.Security;
 using RippleSync.Domain.Users;
 using System.Text;
 
-namespace RippleSync.Tests.Shared.Factories.Users;
+namespace RippleSync.Tests.Common.Factories.Users;
 
 public class UserBuilder
 {
-    private IPasswordHasher _passwordHasher;
+    private readonly IPasswordHasher _passwordHasher;
 
     private string _email = "default@example.com";
     private string _password = "Def4ultP@55";

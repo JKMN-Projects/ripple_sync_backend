@@ -1,8 +1,7 @@
 ﻿using RippleSync.Application.Common.Repositories;
-using RippleSync.Application.Posts;
 using RippleSync.Domain.Posts;
 
-namespace RippleSync.Tests.Shared.TestDoubles.Repositories;
+namespace RippleSync.Tests.Common.TestDoubles.Repositories;
 
 public static class PostRepositoryDoubles
 {
@@ -84,7 +83,7 @@ public static class PostRepositoryDoubles
         {
             public class DoesNothing : Dummy
             {
-                public override Task UpdateAsync(Post post, CancellationToken cancellationToken = default) 
+                public override Task UpdateAsync(Post post, CancellationToken cancellationToken = default)
                     => Task.CompletedTask;
             }
         }

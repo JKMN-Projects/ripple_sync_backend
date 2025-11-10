@@ -1,11 +1,11 @@
 ﻿using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
 
-namespace RippleSync.Tests.Shared.Factories.Posts;
+namespace RippleSync.Tests.Common.Factories.Posts;
 
 public class PostBuilder
 {
-    private Guid _userId;
+    private readonly Guid _userId;
     private string _messageContent = "Default message content";
     private DateTime? _scheduledFor;
     private readonly List<string> _postMediaData = [];

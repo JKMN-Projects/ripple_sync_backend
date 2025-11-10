@@ -85,7 +85,7 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
     {
         foreach (var post in InMemoryData.Posts)
         {
-            if(post.ScheduledFor != null && post.ScheduledFor > DateTime.UtcNow && post.PostEvents?.Count == 0)
+            if (post.ScheduledFor != null && post.ScheduledFor > DateTime.UtcNow && post.PostEvents?.Count == 0)
             {
                 post.ScheduledFor = null;
             }

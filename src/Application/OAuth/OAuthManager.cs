@@ -70,18 +70,20 @@ public class OAuthManager(
         TokenResponse? tokenRes = null;
 
         HttpResponseMessage response;
+        string content = string.Empty;
         try
         {
             response = await httpClient.SendAsync(tokenRequest, cancellationToken);
+
+            content = await response.Content.ReadAsStringAsync(cancellationToken);
+
             response.EnsureSuccessStatusCode();
 
-            var content = await response.Content.ReadAsStreamAsync(cancellationToken);
-
-            tokenRes = await JsonSerializer.DeserializeAsync<TokenResponse>(content, cancellationToken: cancellationToken);
+            tokenRes = JsonSerializer.Deserialize<TokenResponse>(content);
         }
         catch (Exception e)
         {
-            throw new InvalidCastException("Failed to acquire token", e);
+            throw new InvalidCastException($"Failed to acquire token, content: {content}", e);
         }
 
         if (tokenRes == null || string.IsNullOrWhiteSpace(tokenRes?.AccessToken))
@@ -110,7 +112,7 @@ public class OAuthManager(
     {
         return await cache.GetOrCreateAsync(
                 $"oauth:{state}",
-                async cancel => (OAuthStateData?)null, cancellationToken: cancellationToken) // Returns null if not found
+                cancel => new ValueTask<OAuthStateData?>((OAuthStateData?)null), cancellationToken: cancellationToken) // Returns null if not found
                     ?? throw new InvalidOperationException("Invalid or expired state");
     }
 }
