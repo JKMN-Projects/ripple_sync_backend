@@ -215,7 +215,7 @@ internal class NpgsqlPostRepository(
 
             if (!post.PostMedia.NullOrEmpty())
             {
-                var postMediasEntities = post.PostMedia.Select(pm => new PostMediaEntity(pm.Id, post.Id, pm.ImageData));
+                var postMediasEntities = post.PostMedia.Select(pm => new PostMediaEntity(pm.Id, post.Id, EncryptPostMedia(pm.ImageData)));
 
                 rowsAffected = await Connection.InsertAsync(postMediasEntities, trans: Transaction, ct: cancellationToken);
 
