@@ -80,5 +80,18 @@ internal class InMemoryPostRepository : IPostRepository, IPostQueries
         var posts = InMemoryData.Posts.Where(p => p.IsReadyToPublish());
         return Task.FromResult(posts);
     }
+
+    public async Task RemoveScheduleOnAllPostsWithoutEvent(Guid userId, CancellationToken cancellationToken = default)
+    {
+        foreach (var post in InMemoryData.Posts)
+        {
+            if(post.ScheduledFor != null && post.ScheduledFor > DateTime.UtcNow && post.PostEvents?.Count == 0)
+            {
+                post.ScheduledFor = null;
+            }
+        }
+
+        await Task.Yield();
+    }
 }
 

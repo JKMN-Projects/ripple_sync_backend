@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 
 namespace RippleSync.Infrastructure.JukmanORM.Exceptions;
-public class ExceptionFactory
+public class ExceptionFactory                                          
 {
     public static void ThrowRepositoryException(Type currentClass, MethodBase? currentMethod, Exception? otherException = null, string currentQuery = "", object? param = null)
     {

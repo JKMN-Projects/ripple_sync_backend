@@ -312,11 +312,39 @@ internal class NpgsqlPostRepository(
         ));
     }
 
+    public async Task RemoveScheduleOnAllPostsWithoutEvent(Guid userId, CancellationToken cancellationToken = default)
+    {
+        const string deleteSchefuleIfNoEventSql = @"
+        UPDATE post 
+        SET scheduled_for = NULL
+        WHERE user_account_id = @UserId
+          AND scheduled_for IS NOT NULL
+          AND scheduled_for > NOW()
+          AND NOT EXISTS (
+              SELECT 1 
+              FROM post_event 
+              WHERE post_event.post_id = post.id
+          )";
+
+        try
+        {
+            int rowsAffected = await Connection.ExecuteAsync(deleteSchefuleIfNoEventSql, param: new { UserId = userId }, trans: Transaction, ct: cancellationToken);
+        }
+        catch (Exception e)
+        {
+            ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
+        }
+    }
+
     private string EncryptPostMessage(string messageContent)
-        => encryptor.Encrypt(EncryptionTask.PostMessageContent, messageContent);
+        => !string.IsNullOrWhiteSpace(messageContent)
+            ? encryptor.Encrypt(EncryptionTask.PostMessageContent, messageContent)
+            : string.Empty;
 
     private string DecryptPostMessage(string messageContent)
-       => encryptor.Decrypt(EncryptionTask.PostMessageContent, messageContent);
+       => !string.IsNullOrWhiteSpace(messageContent)
+            ? encryptor.Decrypt(EncryptionTask.PostMessageContent, messageContent)
+            : string.Empty;
 
 
     private string EncryptPostMedia(string mediaContent)

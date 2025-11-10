@@ -5,6 +5,7 @@ namespace RippleSync.Application.Common.Repositories;
 public interface IPostRepository
 {
     Task<Post?> GetByIdAsync(Guid postId, CancellationToken cancellationToken = default);
+    Task RemoveScheduleOnAllPostsWithoutEvent(Guid userId, CancellationToken cancellationToken = default);
     Task CreateAsync(Post post, CancellationToken cancellationToken = default);
     Task UpdateAsync(Post post, CancellationToken cancellationToken = default);
     Task DeleteAsync(Post post, CancellationToken cancellationToken = default);

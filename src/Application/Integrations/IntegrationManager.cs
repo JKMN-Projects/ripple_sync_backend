@@ -13,7 +13,8 @@ public sealed class IntegrationManager(
         IUnitOfWork unitOfWork,
         IIntegrationRepository integrationRepo,
         IIntegrationQueries integrationQueries,
-        IPlatformQueries platformQueries)
+        IPlatformQueries platformQueries,
+        IPostRepository postRepo)
 {
     public async Task<ListResponse<PlatformWithUserIntegrationResponse>> GetPlatformsWithUserIntegrationsAsync(Guid userId)
         => new ListResponse<PlatformWithUserIntegrationResponse>(await platformQueries.GetPlatformsWithUserIntegrationsAsync(userId));
@@ -48,7 +49,11 @@ public sealed class IntegrationManager(
     public async Task DeleteIntegrationAsync(Guid userId, Platform platform, CancellationToken cancellationToken = default)
     {
         await unitOfWork.ExecuteInTransactionAsync(async () =>
-            await integrationRepo.DeleteAsync(userId, platform, cancellationToken));
+        {
+            await integrationRepo.DeleteAsync(userId, platform, cancellationToken);
+
+            await postRepo.RemoveScheduleOnAllPostsWithoutEvent(userId, cancellationToken);
+        });
 
         logger.LogInformation("User {UserId} removed integration to {Platform}", userId, platform);
     }
