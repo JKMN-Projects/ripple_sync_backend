@@ -64,7 +64,7 @@ public class Post
     public bool IsDeletable()
     {
         var postStatus = GetPostMaxStatus();
-        return postStatus is PostStatus.Draft or PostStatus.Scheduled;
+        return postStatus is not PostStatus.Processing;
     }
 
     public bool IsReadyToPublish()
