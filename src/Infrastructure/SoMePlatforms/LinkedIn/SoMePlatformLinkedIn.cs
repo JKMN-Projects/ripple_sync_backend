@@ -57,7 +57,7 @@ internal class SoMePlatformLinkedIn(
             linkedInHttpClient.SetDefaultHeaders(integration.TokenType, integration.AccessToken);
 
             var authorUrn = await linkedInHttpClient.GetUserAuthorUrnAsync();
-            var imageUrns = await UploadPostImagesAsync(authorUrn, post.PostMedias);
+            var imageUrns = await UploadPostImagesAsync(authorUrn, post.PostMedia);
 
 
             var builder = new LinkedInPostBuilder()

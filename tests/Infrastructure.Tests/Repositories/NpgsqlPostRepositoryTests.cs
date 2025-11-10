@@ -50,6 +50,61 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             // Assert
             Assert.Empty(posts);
         }
+
+        [Fact]
+        public async Task Should_ReturnAllUsersPosts_WhenUserHasPosts()
+        {
+            // Arrange
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .Build();
+            await userRepository.CreateAsync(user);
+            Post post1 = new PostBuilder(user.Id)
+                .Build();
+            Post post2 = new PostBuilder(user.Id)
+                .Build();
+            await _sut.CreateAsync(post1);
+            await _sut.CreateAsync(post2);
+
+            // Act
+            var posts = await _sut.GetPostsByUserAsync(user.Id, null);
+
+            // Assert
+            Assert.Equal(2, posts.Count());
+            Assert.Contains(posts, p => p.PostId == post1.Id);
+            Assert.Contains(posts, p => p.PostId == post2.Id);
+        }
+
+        [Fact]
+        public async Task Should_ReturnOnlyScheduledPosts_WhenQueryingForScheduledPosts()
+        {
+            // Arrange
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
+            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork, encryption);
+            User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
+                .Build();
+            await userRepository.CreateAsync(user);
+            Integration xIntegration = new IntegrationBuilder(user.Id, Platform.X)
+                .Build();
+            await integrationRepository.CreateAsync(xIntegration);
+            Post draftPost = new PostBuilder(user.Id)
+                .Build();
+            Post scheduledPost = new PostBuilder(user.Id)
+                .ScheduledFor(DateTime.UtcNow.AddHours(1))
+                .PostedTo(xIntegration)
+                .Build();
+            await _sut.CreateAsync(draftPost);
+            await _sut.CreateAsync(scheduledPost);
+
+            // Act
+            var posts = await _sut.GetPostsByUserAsync(user.Id, PostStatus.Scheduled.ToString().ToLowerInvariant());
+
+            // Assert
+            Assert.Single(posts);
+            Assert.Equal(scheduledPost.Id, posts.First().PostId);
+        }
     }
 
     public sealed class GetImageByIdAsync : NpgsqlPostRepositoryTests
@@ -84,7 +139,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
                 .AddRandomMedia()
                 .Build();
             await _sut.CreateAsync(post);
-            var existingMediaId = post.PostMedias.First().Id;
+            var existingMediaId = post.PostMedia.First().Id;
 
             // Act
             var postMedia = await _sut.GetImageByIdAsync(existingMediaId);
@@ -209,7 +264,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             Assert.Equal(post.MessageContent, retrievedPost.MessageContent);
             Assert.Single(retrievedPost.PostEvents);
             Assert.Equal(integration.Id, retrievedPost.PostEvents.First().UserPlatformIntegrationId);
-            Assert.Single(retrievedPost.PostMedias);
+            Assert.Single(retrievedPost.PostMedia);
         }
     }
 
@@ -352,7 +407,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             Assert.NotNull(retrievedPosts);
             Assert.Equal(post.UserId, retrievedPosts.UserId);
             Assert.Equal(post.MessageContent, retrievedPosts.MessageContent);
-            Assert.Equal(2, retrievedPosts.PostMedias.Count());
+            Assert.Equal(2, retrievedPosts.PostMedia.Count());
         }
     }
 
@@ -445,7 +500,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
                 platformPostIdentifier: string.Empty,
                 platformResponse: null
             );
-            post.PostEvents = post.PostEvents.Append(newPostEvent);
+            post.PostEvents.Add(newPostEvent);
             await _sut.UpdateAsync(post);
 
             // Assert
@@ -479,7 +534,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             await _sut.CreateAsync(post);
 
             // Act
-            post.PostEvents = post.PostEvents.Where(pe => pe.UserPlatformIntegrationId != integration2.Id);
+            post.PostEvents.RemoveAll(pe => pe.UserPlatformIntegrationId == integration2.Id);
             await _sut.UpdateAsync(post);
 
             // Assert
@@ -503,17 +558,17 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
                 .AddRandomMedia()
                 .Build();
             await _sut.CreateAsync(post);
-            var mediaToRemoveId = post.PostMedias.First().Id;
+            var mediaToRemoveId = post.PostMedia.First().Id;
 
             // Act
-            post.PostMedias = post.PostMedias.Where(pm => pm.Id != mediaToRemoveId);
+            post.PostMedia.RemoveAll(pm => pm.Id == mediaToRemoveId);
             await _sut.UpdateAsync(post);
 
             // Assert
             Post? retrievedPost = await _sut.GetByIdAsync(post.Id);
             Assert.NotNull(retrievedPost);
-            Assert.Single(retrievedPost.PostMedias);
-            Assert.DoesNotContain(retrievedPost.PostMedias, pm => pm.Id == mediaToRemoveId);
+            Assert.Single(retrievedPost.PostMedia);
+            Assert.DoesNotContain(retrievedPost.PostMedia, pm => pm.Id == mediaToRemoveId);
         }
     }
 
