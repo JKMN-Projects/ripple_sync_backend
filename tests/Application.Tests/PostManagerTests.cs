@@ -89,6 +89,8 @@ public abstract class PostManagerTests
             await sut.ProcessPostAsync(post);
             Assert.True(updatePostRepositorySpy.InvocationCount > 0, "Expected PostRepository.UpdateAsync to be called at least once.");
             Assert.True(unitOfWorkSpy.InvocationCount > 0, "Expected UnitOfWork.Save to be called at least once.");
+            Assert.All(post.PostEvents, postEvent =>
+                Assert.Equal(PostStatus.Posted, postEvent.Status));
         }
 
         [Fact]

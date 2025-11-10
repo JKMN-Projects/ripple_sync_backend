@@ -123,7 +123,10 @@ internal sealed class NpgsqlUserRepository(
                 ? [new UserTokenEntity(user.RefreshToken.Id, user.Id, (int)user.RefreshToken.Type, EncryptUserTokenValue(user.RefreshToken.Value), user.RefreshToken.CreatedAt, user.RefreshToken.ExpiresAt)]
                 : [];
 
-            rowsAffected += await Connection.SyncAsync(tokens, parentIdentifiers: new { UserAccountId = user.Id }, trans: Transaction, ct: cancellationToken);
+            rowsAffected = await Connection.SyncAsync(tokens, parentIdentifiers: new { UserAccountId = user.Id }, trans: Transaction, ct: cancellationToken);
+
+            if (rowsAffected <= 0)
+                throw new RepositoryException("No rows were affected on User Token sync");
         }
         catch (Exception e)
         {

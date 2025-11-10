@@ -7,6 +7,7 @@ using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
+using System.Collections.Generic;
 
 namespace RippleSync.Application.Posts;
 
@@ -30,6 +31,13 @@ public class PostManager(
 
         foreach (var integration in userIntegrations)
         {
+            if (!posts.Any(p => p.PostEvents.Any(pe => pe.UserPlatformIntegrationId == integration.Id)))
+            {
+                logger.LogInformation("No posts found for Integration ID {IntegrationId}. Skipping stats retrieval for this integration.", integration.Id);
+                platformStats.Add((platformName: integration.Platform.ToString(), PlatformStats.Empty));
+                continue;
+            }
+
             ISoMePlatform? platform = null;
             try
             {
@@ -111,7 +119,7 @@ public class PostManager(
             ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp.Value).UtcDateTime
             : null;
 
-        post.PostMedias = mediaAttachments?
+        post.PostMedia = mediaAttachments?
             .Select(PostMedia.Create)
             .ToList() ?? [];
 
@@ -178,8 +186,20 @@ public class PostManager(
             post.Id);
 
         IEnumerable<Guid> userPlatformIntegrations = post.PostEvents.Select(pe => pe.UserPlatformIntegrationId);
-
-        IEnumerable<Integration> integrations = await integrationRepository.GetIntegrationsByIdsAsync(userPlatformIntegrations, cancellationToken);
+        IEnumerable<Integration> integrations;
+        try
+        {
+            integrations = await integrationRepository.GetIntegrationsByIdsAsync(userPlatformIntegrations, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to retrieve integrations for post: PostId={PostId}", post.Id);
+            foreach (var postEvent in post.PostEvents)
+            {
+                postEvent.Status = PostStatus.Failed;
+            }
+            throw;
+        }
 
         // Materialize FIRST, before any modifications
         post.PostEvents = [.. post.PostEvents];

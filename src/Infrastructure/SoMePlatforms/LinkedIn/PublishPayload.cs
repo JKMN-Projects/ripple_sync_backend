@@ -17,8 +17,9 @@ internal class PublishPayload()
     public bool IsReshareDisabledByAuthor { get; set; } = false;
     [JsonPropertyName("distribution")]
     public Distribution Distribution { get; set; } = new Distribution();
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     [JsonPropertyName("content")]
-    public Content Content { get; set; }
+    public Content? Content { get; set; }
 
 }
 internal class Distribution

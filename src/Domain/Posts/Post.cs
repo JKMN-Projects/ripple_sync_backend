@@ -1,5 +1,6 @@
 ﻿
 using RippleSync.Domain.Posts.Exceptions;
+using System.Collections.Generic;
 
 namespace RippleSync.Domain.Posts;
 
@@ -11,10 +12,10 @@ public class Post
     public DateTime SubmittedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public DateTime? ScheduledFor { get; set; }
-    public IEnumerable<PostMedia> PostMedias { get; set; }
-    public IEnumerable<PostEvent> PostEvents { get; set; }
+    public List<PostMedia> PostMedia { get; set; }
+    public List<PostEvent> PostEvents { get; set; }
 
-    private Post(Guid id, Guid userId, string messageContent, DateTime submittedAt, DateTime? updatedAt, DateTime? scheduledFor, IEnumerable<PostMedia> postMedias, IEnumerable<PostEvent> postsEvents)
+    private Post(Guid id, Guid userId, string messageContent, DateTime submittedAt, DateTime? updatedAt, DateTime? scheduledFor, IEnumerable<PostMedia> postMedia, IEnumerable<PostEvent> postsEvents)
     {
         Id = id;
         UserId = userId;
@@ -23,11 +24,11 @@ public class Post
         SubmittedAt = submittedAt;
         UpdatedAt = updatedAt;
         ScheduledFor = scheduledFor;
-        PostMedias = postMedias;
-        PostEvents = postsEvents;
+        PostMedia = postMedia.ToList();
+        PostEvents = postsEvents.ToList();
     }
 
-    public static Post Create(Guid userId, string messageContent, DateTime? scheduledFor, IEnumerable<PostMedia> postMedias, IEnumerable<PostEvent> postsEvents)
+    public static Post Create(Guid userId, string messageContent, DateTime? scheduledFor, IEnumerable<PostMedia> postMedia, IEnumerable<PostEvent> postsEvents)
     {
         if (scheduledFor != null && !postsEvents.Any())
             throw new ScheduledWithNoPostEventsException();
@@ -41,12 +42,12 @@ public class Post
             submittedAt: DateTime.UtcNow,
             updatedAt: null,
             scheduledFor: scheduledFor,
-            postMedias: postMedias,
+            postMedia: postMedia,
             postsEvents: postsEvents
         );
     }
 
-    public static Post Reconstitute(Guid id, Guid userId, string messageContent, DateTime submittedAt, DateTime? updatedAt, DateTime? scheduledFor, IEnumerable<PostMedia> postMedias, IEnumerable<PostEvent> postsEvents)
+    public static Post Reconstitute(Guid id, Guid userId, string messageContent, DateTime submittedAt, DateTime? updatedAt, DateTime? scheduledFor, IEnumerable<PostMedia> postMedia, IEnumerable<PostEvent> postsEvents)
     {
         return new Post(
             id: id,
@@ -55,7 +56,7 @@ public class Post
             submittedAt: submittedAt,
             updatedAt: updatedAt,
             scheduledFor: scheduledFor,
-            postMedias: postMedias,
+            postMedia: postMedia,
             postsEvents: postsEvents
         );
     }
@@ -63,7 +64,7 @@ public class Post
     public bool IsDeletable()
     {
         var postStatus = GetPostMaxStatus();
-        return postStatus is PostStatus.Draft or PostStatus.Scheduled;
+        return postStatus is not PostStatus.Processing;
     }
 
     public bool IsReadyToPublish()
@@ -86,8 +87,7 @@ public class Post
         {
             postEvent.Anonymize();
         }
-
-        foreach (var media in PostMedias ?? [])
+        foreach (var media in PostMedia)
         {
             media.Anonymize();
         }

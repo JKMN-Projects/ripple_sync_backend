@@ -98,7 +98,9 @@ internal class NpgsqlPostRepository(
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
 
-        return postMediaEntity?.ImageData;
+        return postMediaEntity != null
+            ? DecryptPostMedia(postMediaEntity.ImageData)
+            : null;
     }
 
     public async Task<IEnumerable<Post>> GetAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -213,9 +215,9 @@ internal class NpgsqlPostRepository(
             if (rowsAffected <= 0)
                 throw new RepositoryException("No rows were affected on post insert");
 
-            if (!post.PostMedias.NullOrEmpty())
+            if (!post.PostMedia.NullOrEmpty())
             {
-                var postMediasEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, EncryptPostMedia(pm.ImageData)));
+                var postMediasEntities = post.PostMedia.Select(pm => new PostMediaEntity(pm.Id, post.Id, EncryptPostMedia(pm.ImageData)));
 
                 rowsAffected = await Connection.InsertAsync(postMediasEntities, trans: Transaction, ct: cancellationToken);
 
@@ -247,16 +249,16 @@ internal class NpgsqlPostRepository(
 
         try
         {
-            int rowsAffected = await Connection.UpdateAsync(postEntity, trans: Transaction, ct: cancellationToken);
+            int postRowsAffected = await Connection.UpdateAsync(postEntity, trans: Transaction, ct: cancellationToken);
 
-            var postMediaEntities = post.PostMedias.Select(pm => new PostMediaEntity(pm.Id, post.Id, EncryptPostMedia(pm.ImageData)));
+            var postMediaEntities = post.PostMedia.Select(pm => new PostMediaEntity(pm.Id, post.Id, EncryptPostMedia(pm.ImageData)));
             var postEventEntities = post.PostEvents.Select(pe => new PostEventEntity(post.Id, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
 
-            rowsAffected += await Connection.SyncAsync(postMediaEntities, parentIdentifiers: new { PostId = post.Id }, trans: Transaction, ct: cancellationToken);
-            rowsAffected += await Connection.SyncAsync(postEventEntities, parentIdentifiers: new { PostId = post.Id }, trans: Transaction, ct: cancellationToken);
+            int postMediaRowsAffected = await Connection.SyncAsync(postMediaEntities, parentIdentifiers: new { PostId = post.Id }, trans: Transaction, ct: cancellationToken);
+            int postEventRowsAffected = await Connection.SyncAsync(postEventEntities, parentIdentifiers: new { PostId = post.Id }, trans: Transaction, ct: cancellationToken);
 
-            if (rowsAffected <= 0)
-                throw new RepositoryException("No rows were affected on Post update");
+            if ((postRowsAffected + postMediaRowsAffected + postEventRowsAffected) <= 0)
+                throw new RepositoryException($"No rows were affected on Post update");
         }
         catch (Exception e)
         {

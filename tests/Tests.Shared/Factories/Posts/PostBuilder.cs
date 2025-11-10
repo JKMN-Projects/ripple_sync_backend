@@ -59,7 +59,7 @@ public class PostBuilder
             userId: _userId,
             messageContent: _messageContent,
             scheduledFor: _scheduledFor,
-            postMedias: postMedias,
+            postMedia: postMedias,
             postsEvents: postEvents
         );
     }
