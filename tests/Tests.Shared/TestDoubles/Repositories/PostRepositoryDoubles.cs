@@ -15,6 +15,7 @@ public static class PostRepositoryDoubles
         public virtual Task UpdateAsync(Post post, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public virtual Task DeleteAsync(Post post, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task UpdatePostEventStatusAsync(PostEvent postEvent, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public Task RemoveScheduleOnAllPostsWithoutEvent(Guid userId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
     }
 
     public sealed class Composite : IPostRepository
@@ -73,6 +74,8 @@ public static class PostRepositoryDoubles
 
         public Task<IEnumerable<Post>> GetPostsReadyToPublishAsync(CancellationToken cancellationToken = default)
             => TryMethod(repo => repo.GetPostsReadyToPublishAsync(cancellationToken));
+        public Task RemoveScheduleOnAllPostsWithoutEvent(Guid userId, CancellationToken cancellationToken = default)
+            => TryMethod(repo => repo.RemoveScheduleOnAllPostsWithoutEvent(userId, cancellationToken));
     }
 
     public static class Stubs
