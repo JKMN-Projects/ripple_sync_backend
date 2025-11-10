@@ -31,6 +31,13 @@ public class PostManager(
 
         foreach (var integration in userIntegrations)
         {
+            if (!posts.Any(p => p.PostEvents.Any(pe => pe.UserPlatformIntegrationId == integration.Id)))
+            {
+                logger.LogInformation("No posts found for Integration ID {IntegrationId}. Skipping stats retrieval for this integration.", integration.Id);
+                platformStats.Add((platformName: integration.Platform.ToString(), PlatformStats.Empty));
+                continue;
+            }
+
             ISoMePlatform? platform = null;
             try
             {
