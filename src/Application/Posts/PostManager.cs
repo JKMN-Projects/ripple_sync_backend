@@ -87,9 +87,14 @@ public class PostManager(
             .Select(PostMedia.Create)
             .ToList() ?? [];
 
-        var postEvents = integrationIds?
-            .Select(id => PostEvent.Create(id, scheduledFor.HasValue ? PostStatus.Scheduled : PostStatus.Draft, "", new { }))
-            .ToList() ?? [];
+        List<PostEvent> postEvents = [];
+
+        if (scheduledFor.HasValue)
+        {
+            postEvents = integrationIds?
+                .Select(id => PostEvent.Create(id, PostStatus.Scheduled, null, null))
+                .ToList() ?? [];
+        }
 
         var post = Post.Create(
             userId,
@@ -126,7 +131,7 @@ public class PostManager(
         if (post.ScheduledFor.HasValue)
         {
             post.PostEvents = integrationIds?
-                .Select(id => PostEvent.Create(id, PostStatus.Scheduled, "", new { }))
+                .Select(id => PostEvent.Create(id, PostStatus.Scheduled, null, null))
                 .ToList() ?? [];
         }
         else
