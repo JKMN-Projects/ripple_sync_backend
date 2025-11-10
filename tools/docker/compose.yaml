@@ -2,8 +2,12 @@ version: '3.8'
 
 services:
   postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
     image: postgres:latest
     container_name: ripple_sync_postgres
+    command: postgres -c shared_preload_libraries=pg_cron -c cron.database_name=ripple_sync
     environment:
       POSTGRES_USER: JukmanDev
       POSTGRES_PASSWORD: Juk20Man25
@@ -13,7 +17,7 @@ services:
     volumes:
       - postgres_ripplesync_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U JukmanDev"]
+      test: ["CMD-SHELL", "pg_isready -U JukmanDev -d ripple_sync"]
       interval: 10s
       timeout: 5s
       retries: 5

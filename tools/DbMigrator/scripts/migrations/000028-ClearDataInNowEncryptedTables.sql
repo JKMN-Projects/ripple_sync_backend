@@ -1,0 +1,1 @@
+TRUNCATE TABLE user_token, post_event, user_platform_integration, post, user_account CASCADE;

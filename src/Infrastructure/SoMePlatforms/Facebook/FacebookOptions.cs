@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace RippleSync.Infrastructure.SoMePlatforms.X;
+namespace RippleSync.Infrastructure.SoMePlatforms.Facebook;
 
 public class FacebookOptions
 {

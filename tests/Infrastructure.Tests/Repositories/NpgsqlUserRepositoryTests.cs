@@ -1,6 +1,9 @@
-﻿using RippleSync.Domain.Users;
+﻿using RippleSync.Application.Common.Security;
+using RippleSync.Domain.Users;
+using RippleSync.Infrastructure.Security;
 using RippleSync.Infrastructure.Tests.Configuration;
 using RippleSync.Infrastructure.UserRepository;
+using RippleSync.Tests.Shared;
 using RippleSync.Tests.Shared.Factories.Users;
 using RippleSync.Tests.Shared.TestDoubles.Security;
 
@@ -12,7 +15,8 @@ public class NpgsqlUserRepositoryTests : RepositoryTestBase
 
     public NpgsqlUserRepositoryTests(PostgresDatabaseFixture fixture) : base(fixture)
     {
-        _sut = new NpgsqlUserRepository(UnitOfWork);
+        IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+        _sut = new NpgsqlUserRepository(UnitOfWork, encryption);
     }
 
     public override async Task DisposeAsync()
@@ -55,16 +59,16 @@ public class NpgsqlUserRepositoryTests : RepositoryTestBase
                 .WithRefreshToken(refreshToken)
                 .Build();
             await _sut.CreateAsync(user);
-            //await DataSeeder.SeedUserAsync(user);
 
             // Act
             User? receivedUser = await _sut.GetByEmailAsync(user.Email);
 
             // Assert
-            Assert.Equal(user.Id, receivedUser?.Id);
-            Assert.Equal(user.Email, receivedUser?.Email);
-            Assert.Equal(user.PasswordHash, receivedUser?.PasswordHash);
-            Assert.Equal(user.Salt, receivedUser?.Salt);
+            Assert.NotNull(receivedUser);
+            Assert.Equal(user.Id, receivedUser.Id);
+            Assert.Equal(user.Email, receivedUser.Email);
+            Assert.Equal(user.PasswordHash, receivedUser.PasswordHash);
+            Assert.Equal(user.Salt, receivedUser.Salt);
             Assert.NotNull(receivedUser?.RefreshToken);
         }
     }

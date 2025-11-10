@@ -1,10 +1,13 @@
-﻿using RippleSync.Domain.Integrations;
+﻿using RippleSync.Application.Common.Security;
+using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
 using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.IntegrationRepository;
 using RippleSync.Infrastructure.PlatformRepository;
+using RippleSync.Infrastructure.Security;
 using RippleSync.Infrastructure.Tests.Configuration;
 using RippleSync.Infrastructure.UserRepository;
+using RippleSync.Tests.Shared;
 using RippleSync.Tests.Shared.Factories.Integrations;
 using RippleSync.Tests.Shared.Factories.Users;
 using RippleSync.Tests.Shared.TestDoubles.Security;
@@ -50,8 +53,9 @@ public class NpgsqlPlatformRepositoryTests : RepositoryTestBase
         public async Task Should_ReturnPlatformsWithCorrectConnectionStatus_WhenUserHasIntegrations()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
-            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
+            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);

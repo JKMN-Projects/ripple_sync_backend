@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Posts;
-using RippleSync.Infrastructure.SoMePlatforms.X;
 
 namespace RippleSync.Infrastructure.SoMePlatforms.Threads;
 internal class SoMePlatformThreads(IOptions<ThreadsOptions> options) : ISoMePlatform

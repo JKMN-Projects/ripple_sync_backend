@@ -28,7 +28,7 @@ internal class NpgsqlPlatformRepository(IUnitOfWork uow) : BaseRepository(uow), 
 
     public async Task<IEnumerable<PlatformWithUserIntegrationResponse>> GetPlatformsWithUserIntegrationsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var getPlatformsQuery =
+        const string getPlatformsQuery =
             @"SELECT 
                 p.id,
                 p.platform_name,

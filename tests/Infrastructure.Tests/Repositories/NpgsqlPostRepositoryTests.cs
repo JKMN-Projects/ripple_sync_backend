@@ -1,11 +1,14 @@
-﻿using RippleSync.Domain.Integrations;
+﻿using RippleSync.Application.Common.Security;
+using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
 using RippleSync.Domain.Posts;
 using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.IntegrationRepository;
 using RippleSync.Infrastructure.PostRepository;
+using RippleSync.Infrastructure.Security;
 using RippleSync.Infrastructure.Tests.Configuration;
 using RippleSync.Infrastructure.UserRepository;
+using RippleSync.Tests.Shared;
 using RippleSync.Tests.Shared.Factories.Integrations;
 using RippleSync.Tests.Shared.Factories.Posts;
 using RippleSync.Tests.Shared.Factories.Users;
@@ -19,7 +22,8 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
 
     public NpgsqlPostRepositoryTests(PostgresDatabaseFixture fixture) : base(fixture)
     {
-        _sut = new NpgsqlPostRepository(UnitOfWork);
+        IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+        _sut = new NpgsqlPostRepository(UnitOfWork, encryption);
     }
 
     public override async Task DisposeAsync()
@@ -124,7 +128,8 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_ReturnPostMedia_WhenPostMediaExists()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -165,7 +170,8 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_ReturnAllPosts_WhenUserHasPosts()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -209,7 +215,8 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_ReturnPost_WhenPostExists()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -230,8 +237,9 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_ReturnPostWithEventsAndMedia_WhenAvailable()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
-            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
+            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -281,8 +289,10 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_OnlyReturnPostsWithScheduledTimeInThePast()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
-            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork);
+
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
+            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -319,7 +329,8 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_SavePostToDatabseWithNoPostEvents_WhenPostIsDraft()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -340,8 +351,9 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_SavePostWithPostEvents_WhenPostIsScheduled()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
-            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
+            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -375,7 +387,8 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_SavePostWithPostMedias_WhenPostHasMedia()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -406,7 +419,8 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_UpdatePostMessageContent()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -428,8 +442,9 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_UpdatePostEventStatus_WhenPostIsPublished()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
-            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
+            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -458,8 +473,9 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_AddNewPostEvent_WhenNewIntegrationIsAdded()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
-            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
+            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -496,8 +512,9 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_DeleteOldPostEvent_WhenIntegrationIsRemoved()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
-            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
+            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -529,7 +546,8 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_DeleteOldPostMedia_WhenMediaIsRemoved()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -562,7 +580,8 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_DeletePostFromDatabase()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -582,8 +601,9 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_DeletePostEventsAndMedia_WhenPostIsDeleted()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
-            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
+            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
