@@ -55,7 +55,8 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_ReturnAllUsersPosts_WhenUserHasPosts()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -79,8 +80,9 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
         public async Task Should_ReturnOnlyScheduledPosts_WhenQueryingForScheduledPosts()
         {
             // Arrange
-            var userRepository = new NpgsqlUserRepository(UnitOfWork);
-            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
+            var integrationRepository = new NpgsqlIntegrationRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
