@@ -98,7 +98,7 @@ internal class NpgsqlPostRepository(
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
 
-        return postMediaEntity?.ImageData;
+        return DecryptPostMedia(postMediaEntity?.ImageData);
     }
 
     public async Task<IEnumerable<Post>> GetAllByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
