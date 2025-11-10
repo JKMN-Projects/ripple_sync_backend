@@ -5,10 +5,10 @@ public class PostEvent
 {
     public Guid UserPlatformIntegrationId { get; set; }
     public PostStatus Status { get; set; }
-    public string PlatformPostIdentifier { get; set; }
+    public string? PlatformPostIdentifier { get; set; }
     public object? PlatformResponse { get; set; }
 
-    private PostEvent(Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
+    private PostEvent(Guid userPlatformIntegrationId, PostStatus status, string? platformPostIdentifier, object? platformResponse)
     {
         UserPlatformIntegrationId = userPlatformIntegrationId;
         Status = status;
@@ -16,7 +16,7 @@ public class PostEvent
         PlatformResponse = platformResponse;
     }
 
-    public static PostEvent Create(Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
+    public static PostEvent Create(Guid userPlatformIntegrationId, PostStatus status, string? platformPostIdentifier, object? platformResponse)
     {
         return new PostEvent(
             userPlatformIntegrationId: userPlatformIntegrationId,
@@ -26,7 +26,7 @@ public class PostEvent
         );
     }
 
-    public static PostEvent Reconstitute(Guid userPlatformIntegrationId, PostStatus status, string platformPostIdentifier, object? platformResponse)
+    public static PostEvent Reconstitute(Guid userPlatformIntegrationId, PostStatus status, string? platformPostIdentifier, object? platformResponse)
     {
         return new PostEvent(
             userPlatformIntegrationId: userPlatformIntegrationId,
@@ -38,7 +38,7 @@ public class PostEvent
 
     public PostEvent Anonymize()
     {
-        PlatformPostIdentifier = string.Empty;
+        PlatformPostIdentifier = null;
         PlatformResponse = null;
         return this;
     }

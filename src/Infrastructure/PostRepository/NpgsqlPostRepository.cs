@@ -250,15 +250,20 @@ internal class NpgsqlPostRepository(
         try
         {
             int rowsAffected = await Connection.UpdateAsync(postEntity, trans: Transaction, ct: cancellationToken);
+            if (rowsAffected <= 0)
+                throw new RepositoryException("No rows were affected on Post update");
 
             var postMediaEntities = post.PostMedia.Select(pm => new PostMediaEntity(pm.Id, post.Id, EncryptPostMedia(pm.ImageData)));
             var postEventEntities = post.PostEvents.Select(pe => new PostEventEntity(post.Id, pe.UserPlatformIntegrationId, (int)pe.Status, pe.PlatformPostIdentifier, pe.PlatformResponse?.ToString()));
 
-            rowsAffected += await Connection.SyncAsync(postMediaEntities, parentIdentifiers: new { PostId = post.Id }, trans: Transaction, ct: cancellationToken);
-            rowsAffected += await Connection.SyncAsync(postEventEntities, parentIdentifiers: new { PostId = post.Id }, trans: Transaction, ct: cancellationToken);
-
+            rowsAffected = await Connection.SyncAsync(postMediaEntities, parentIdentifiers: new { PostId = post.Id }, trans: Transaction, ct: cancellationToken);
             if (rowsAffected <= 0)
-                throw new RepositoryException("No rows were affected on Post update");
+                throw new RepositoryException("No rows were affected on Post Media sync");
+
+            rowsAffected = await Connection.SyncAsync(postEventEntities, parentIdentifiers: new { PostId = post.Id }, trans: Transaction, ct: cancellationToken);
+            if (rowsAffected <= 0)
+                throw new RepositoryException("No rows were affected on Post Event sync");
+
         }
         catch (Exception e)
         {
