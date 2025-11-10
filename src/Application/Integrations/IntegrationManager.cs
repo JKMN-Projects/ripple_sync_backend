@@ -2,7 +2,6 @@
 using RippleSync.Application.Common.Queries;
 using RippleSync.Application.Common.Repositories;
 using RippleSync.Application.Common.Responses;
-using RippleSync.Application.Common.Security;
 using RippleSync.Application.Common.UnitOfWork;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
@@ -14,8 +13,7 @@ public sealed class IntegrationManager(
         IUnitOfWork unitOfWork,
         IIntegrationRepository integrationRepo,
         IIntegrationQueries integrationQueries,
-        IPlatformQueries platformQueries,
-        IEncryptionService encryptor)
+        IPlatformQueries platformQueries)
 {
     public async Task<ListResponse<PlatformWithUserIntegrationResponse>> GetPlatformsWithUserIntegrationsAsync(Guid userId)
         => new ListResponse<PlatformWithUserIntegrationResponse>(await platformQueries.GetPlatformsWithUserIntegrationsAsync(userId));
@@ -37,44 +35,20 @@ public sealed class IntegrationManager(
             throw new ArgumentOutOfRangeException(nameof(platformId), "Invalid platform ID");
         }
 
-        string encryptedAccessToken = encryptor.Encrypt(tokenResponse.AccessToken);
-
-        string? encryptedRefreshToken = !string.IsNullOrWhiteSpace(tokenResponse.RefreshToken)
-            ? encryptor.Encrypt(tokenResponse.RefreshToken)
-            : null;
-
         DateTime expiresAt = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
 
-        Integration integration = Integration.Create(userId, (Platform)platformId, encryptedAccessToken, encryptedRefreshToken, expiresAt, tokenResponse.TokenType, tokenResponse.Scope);
-        unitOfWork.BeginTransaction();
-        try
-        {
-            await integrationRepo.CreateAsync(integration, cancellationToken);
-            unitOfWork.Save();
-        }
-        catch (Exception)
-        {
-            unitOfWork.Cancel();
-            throw;
-        }
+        Integration integration = Integration.Create(userId, (Platform)platformId, tokenResponse.AccessToken, tokenResponse.RefreshToken, expiresAt, tokenResponse.TokenType, tokenResponse.Scope);
+
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
+            await integrationRepo.CreateAsync(integration, cancellationToken));
 
         logger.LogInformation("User {UserId} created integration to {Platform}", userId, (Platform)platformId);
     }
 
     public async Task DeleteIntegrationAsync(Guid userId, Platform platform, CancellationToken cancellationToken = default)
     {
-        unitOfWork.BeginTransaction();
-        try
-        {
-            await integrationRepo.DeleteAsync(userId, platform, cancellationToken);
-            unitOfWork.Save();
-        }
-        catch (Exception)
-        {
-            unitOfWork.Cancel();
-            throw;
-        }
-
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
+            await integrationRepo.DeleteAsync(userId, platform, cancellationToken));
 
         logger.LogInformation("User {UserId} removed integration to {Platform}", userId, platform);
     }

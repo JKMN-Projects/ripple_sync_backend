@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace RippleSync.Infrastructure.SoMePlatforms.X;
+namespace RippleSync.Infrastructure.SoMePlatforms.Instagram;
 
 public class InstagramOptions
 {

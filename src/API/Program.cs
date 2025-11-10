@@ -6,9 +6,14 @@ using RippleSync.API.Common.Middleware;
 using RippleSync.API.Platforms;
 using RippleSync.API.PostPublisher;
 using RippleSync.Application;
+using RippleSync.Application.Common.Notifiers;
 using RippleSync.Application.Platforms;
 using RippleSync.Infrastructure;
 using RippleSync.Infrastructure.Security;
+using RippleSync.Infrastructure.SoMePlatforms.Facebook;
+using RippleSync.Infrastructure.SoMePlatforms.Instagram;
+using RippleSync.Infrastructure.SoMePlatforms.LinkedIn;
+using RippleSync.Infrastructure.SoMePlatforms.Threads;
 using RippleSync.Infrastructure.SoMePlatforms.X;
 using Serilog;
 using System.Globalization;
@@ -98,6 +103,11 @@ bool targetProd = false;
 _ = bool.TryParse(Environment.GetEnvironmentVariable("TARGET_PROD"), out targetProd);
 connString = targetProd ? builder.Configuration.GetConnectionString("ProdPostgres") : connString;
 
+if (string.IsNullOrWhiteSpace(connString))
+{
+    throw new InvalidOperationException("Connection string not found");
+}
+
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructure(connString);
 
@@ -118,7 +128,9 @@ builder.Services.AddJwtAuthentication(jwtOptions);
 
 builder.Services.AddSingleton<PostChannel>();
 
-builder.Services.AddHostedService<PostSchedulingBackgroundService>();
+//builder.Services.AddHostedService<PostSchedulingBackgroundService>();
+
+builder.Services.AddHostedService<PostNotificationBackgroundService>();
 builder.Services.AddHostedService<PostConsumer>();
 
 builder.Services.AddCors(options =>

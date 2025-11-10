@@ -121,6 +121,10 @@ public class PostManager(
                 .Select(id => PostEvent.Create(id, PostStatus.Scheduled, "", new { }))
                 .ToList() ?? [];
         }
+        else
+        {
+            post.PostEvents = [];
+        }
 
         post.UpdatedAt = DateTime.UtcNow;
 
@@ -146,7 +150,7 @@ public class PostManager(
 
         // Then delete
 
-        await unitOfWork.ExecuteInTransactionAsync(async () => 
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
             await postRepository.DeleteAsync(post, cancellationToken));
     }
 
@@ -177,12 +181,11 @@ public class PostManager(
 
         IEnumerable<Integration> integrations = await integrationRepository.GetIntegrationsByIdsAsync(userPlatformIntegrations, cancellationToken);
 
+        // Materialize FIRST, before any modifications
+        post.PostEvents = [.. post.PostEvents];
+
         foreach (var postEvent in post.PostEvents)
         {
-            postEvent.Status = PostStatus.Processing;
-            await unitOfWork.ExecuteInTransactionAsync(async () =>
-                await postRepository.UpdateAsync(post, cancellationToken));
-
             try
             {
                 var integration = integrations.FirstOrDefault(i => i.Id == postEvent.UserPlatformIntegrationId);

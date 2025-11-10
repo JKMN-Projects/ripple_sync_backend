@@ -65,12 +65,13 @@ public class Post
         var postStatus = GetPostMaxStatus();
         return postStatus is PostStatus.Draft or PostStatus.Scheduled;
     }
+
     public bool IsReadyToPublish()
     {
-        var postStatus = GetPostMaxStatus();
-        var readyToPublish = ScheduledFor < DateTime.UtcNow && postStatus == PostStatus.Scheduled;
+        var readyToPublish = ScheduledFor < DateTime.UtcNow;
         return readyToPublish;
     }
+
     public PostStatus? GetPostMaxStatus()
     {
         var postStatus = PostEvents.MaxBy(pe => pe.Status)?.Status;
@@ -85,12 +86,12 @@ public class Post
         {
             postEvent.Anonymize();
         }
+
         foreach (var media in PostMedias ?? [])
         {
             media.Anonymize();
         }
+
         return this;
-
-
     }
 }

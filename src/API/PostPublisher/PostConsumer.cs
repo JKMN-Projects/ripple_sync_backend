@@ -12,17 +12,17 @@ public class PostConsumer(ILogger<PostConsumer> logger, IServiceProvider service
         _logger.LogInformation("PostEventConsumer started");
         try
         {
-            await foreach (var message in channel.ReadAllAsync().WithCancellation(stoppingToken))
+            await foreach (var post in channel.ReadAllAsync().WithCancellation(stoppingToken))
             {
                 try
                 {
                     using var serviceScope = serviceProvider.CreateScope();
                     var postManager = serviceScope.ServiceProvider.GetRequiredService<PostManager>();
-                    await postManager.ProcessPostAsync(message, stoppingToken);
+                    await postManager.ProcessPostAsync(post, stoppingToken);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error processing post: Post={PostId}", message.Id);
+                    _logger.LogError(ex, "Error processing post: Post={PostId}", post.Id);
                 }
             }
         }

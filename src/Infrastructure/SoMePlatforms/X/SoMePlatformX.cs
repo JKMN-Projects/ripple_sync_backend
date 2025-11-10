@@ -2,9 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.VisualBasic;
-using RippleSync.Application.Common.Responses;
-using RippleSync.Application.Common.Security;
 using RippleSync.Application.Platforms;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
@@ -20,8 +17,7 @@ namespace RippleSync.Infrastructure.SoMePlatforms.X;
 
 internal class SoMePlatformX(
     ILogger<SoMePlatformX> logger,
-    IOptions<XOptions> options,
-    IEncryptionService encryptor) : ISoMePlatform
+    IOptions<XOptions> options) : ISoMePlatform
 {
     public string GetAuthorizationUrl(AuthorizationConfiguration authConfig)
     {
@@ -66,7 +62,7 @@ internal class SoMePlatformX(
 
         var authHeader = new AuthenticationHeaderValue(
             integration.TokenType,
-            encryptor.Decrypt(integration.AccessToken)
+            integration.AccessToken
         );
         using var httpClient = new HttpClient();
         IEnumerable<string> postIds = publishedPostsOnPlatform
@@ -153,7 +149,7 @@ internal class SoMePlatformX(
 
             request.Headers.Authorization = new AuthenticationHeaderValue(
                 integration.TokenType,
-                encryptor.Decrypt(integration.AccessToken)
+                integration.AccessToken
             );
 
             using var httpClient = new HttpClient();

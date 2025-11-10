@@ -27,6 +27,13 @@ internal class NpgsqlUnitOfWork : IDisposable, IUnitOfWork
             }
             else if (_connection.State is ConnectionState.Closed or ConnectionState.Broken)
             {
+                // Connection is dead but transaction might still reference it
+                if (Transaction != null)
+                {
+                    Transaction.Dispose();
+                    Transaction = null;
+                }
+
                 _connection.Dispose();
                 _connection = _dataSource.OpenConnection();
             }
@@ -37,7 +44,7 @@ internal class NpgsqlUnitOfWork : IDisposable, IUnitOfWork
 
     public IDbTransaction? Transaction { get; private set; }
 
-    public void BeginTransaction() 
+    public void BeginTransaction()
         => Transaction = Connection.BeginTransaction();
 
     public void Save()

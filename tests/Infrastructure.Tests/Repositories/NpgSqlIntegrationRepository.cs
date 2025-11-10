@@ -1,11 +1,14 @@
 ﻿using RippleSync.Application.Common.Repositories;
+using RippleSync.Application.Common.Security;
 using RippleSync.Domain.Integrations;
 using RippleSync.Domain.Platforms;
 using RippleSync.Domain.Users;
 using RippleSync.Infrastructure.IntegrationRepository;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
+using RippleSync.Infrastructure.Security;
 using RippleSync.Infrastructure.Tests.Configuration;
 using RippleSync.Infrastructure.UserRepository;
+using RippleSync.Tests.Shared;
 using RippleSync.Tests.Shared.Factories.Integrations;
 using RippleSync.Tests.Shared.Factories.Users;
 using RippleSync.Tests.Shared.TestDoubles.Security;
@@ -18,7 +21,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
 
     public NpgSqlIntegrationRepository(PostgresDatabaseFixture fixture) : base(fixture)
     {
-        _sut = new NpgsqlIntegrationRepository(UnitOfWork);
+        IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+        _sut = new NpgsqlIntegrationRepository(UnitOfWork, encryption);
     }
 
     public override async Task DisposeAsync()
@@ -37,7 +41,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         public async Task Should_ReturnEmptyList_WhenUserHasNoIntegrations()
         {
             // Arrange
-            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -60,7 +65,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         public async Task Should_ReturnIntegrations_WhenUserHasIntegrations()
         {
             // Arrange
-            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -91,7 +97,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         public async Task Should_SaveIntegrationToDatabase()
         {
             // Arrange
-            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -123,7 +130,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         public async Task Should_UpdateIntegrationInDatabase()
         {
             // Arrange
-            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            var userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -134,21 +142,22 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
 
             // Act
             await _sut.UpdateAsync(integration);
-            
+
             // Assert
             var retrievedIntegrations = await _sut.GetByUserIdAsync(user.Id);
             Assert.Single(retrievedIntegrations);
             var retrievedIntegration = retrievedIntegrations.First();
             Assert.Equal(integration.Id, retrievedIntegration.Id);
             Assert.Empty(retrievedIntegration.AccessToken);
-            Assert.Empty(retrievedIntegration.RefreshToken);
+            Assert.Null(retrievedIntegration.RefreshToken);
         }
 
         [Fact]
         public async Task Should_ThrowRepositoryException_WhenUpdatingNonExistentIntegration()
         {
             // Arrange
-            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -170,7 +179,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         public async Task Should_DeleteIntegrationFromDatabase()
         {
             // Arrange
-            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -190,7 +200,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         public async Task Should_ThrowRepositoryException_WhenDeletingNonExistentIntegration()
         {
             // Arrange
-            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -210,7 +221,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         public async Task Should_ReturnIntegrations_WhenIntegrationsExist()
         {
             // Arrange
-            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
@@ -242,7 +254,8 @@ public class NpgSqlIntegrationRepository : RepositoryTestBase
         public async Task Should_ReturnConnectedIntegrations_WhenUserHasIntegrations()
         {
             // Arrange
-            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork);
+            IEncryptionService encryption = new AesGcmEncryptionService(TestConfiguration.Configuration);
+            IUserRepository userRepository = new NpgsqlUserRepository(UnitOfWork, encryption);
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
