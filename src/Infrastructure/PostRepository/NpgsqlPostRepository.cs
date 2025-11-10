@@ -243,8 +243,6 @@ internal class NpgsqlPostRepository(
 
     public async Task UpdateAsync(Post post, CancellationToken cancellationToken = default)
     {
-
-
         var postEntity = new PostEntity(post.Id, post.UserId, EncryptPostMessage(post.MessageContent), post.SubmittedAt, post.UpdatedAt, post.ScheduledFor);
 
         try
@@ -346,10 +344,13 @@ internal class NpgsqlPostRepository(
             ? encryptor.Decrypt(EncryptionTask.PostMessageContent, messageContent)
             : string.Empty;
 
-
     private string EncryptPostMedia(string mediaContent)
-        => encryptor.Encrypt(EncryptionTask.PostMediaContent, mediaContent);
+        => !string.IsNullOrWhiteSpace(mediaContent)
+            ? encryptor.Encrypt(EncryptionTask.PostMediaContent, mediaContent)
+            : string.Empty;
 
     private string DecryptPostMedia(string mediaContent)
-       => encryptor.Decrypt(EncryptionTask.PostMediaContent, mediaContent);
+        => !string.IsNullOrWhiteSpace(mediaContent)
+            ? encryptor.Decrypt(EncryptionTask.PostMediaContent, mediaContent)
+            : string.Empty;
 }
