@@ -52,7 +52,7 @@ public sealed class IntegrationManager(
         {
             await integrationRepo.DeleteAsync(userId, platform, cancellationToken);
 
-            await postRepo.RemoveScheduleOnAllPostsWithoutEvent(userId, cancellationToken);
+            await postRepo.RemoveScheduleOnAllPostsWithoutEventAsync(userId, cancellationToken);
         });
 
         logger.LogInformation("User {UserId} removed integration to {Platform}", userId, platform);
