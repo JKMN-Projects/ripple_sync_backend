@@ -193,7 +193,7 @@ public class PostManager(
         IEnumerable<Integration> integrations;
         try
         {
-            integrations = await integrationRepository.GetIntegrationsByIdsAsync(userPlatformIntegrations, cancellationToken);
+            integrations = await integrationRepository.GetByIdsAsync(userPlatformIntegrations, cancellationToken);
         }
         catch (Exception ex)
         {

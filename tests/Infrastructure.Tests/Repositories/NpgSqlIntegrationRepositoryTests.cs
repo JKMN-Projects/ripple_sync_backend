@@ -236,7 +236,7 @@ public class NpgSqlIntegrationRepositoryTests : RepositoryTestBase
             integrationIds = integrationIds.Select(id => id); // Simulate IEnumerable<Guid>, test should work when input is not a materialized collection
 
             // Act
-            var integrations = await _sut.GetIntegrationsByIdsAsync(integrationIds);
+            var integrations = await _sut.GetByIdsAsync(integrationIds);
 
             // Assert
             Assert.Equal(2, integrations.Count());
