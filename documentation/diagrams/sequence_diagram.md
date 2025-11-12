@@ -58,9 +58,55 @@ sequenceDiagram
 
 ## Publish post
 
-Used to publish post
-
 ```mermaid
 sequenceDiagram
-    database Client 
+    participant Postgres
+    participant NpgsqlNotificationListener
+    participant PostNotificationBackgroundService
+    participant PostChannel
+    participant PostConsumer
+    participant PostManager
+    participant IPostRepository
+
+    Postgres ->>+ NpgsqlNotificationListener: Notifies about changes to post_events table
+    NpgsqlNotificationListener -->>+ PostNotificationBackgroundService: Notify about post event
+    PostNotificationBackgroundService ->>+ PostManager: Get posts ready to publish
+    PostManager ->>+ IPostRepository: Get posts ready to publish
+    IPostRepository -->>- PostManager: Return posts
+    PostManager -->>- PostNotificationBackgroundService: Return posts
+    loop for each post ready to publish
+        PostNotificationBackgroundService ->>+ PostChannel: Publish notification
+        PostChannel -->>- PostNotificationBackgroundService: Acknowledge notification
+    end
+    PostNotificationBackgroundService -->>- NpgsqlNotificationListener: Acknowledge notification
+    NpgsqlNotificationListener -->>- Postgres:
+```
+
+#### When new post in the post channel
+```mermaid
+sequenceDiagram
+    participant PostChannel
+    participant PostConsumer
+    participant PostManager
+    participant IPostRepository
+    participant IIntegrationRepository
+    participant IPlatformFactory
+    participant IPlatform
+
+    PostChannel ->>+ PostConsumer : Notify about new post ready to publish
+    loop For each post in post channel
+        PostConsumer ->>+ PostManager: Publish post
+        PostManager ->>+ IIntegrationRepository: Get User integrations for post
+        IIntegrationRepository -->>- PostManager: Return integrations
+        loop For each integration
+            PostManager ->>+ IPlatformFactory: Get platform instance
+            IPlatformFactory -->>- PostManager: Return platform instance
+            PostManager ->>+ IPlatform: Publish post
+            IPlatform -->>- PostManager: Return published post event
+            PostManager ->>+ IPostRepository: Save published post
+            IPostRepository -->>- PostManager:
+        end
+        PostManager -->>- PostConsumer:
+    end
+    PostConsumer -->>- PostConsumer:
 ```
