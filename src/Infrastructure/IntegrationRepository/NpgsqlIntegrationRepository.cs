@@ -41,7 +41,7 @@ internal class NpgsqlIntegrationRepository(
         return connectedIntegrationEntities.Any() ? connectedIntegrationEntities.Select(i => new ConnectedIntegrationsResponse(i.Id, i.Name)) : [];
     }
 
-    public async Task<IEnumerable<Integration>> GetIntegrationsByIdsAsync(IEnumerable<Guid> integrationIds, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Integration>> GetByIdsAsync(IEnumerable<Guid> integrationIds, CancellationToken cancellationToken = default)
     {
         IEnumerable<UserPlatformIntegrationEntity> integrations = [];
 

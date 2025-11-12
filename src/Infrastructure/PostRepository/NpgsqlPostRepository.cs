@@ -310,7 +310,7 @@ internal class NpgsqlPostRepository(
         ));
     }
 
-    public async Task RemoveScheduleOnAllPostsWithoutEvent(Guid userId, CancellationToken cancellationToken = default)
+    public async Task RemoveScheduleOnAllPostsWithoutEventAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         const string deleteSchefuleIfNoEventSql = @"
         UPDATE post 
