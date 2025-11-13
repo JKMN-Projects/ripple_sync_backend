@@ -165,21 +165,17 @@ internal class NpgsqlPostRepository(
             WITH to_claim AS MATERIALIZED (
                 SELECT pe.id
                 FROM post_event AS pe
-                JOIN post AS p 
-                    ON p.id = pe.post_id
-                JOIN post_status AS ps 
-                    ON ps.id = pe.post_status_id
-                WHERE ps.status = 'scheduled'
+                JOIN post AS p ON p.id = pe.post_id
+                WHERE pe.post_status_id = @ScheduledId
                   AND p.scheduled_for < NOW()
                 ORDER BY p.scheduled_for ASC
                 LIMIT 1000
                 FOR UPDATE SKIP LOCKED
             )
             UPDATE post_event AS pe
-            SET post_status_id = (SELECT id FROM post_status WHERE status = 'processing')
+            SET post_status_id = @ProcessingId
             FROM to_claim
-            JOIN post AS p 
-                ON p.id = pe.post_id
+            JOIN post AS p ON p.id = pe.post_id
             WHERE pe.id = to_claim.id
             RETURNING p.*;";
 
@@ -187,9 +183,13 @@ internal class NpgsqlPostRepository(
         {
             var postEntities = await Connection.QueryAsync<PostEntity>(
                 getReadyToPostAndClaimPostsSql,
+                new
+                {
+                    ScheduledId = PostStatus.Scheduled,
+                    ProcessingId = PostStatus.Processing
+                },
                 trans: Transaction,
-                ct: cancellationToken
-            );
+                ct: cancellationToken);
 
             if (!postEntities.Any())
                 return [];
