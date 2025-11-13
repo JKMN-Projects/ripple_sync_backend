@@ -162,10 +162,11 @@ internal class NpgsqlPostRepository(
 
         //FOR UPDATE OF pe SKIP LOCKED skips rows currently locked in another transaction, potentially another consumer.
         const string getReadyToPostAndClaimPostsSql = @"
-            WITH to_claim AS MATERIALIZED (
-                SELECT pe.id
+            WITH to_claim AS (
+                SELECT pe.post_id, pe.user_platform_integration_id
                 FROM post_event AS pe
-                JOIN post AS p ON p.id = pe.post_id
+                JOIN post AS p 
+                    ON p.id = pe.post_id
                 WHERE pe.post_status_id = @ScheduledId
                   AND p.scheduled_for < NOW()
                 ORDER BY p.scheduled_for ASC
@@ -175,8 +176,10 @@ internal class NpgsqlPostRepository(
             UPDATE post_event AS pe
             SET post_status_id = @ProcessingId
             FROM to_claim
-            JOIN post AS p ON p.id = pe.post_id
-            WHERE pe.id = to_claim.id
+            JOIN post AS p 
+                ON p.id = to_claim.post_id
+            WHERE pe.post_id = to_claim.post_id
+              AND pe.user_platform_integration_id = to_claim.user_platform_integration_id
             RETURNING p.*;";
 
         try
@@ -185,8 +188,8 @@ internal class NpgsqlPostRepository(
                 getReadyToPostAndClaimPostsSql,
                 new
                 {
-                    ScheduledId = PostStatus.Scheduled,
-                    ProcessingId = PostStatus.Processing
+                    ScheduledId = (int)PostStatus.Scheduled,
+                    ProcessingId = (int)PostStatus.Processing
                 },
                 trans: Transaction,
                 ct: cancellationToken);
@@ -200,6 +203,7 @@ internal class NpgsqlPostRepository(
         {
             ExceptionFactory.ThrowRepositoryException(GetType(), System.Reflection.MethodBase.GetCurrentMethod(), e);
         }
+
 
         return posts;
     }
