@@ -1,7 +1,7 @@
 # ER Diagram
 
 ```mermaid
-    erDiagram
+erDiagram
     user_account ||--o{ user_platform_integration : "has"
     user_account ||--o{ post : "creates"
     user_account ||--o{ user_token : "has"
