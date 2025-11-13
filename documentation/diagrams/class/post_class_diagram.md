@@ -51,5 +51,4 @@ classDiagram
     Post *--> PostMedia
     Post *--> PostEvent
     PostEvent o-- PostStatus
-
 ```
