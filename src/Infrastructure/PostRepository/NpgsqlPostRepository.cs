@@ -8,6 +8,7 @@ using RippleSync.Infrastructure.Base;
 using RippleSync.Infrastructure.JukmanORM.Exceptions;
 using RippleSync.Infrastructure.JukmanORM.Extensions;
 using RippleSync.Infrastructure.PostRepository.Entities;
+using System.Data;
 
 namespace RippleSync.Infrastructure.PostRepository;
 internal class NpgsqlPostRepository(
@@ -161,38 +162,37 @@ internal class NpgsqlPostRepository(
 
         //FOR UPDATE OF pe SKIP LOCKED skips rows currently locked in another transaction, potentially another consumer.
         const string getReadyToPostAndClaimPostsSql = @"
-            WITH claimed_posts AS (
-                SELECT pe.post_id
-                FROM post AS p
-                INNER JOIN post_event AS pe ON pe.post_id = p.id
-                INNER JOIN post_status AS ps ON pe.post_status_id = ps.id
-                WHERE p.scheduled_for IS NOT NULL
-                    AND ps.status = 'scheduled'
-                    AND p.scheduled_for < NOW()
+            WITH to_claim AS MATERIALIZED (
+                SELECT pe.id
+                FROM post_event AS pe
+                JOIN post AS p 
+                    ON p.id = pe.post_id
+                JOIN post_status AS ps 
+                    ON ps.id = pe.post_status_id
+                WHERE ps.status = 'scheduled'
+                  AND p.scheduled_for < NOW()
                 ORDER BY p.scheduled_for ASC
                 LIMIT 1000
-                FOR UPDATE OF pe SKIP LOCKED 
+                FOR UPDATE SKIP LOCKED
             )
             UPDATE post_event AS pe
             SET post_status_id = (SELECT id FROM post_status WHERE status = 'processing')
-            FROM claimed_posts
-            WHERE pe.post_id = claimed_posts.post_id
-            RETURNING pe.post_id";
+            FROM to_claim
+            JOIN post AS p 
+                ON p.id = pe.post_id
+            WHERE pe.id = to_claim.id
+            RETURNING p.*;";
 
         try
         {
-            var postIds = await Connection.QueryAsync<Guid>(
-                    getReadyToPostAndClaimPostsSql,
-                    trans: Transaction,
-                    ct: cancellationToken
-                );
+            var postEntities = await Connection.QueryAsync<PostEntity>(
+                getReadyToPostAndClaimPostsSql,
+                trans: Transaction,
+                ct: cancellationToken
+            );
 
-            if (!postIds.Any())
+            if (!postEntities.Any())
                 return [];
-
-            var postEntities = await Connection.SelectAsync<PostEntity>("id = ANY(@PostIds)", param: new { PostIds = postIds }, ct: cancellationToken);
-
-            if (!postEntities.Any()) return posts;
 
             posts = await GetMediaAndEventsForPosts(postEntities, cancellationToken);
         }
