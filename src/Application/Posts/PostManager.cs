@@ -205,9 +205,6 @@ public class PostManager(
             throw;
         }
 
-        // Materialize FIRST, before any modifications
-        post.PostEvents = [.. post.PostEvents];
-
         foreach (var postEvent in post.PostEvents)
         {
             try

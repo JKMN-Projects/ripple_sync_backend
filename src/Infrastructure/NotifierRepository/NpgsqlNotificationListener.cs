@@ -18,7 +18,7 @@ internal class NpgsqlNotificationListener(
 
         connection.Notification += async (sender, args) =>
         {
-            logger.LogDebug("Received 'posts_ready' notification");
+            logger.LogInformation("Received 'posts_ready' notification");
             await onNotificationReceived();
         };
 
