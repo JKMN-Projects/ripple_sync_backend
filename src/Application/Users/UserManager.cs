@@ -90,11 +90,14 @@ public sealed class UserManager(
         if (email.Split('.', StringSplitOptions.RemoveEmptyEntries).Length < 2) throw new ArgumentException("Invalid email format", nameof(email));
 
         ArgumentException.ThrowIfNullOrWhiteSpace(password, nameof(password));
-        if (password.Length < 8) throw new ArgumentException("Password must be at least 8 characters long.", nameof(password));
-        else if (!password.Any(char.IsDigit)) throw new ArgumentException("Password must contain at least one digit.", nameof(password));
-        else if (!password.Any(char.IsUpper)) throw new ArgumentException("Password must contain at least one uppercase letter.", nameof(password));
-        else if (!password.Any(char.IsLower)) throw new ArgumentException("Password must contain at least one lowercase letter.", nameof(password));
-        else if (!password.Any(ch => !char.IsLetterOrDigit(ch))) throw new ArgumentException("Password must contain at least one special character.", nameof(password));
+
+        const string passwordRequirements = "Password must be at least 8 characters long and contain at least one digit, one uppercase letter, one lowercase letter, and one special character.";
+
+        if (password.Length < 8) throw new ArgumentException(passwordRequirements, nameof(password));
+        else if (!password.Any(char.IsDigit)) throw new ArgumentException(passwordRequirements, nameof(password));
+        else if (!password.Any(char.IsUpper)) throw new ArgumentException(passwordRequirements, nameof(password));
+        else if (!password.Any(char.IsLower)) throw new ArgumentException(passwordRequirements, nameof(password));
+        else if (!password.Any(ch => !char.IsLetterOrDigit(ch))) throw new ArgumentException(passwordRequirements, nameof(password));
 
         User? existingUser = await userRepository.GetByEmailAsync(email, cancellationToken);
         if (existingUser is not null) throw new EmailAlreadyInUseException(email);
