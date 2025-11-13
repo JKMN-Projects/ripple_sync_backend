@@ -298,16 +298,20 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             User user = new UserBuilder(new PasswordHasherDoubles.Fakes.Base64Hasher())
                 .Build();
             await userRepository.CreateAsync(user);
-            Integration integration = new IntegrationBuilder(user.Id, Platform.X)
+            Integration xIntegration = new IntegrationBuilder(user.Id, Platform.X)
                 .Build();
-            await integrationRepository.CreateAsync(integration);
+            Integration linkedInIntegration = new IntegrationBuilder(user.Id, Platform.LinkedIn)
+                .Build();
+            await integrationRepository.CreateAsync(xIntegration);
+            await integrationRepository.CreateAsync(linkedInIntegration);
             Post pastPost = new PostBuilder(user.Id)
                 .ScheduledFor(DateTime.UtcNow.AddHours(-1))
-                .PostedTo(integration)
+                .PostedTo(xIntegration)
+                .PostedTo(linkedInIntegration)
                 .Build();
             Post futurePost = new PostBuilder(user.Id)
                 .ScheduledFor(DateTime.UtcNow.AddHours(1))
-                .PostedTo(integration)
+                .PostedTo(xIntegration)
                 .Build();
             await _sut.CreateAsync(pastPost);
             await _sut.CreateAsync(futurePost);
@@ -318,6 +322,7 @@ public class NpgsqlPostRepositoryTests : RepositoryTestBase
             // Assert
             Assert.Single(posts);
             Assert.Equal(pastPost.Id, posts.First().Id);
+            Assert.Equal(2, posts.Single().PostEvents.Count());
         }
     }
 

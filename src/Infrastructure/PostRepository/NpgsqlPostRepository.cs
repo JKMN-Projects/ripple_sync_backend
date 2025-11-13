@@ -172,15 +172,18 @@ internal class NpgsqlPostRepository(
                 ORDER BY p.scheduled_for ASC
                 LIMIT 1000
                 FOR UPDATE SKIP LOCKED
+            ),
+            updated AS (
+                UPDATE post_event AS pe
+                SET post_status_id = @ProcessingId
+                FROM to_claim
+                JOIN post AS p 
+                    ON p.id = to_claim.post_id
+                WHERE pe.post_id = to_claim.post_id
+                  AND pe.user_platform_integration_id = to_claim.user_platform_integration_id
+                RETURNING p.*
             )
-            UPDATE post_event AS pe
-            SET post_status_id = @ProcessingId
-            FROM to_claim
-            JOIN post AS p 
-                ON p.id = to_claim.post_id
-            WHERE pe.post_id = to_claim.post_id
-              AND pe.user_platform_integration_id = to_claim.user_platform_integration_id
-            RETURNING p.*;";
+            SELECT DISTINCT * FROM updated;";
 
         try
         {
