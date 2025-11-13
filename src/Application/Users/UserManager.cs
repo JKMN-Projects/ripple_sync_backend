@@ -88,9 +88,9 @@ public sealed class UserManager(
         if (!email.Contains('@') || !email.Contains('.')) throw new ArgumentException("Invalid email format", nameof(email));
         if (email.Split('@', StringSplitOptions.RemoveEmptyEntries).Length != 2) throw new ArgumentException("Invalid email format", nameof(email));
         if (email.Split('.', StringSplitOptions.RemoveEmptyEntries).Length < 2) throw new ArgumentException("Invalid email format", nameof(email));
+        email = email.Trim().ToLowerInvariant();
 
         ArgumentException.ThrowIfNullOrWhiteSpace(password, nameof(password));
-
         const string passwordRequirements = "Password must be at least 8 characters long and contain at least one digit, one uppercase letter, one lowercase letter, and one special character.";
 
         if (password.Length < 8) throw new ArgumentException(passwordRequirements, nameof(password));
