@@ -14,6 +14,7 @@ public class PostConsumer(ILogger<PostConsumer> logger, IServiceProvider service
         {
             await foreach (var post in channel.ReadAllAsync().WithCancellation(stoppingToken))
             {
+                logger.LogInformation("Consuming post: Post={PostId}", post.Id);
                 try
                 {
                     using var serviceScope = serviceProvider.CreateScope();
@@ -25,6 +26,10 @@ public class PostConsumer(ILogger<PostConsumer> logger, IServiceProvider service
                     _logger.LogError(ex, "Error processing post: Post={PostId}", post.Id);
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("PostEventConsumer stopping due to cancellation");
         }
         catch (Exception ex)
         {

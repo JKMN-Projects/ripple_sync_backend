@@ -35,21 +35,18 @@ public class PostNotificationBackgroundService(
     {
         try
         {
+            logger.LogInformation("Processing ready posts");
             using var scope = serviceProvider.CreateScope();
             var postChannel = scope.ServiceProvider.GetRequiredService<PostChannel>();
             var postManager = scope.ServiceProvider.GetRequiredService<PostManager>();
 
             var posts = await postManager.GetPostReadyToPublish(cancellationToken);
-
+            logger.LogInformation("Found {Count} posts ready to be published. Ids: {Ids}", posts.Count(), string.Join(", ", posts.Select(p => p.Id)));
             foreach (var post in posts)
             {
                 await postChannel.PublishAsync(post);
             }
-
-            if (posts.Any())
-            {
-                logger.LogDebug("Published {Count} posts to channel", posts.Count());
-            }
+            logger.LogInformation("Published {Count} posts to channel", posts.Count());
         }
         catch (Exception ex)
         {
