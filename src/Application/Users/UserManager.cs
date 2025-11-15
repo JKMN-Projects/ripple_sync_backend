@@ -176,7 +176,10 @@ public sealed class UserManager(
         if (!user.VerifyRefreshToken(refreshToken, timeProvider))
         {
             logger.LogWarning("Invalid or expired refresh token for user with ID {UserId}", user.Id);
-            await userRepository.UpdateAsync(user, cancellationToken);
+            await unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                await userRepository.UpdateAsync(user, cancellationToken);
+            });
             throw new ArgumentException("Invalid or expired refresh token.", nameof(refreshToken));
         }
 
