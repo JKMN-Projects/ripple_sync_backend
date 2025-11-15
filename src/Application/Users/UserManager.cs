@@ -173,37 +173,30 @@ public sealed class UserManager(
         User? user = await userRepository.GetByRefreshTokenAsync(refreshToken, cancellationToken)
             ?? throw EntityNotFoundException.ForEntity<User>(refreshToken, nameof(User.RefreshToken));
 
-        AuthenticationToken? token = null;
-        RefreshToken? newRefreshToken = null;
+        if (!user.VerifyRefreshToken(refreshToken, timeProvider))
+        {
+            logger.LogWarning("Invalid or expired refresh token for user with ID {UserId}", user.Id);
+            await userRepository.UpdateAsync(user, cancellationToken);
+            throw new ArgumentException("Invalid or expired refresh token.", nameof(refreshToken));
+        }
+
+        AuthenticationToken token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
+        RefreshToken newRefreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
+        user.AddRefreshToken(newRefreshToken);
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            if (!user.VerifyRefreshToken(refreshToken, timeProvider))
-            {
-                logger.LogWarning("Invalid or expired refresh token for user with ID {UserId}", user.Id);
-                await userRepository.UpdateAsync(user, cancellationToken);
-                throw new ArgumentException("Invalid or expired refresh token.", nameof(refreshToken));
-            }
-
-            token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
-            newRefreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
-            user.AddRefreshToken(newRefreshToken);
-
             await userRepository.UpdateAsync(user, cancellationToken);
         });
 
-        return token == null
-            ? throw new InvalidOperationException("Failed to generate new token")
-            : newRefreshToken == null
-                ? throw new InvalidOperationException("Failed to generate new refresh tokens")
-                : new AuthenticationTokenResponse(
-                    token.AccessToken,
-                    token.TokenType,
-                    token.ExpiresInMilliSeconds,
-                    newRefreshToken.Value,
-                    ((DateTimeOffset)newRefreshToken.ExpiresAt).ToUnixTimeMilliseconds(),
-                    token.Claims
-                );
+        return new AuthenticationTokenResponse(
+            token.AccessToken,
+            token.TokenType,
+            token.ExpiresInMilliSeconds,
+            newRefreshToken.Value,
+            ((DateTimeOffset)newRefreshToken.ExpiresAt).ToUnixTimeMilliseconds(),
+            token.Claims
+        );
     }
 }
 
