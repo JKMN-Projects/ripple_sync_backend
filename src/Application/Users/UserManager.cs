@@ -36,6 +36,7 @@ public sealed class UserManager(
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email, nameof(email));
+        email = email.Trim().ToLowerInvariant();
         ArgumentException.ThrowIfNullOrWhiteSpace(password, nameof(password));
 
         User? user = await userRepository.GetByEmailAsync(email, cancellationToken)
