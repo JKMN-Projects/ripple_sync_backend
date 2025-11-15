@@ -36,6 +36,7 @@ public sealed class UserManager(
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email, nameof(email));
+        email = email.Trim().ToLowerInvariant();
         ArgumentException.ThrowIfNullOrWhiteSpace(password, nameof(password));
 
         User? user = await userRepository.GetByEmailAsync(email, cancellationToken)
@@ -88,9 +89,9 @@ public sealed class UserManager(
         if (!email.Contains('@') || !email.Contains('.')) throw new ArgumentException("Invalid email format", nameof(email));
         if (email.Split('@', StringSplitOptions.RemoveEmptyEntries).Length != 2) throw new ArgumentException("Invalid email format", nameof(email));
         if (email.Split('.', StringSplitOptions.RemoveEmptyEntries).Length < 2) throw new ArgumentException("Invalid email format", nameof(email));
+        email = email.Trim().ToLowerInvariant();
 
         ArgumentException.ThrowIfNullOrWhiteSpace(password, nameof(password));
-
         const string passwordRequirements = "Password must be at least 8 characters long and contain at least one digit, one uppercase letter, one lowercase letter, and one special character.";
 
         if (password.Length < 8) throw new ArgumentException(passwordRequirements, nameof(password));
@@ -172,37 +173,33 @@ public sealed class UserManager(
         User? user = await userRepository.GetByRefreshTokenAsync(refreshToken, cancellationToken)
             ?? throw EntityNotFoundException.ForEntity<User>(refreshToken, nameof(User.RefreshToken));
 
-        AuthenticationToken? token = null;
-        RefreshToken? newRefreshToken = null;
+        if (!user.VerifyRefreshToken(refreshToken, timeProvider))
+        {
+            logger.LogWarning("Invalid or expired refresh token for user with ID {UserId}", user.Id);
+            await unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                await userRepository.UpdateAsync(user, cancellationToken);
+            });
+            throw new ArgumentException("Invalid or expired refresh token.", nameof(refreshToken));
+        }
+
+        AuthenticationToken token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
+        RefreshToken newRefreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
+        user.AddRefreshToken(newRefreshToken);
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            if (!user.VerifyRefreshToken(refreshToken, timeProvider))
-            {
-                logger.LogWarning("Invalid or expired refresh token for user with ID {UserId}", user.Id);
-                await userRepository.UpdateAsync(user, cancellationToken);
-                throw new ArgumentException("Invalid or expired refresh token.", nameof(refreshToken));
-            }
-
-            token = await authenticationTokenProvider.GenerateTokenAsync(user, cancellationToken);
-            newRefreshToken = await authenticationTokenProvider.GenerateRefreshTokenAsync(user, cancellationToken);
-            user.AddRefreshToken(newRefreshToken);
-
             await userRepository.UpdateAsync(user, cancellationToken);
         });
 
-        return token == null
-            ? throw new InvalidOperationException("Failed to generate new token")
-            : newRefreshToken == null
-                ? throw new InvalidOperationException("Failed to generate new refresh tokens")
-                : new AuthenticationTokenResponse(
-                    token.AccessToken,
-                    token.TokenType,
-                    token.ExpiresInMilliSeconds,
-                    newRefreshToken.Value,
-                    ((DateTimeOffset)newRefreshToken.ExpiresAt).ToUnixTimeMilliseconds(),
-                    token.Claims
-                );
+        return new AuthenticationTokenResponse(
+            token.AccessToken,
+            token.TokenType,
+            token.ExpiresInMilliSeconds,
+            newRefreshToken.Value,
+            ((DateTimeOffset)newRefreshToken.ExpiresAt).ToUnixTimeMilliseconds(),
+            token.Claims
+        );
     }
 }
 
