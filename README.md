@@ -1,9 +1,9 @@
 # RippleSync Backend
 
-A robust social media management platform backend built with .NET 9 and Clean Architecture principles, enabling seamless cross-platform content publishing and analytics.
-
 [![Build & Test](https://github.com/JKMN-Projects/ripple_sync_backend/actions/workflows/build-docker-image.yml/badge.svg)](https://github.com/JKMN-Projects/ripple_sync_backend/actions/workflows/build-docker-image.yml)
 [![Tests](https://github.com/JKMN-Projects/ripple_sync_backend/actions/workflows/main.yml/badge.svg)](https://github.com/JKMN-Projects/ripple_sync_backend/actions/workflows/main.yml)
+
+A robust social media management platform backend built with .NET 9 and Clean Architecture principles, enabling seamless cross-platform content publishing and analytics.
 
 ## 🚀 Features
 
