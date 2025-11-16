@@ -161,7 +161,7 @@ This project is proprietary software. All rights reserved.
 
 ## 👥 Team
 
-- **Jukman Projects** - Initial work and maintenance
+- **Jukman** - Initial work and maintenance
 
 ## 🔗 Related Projects
 
@@ -173,4 +173,4 @@ For questions or support, please reach out to the development team.
 
 ---
 
-Built with ❤️ using .NET 9 and Clean Architecture
+Built by **Jukman** with ❤️ using .NET 9 and Clean Architecture
